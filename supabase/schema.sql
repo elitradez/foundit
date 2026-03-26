@@ -52,6 +52,17 @@ create table if not exists public.claims (
   updated_at timestamptz not null default now()
 );
 
+-- If claims already existed, ensure newer columns exist too.
+alter table public.claims add column if not exists student_name text;
+alter table public.claims add column if not exists student_email text;
+alter table public.claims add column if not exists student_id_number text;
+alter table public.claims add column if not exists claim_description text;
+alter table public.claims add column if not exists status text not null default 'pending';
+alter table public.claims add column if not exists created_at timestamptz not null default now();
+alter table public.claims add column if not exists updated_at timestamptz not null default now();
+alter table public.claims drop constraint if exists claims_status_check;
+alter table public.claims add constraint claims_status_check check (status in ('pending', 'approved', 'returned'));
+
 create index if not exists claims_item_id_idx on public.claims (item_id);
 create index if not exists claims_status_idx on public.claims (status);
 create index if not exists claims_created_at_idx on public.claims (created_at desc);

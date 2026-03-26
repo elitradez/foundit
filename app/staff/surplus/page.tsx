@@ -44,40 +44,39 @@ export default async function StaffSurplusPage() {
         <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4">
           <div>
             <p className="text-xs font-semibold uppercase tracking-wider text-[#CC0000]">Staff</p>
-            <h1 className="text-xl font-semibold">Surplus log</h1>
+            <h1 className="text-2xl font-semibold">Surplus log</h1>
           </div>
-          <Link href="/staff" className="rounded-xl border border-white/15 px-4 py-2 text-sm text-[#F5F5F0]/85 hover:bg-white/5">
-            Back to dashboard
+          <Link href="/staff" className="rounded-xl border border-white/15 px-5 py-3 text-base text-[#F5F5F0]/85 hover:bg-white/5">
+            Back
           </Link>
         </div>
       </header>
 
       <main className="mx-auto max-w-6xl px-4 py-8">
         <div className="mb-6 flex flex-wrap gap-3">
-          <div className="rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm">
+          <div className="rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3 text-base">
             Total in surplus: <span className="font-semibold">{items.length}</span>
           </div>
-          <div className="rounded-xl border border-red-500/25 bg-red-500/10 px-4 py-3 text-sm text-red-200">
+          <div className="rounded-xl border border-red-500/25 bg-red-500/10 px-4 py-3 text-base text-red-200">
             Past 30 days: <span className="font-semibold">{past30}</span>
           </div>
         </div>
 
         <div className="overflow-hidden rounded-2xl border border-white/10">
-          <table className="w-full text-left text-sm">
-            <thead className="border-b border-white/10 bg-white/[0.04] text-[#F5F5F0]/70">
+          <table className="w-full text-left text-base">
+            <thead className="border-b border-white/10 bg-white/[0.04] text-[#F5F5F0]/75">
               <tr>
                 <th className="px-4 py-3 font-medium">Photo</th>
                 <th className="px-4 py-3 font-medium">Item</th>
-                <th className="px-4 py-3 font-medium">Location found</th>
-                <th className="px-4 py-3 font-medium">Date found</th>
-                <th className="px-4 py-3 font-medium">Date sent to surplus</th>
-                <th className="px-4 py-3 font-medium">Status</th>
+                <th className="px-4 py-3 font-medium">Location</th>
+                <th className="px-4 py-3 font-medium">Sent to surplus</th>
+                <th className="px-4 py-3 font-medium">Days in surplus</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-white/10">
               {items.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-4 py-12 text-center text-[#F5F5F0]/50">
+                  <td colSpan={5} className="px-4 py-12 text-center text-[#F5F5F0]/50">
                     No items in surplus.
                   </td>
                 </tr>
@@ -89,27 +88,28 @@ export default async function StaffSurplusPage() {
                 const ready = days >= 30;
                 return (
                   <tr key={item.id} className={ready ? "bg-red-500/5" : "bg-black/20"}>
-                    <td className="px-4 py-3">
-                      <div className="relative h-14 w-14 overflow-hidden rounded-lg border border-white/10">
+                    <td className="px-4 py-4">
+                      <div className="relative h-16 w-16 overflow-hidden rounded-lg border border-white/10">
                         <Image
                           src={`/api/staff/items/${item.item_id}/photo`}
                           alt=""
                           fill
                           className="object-cover"
-                          sizes="56px"
+                          sizes="64px"
                           unoptimized
                         />
                       </div>
                     </td>
-                    <td className="px-4 py-3 font-medium">{item.item_name}</td>
-                    <td className="px-4 py-3 text-[#F5F5F0]/80">{item.location_found}</td>
-                    <td className="px-4 py-3 text-[#F5F5F0]/80">{item.date_found}</td>
-                    <td className="px-4 py-3 text-[#F5F5F0]/80">{item.date_sent_to_surplus?.slice(0, 10) ?? "-"}</td>
-                    <td className="px-4 py-3">
+                    <td className="px-4 py-4 font-medium">{item.item_name}</td>
+                    <td className="px-4 py-4 text-[#F5F5F0]/80">{item.location_found}</td>
+                    <td className="px-4 py-4 text-[#F5F5F0]/80">{item.date_sent_to_surplus?.slice(0, 10) ?? "-"}</td>
+                    <td className="px-4 py-4">
                       {ready ? (
-                        <span className="rounded-full bg-red-500/20 px-2 py-0.5 text-xs text-red-300">Ready for disposal</span>
+                        <span className="rounded-full bg-red-500/25 px-3 py-1 text-sm font-semibold text-red-100">
+                          {days} days - Ready for disposal
+                        </span>
                       ) : (
-                        <span className="rounded-full bg-amber-500/15 px-2 py-0.5 text-xs text-amber-200">In surplus</span>
+                        <span className="rounded-full bg-white/10 px-3 py-1 text-sm text-[#F5F5F0]/90">{days} days</span>
                       )}
                     </td>
                   </tr>

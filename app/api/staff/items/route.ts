@@ -2,7 +2,6 @@ import { randomUUID } from "crypto";
 import { NextResponse } from "next/server";
 import { isStaffAuthenticated } from "@/lib/staff-api";
 import { createAdminSupabaseClient } from "@/lib/supabase-admin";
-import { hashPin } from "@/lib/pin";
 
 function safeFilename(name: string): string {
   return name.replace(/[^a-zA-Z0-9._-]/g, "_").slice(0, 120) || "photo";
@@ -54,16 +53,14 @@ export async function POST(req: Request) {
   const description = String(form.get("description") ?? "").trim();
   const location = String(form.get("location") ?? "").trim();
   const dateFound = String(form.get("date_found") ?? "").trim();
-  const optionalPin = String(form.get("optional_pin") ?? "").trim();
+  const safeDescription = description || name || "Lost item";
+  const safeDateFound = /^\d{4}-\d{2}-\d{2}$/.test(dateFound) ? dateFound : new Date().toISOString().slice(0, 10);
 
   if (!(file instanceof File) || file.size === 0) {
     return NextResponse.json({ error: "Missing photo" }, { status: 400 });
   }
-  if (!name || !description || !location || !dateFound) {
+  if (!name || !location) {
     return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
-  }
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(dateFound)) {
-    return NextResponse.json({ error: "Invalid date" }, { status: 400 });
   }
 
   const id = randomUUID();
@@ -79,25 +76,17 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: upErr.message }, { status: 500 });
   }
 
-  let pin_hash: string | null = null;
-  let pin_salt: string | null = null;
-  if (optionalPin.length > 0) {
-    if (optionalPin.length < 4 || optionalPin.length > 32) {
-      return NextResponse.json({ error: "PIN must be 4–32 characters" }, { status: 400 });
-    }
-    const h = hashPin(optionalPin);
-    pin_hash = h.pin_hash;
-    pin_salt = h.pin_salt;
-  }
+  const pin_hash: string | null = null;
+  const pin_salt: string | null = null;
 
   const { data, error } = await supabase
     .from("items")
     .insert({
       id,
       name,
-      description,
+      description: safeDescription,
       location,
-      date_found: dateFound,
+      date_found: safeDateFound,
       photo_path: photoPath,
       pin_hash,
       pin_salt,

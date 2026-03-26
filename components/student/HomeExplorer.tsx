@@ -161,14 +161,11 @@ export function HomeExplorer({ initialItems, loadError }: Props) {
 }
 
 function ClaimModal({ item, onClose }: { item: PublicItem; onClose: () => void }) {
-  const [studentName, setStudentName] = useState("");
-  const [studentEmail, setStudentEmail] = useState("");
-  const [studentIdNumber, setStudentIdNumber] = useState("");
   const [studentDescription, setStudentDescription] = useState("");
-  const [pin, setPin] = useState("");
   const [score, setScore] = useState<number | null>(null);
   const [revealUrl, setRevealUrl] = useState<string | null>(null);
   const [showFoundPopup, setShowFoundPopup] = useState(false);
+  const [showPickupPopup, setShowPickupPopup] = useState(false);
   const [matchBusy, setMatchBusy] = useState(false);
   const [submitBusy, setSubmitBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -217,11 +214,7 @@ function ClaimModal({ item, onClose }: { item: PublicItem; onClose: () => void }
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           itemId: item.id,
-          studentName,
-          studentEmail,
-          studentIdNumber,
           studentDescription,
-          pin: item.requires_pin ? pin : undefined,
         }),
       });
       const data = (await res.json().catch(() => ({}))) as { error?: string };
@@ -229,8 +222,8 @@ function ClaimModal({ item, onClose }: { item: PublicItem; onClose: () => void }
         setError(data.error ?? "Submit failed");
         return;
       }
-      onClose();
-      alert("Claim submitted.");
+      setShowFoundPopup(false);
+      setShowPickupPopup(true);
     } finally {
       setSubmitBusy(false);
     }
@@ -273,36 +266,6 @@ function ClaimModal({ item, onClose }: { item: PublicItem; onClose: () => void }
           ) : null}
 
           <label className="block space-y-2">
-            <span className="text-sm text-[#F5F5F0]/80">Full name</span>
-            <input
-              value={studentName}
-              onChange={(e) => setStudentName(e.target.value)}
-              className="w-full rounded-xl border border-white/10 bg-black/40 px-4 py-3 text-[#F5F5F0] outline-none focus:border-[#CC0000]/45 focus:ring-2 focus:ring-[#CC0000]/25"
-              placeholder="First Last"
-            />
-          </label>
-
-          <label className="block space-y-2">
-            <span className="text-sm text-[#F5F5F0]/80">University email (.edu)</span>
-            <input
-              value={studentEmail}
-              onChange={(e) => setStudentEmail(e.target.value)}
-              className="w-full rounded-xl border border-white/10 bg-black/40 px-4 py-3 text-[#F5F5F0] outline-none focus:border-[#CC0000]/45 focus:ring-2 focus:ring-[#CC0000]/25"
-              placeholder="you@utah.edu"
-            />
-          </label>
-
-          <label className="block space-y-2">
-            <span className="text-sm text-[#F5F5F0]/80">Student ID number</span>
-            <input
-              value={studentIdNumber}
-              onChange={(e) => setStudentIdNumber(e.target.value)}
-              className="w-full rounded-xl border border-white/10 bg-black/40 px-4 py-3 text-[#F5F5F0] outline-none focus:border-[#CC0000]/45 focus:ring-2 focus:ring-[#CC0000]/25"
-              placeholder="u1234567"
-            />
-          </label>
-
-          <label className="block space-y-2">
             <span className="text-sm text-[#F5F5F0]/80">Describe your lost item</span>
             <textarea
               value={studentDescription}
@@ -312,19 +275,6 @@ function ClaimModal({ item, onClose }: { item: PublicItem; onClose: () => void }
               className="w-full rounded-xl border border-white/10 bg-black/40 px-4 py-3 text-[#F5F5F0] outline-none focus:border-[#CC0000]/45 focus:ring-2 focus:ring-[#CC0000]/25"
             />
           </label>
-
-          {item.requires_pin ? (
-            <label className="block space-y-2">
-              <span className="text-sm text-[#F5F5F0]/80">Item PIN</span>
-              <input
-                type="password"
-                value={pin}
-                onChange={(e) => setPin(e.target.value)}
-                placeholder="Provided when the item was logged"
-                className="w-full rounded-xl border border-white/10 bg-black/40 px-4 py-3 text-[#F5F5F0] outline-none focus:border-[#CC0000]/45 focus:ring-2 focus:ring-[#CC0000]/25"
-              />
-            </label>
-          ) : null}
 
           <button
             type="button"
@@ -374,13 +324,7 @@ function ClaimModal({ item, onClose }: { item: PublicItem; onClose: () => void }
               <button
                 type="button"
                 onClick={() => void submitClaim()}
-                disabled={
-                  submitBusy ||
-                  !studentName.trim() ||
-                  !studentEmail.trim() ||
-                  !studentIdNumber.trim() ||
-                  !studentDescription.trim()
-                }
+                disabled={submitBusy || !studentDescription.trim()}
                 className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-[#CC0000] py-3 text-sm font-semibold text-white transition duration-200 hover:scale-[1.01] hover:bg-[#a80000] active:scale-[0.99] disabled:opacity-50"
               >
                 {submitBusy ? (
@@ -393,6 +337,26 @@ function ClaimModal({ item, onClose }: { item: PublicItem; onClose: () => void }
                 )}
               </button>
             </div>
+          </div>
+        </div>
+      ) : null}
+      {showPickupPopup ? (
+        <div className="anim-fade-in fixed inset-0 z-[70] flex items-center justify-center bg-black/85 p-4">
+          <div className="anim-pop-in w-full max-w-md rounded-2xl border border-white/10 bg-[#141414] p-5 shadow-2xl">
+            <p className="text-center text-2xl font-bold text-emerald-400">Claim submitted</p>
+            <p className="mt-3 text-center text-sm text-[#F5F5F0]/80">
+              Please go to Lassonde Studios Lost and Found to claim your item.
+            </p>
+            <p className="mt-2 text-center text-xs text-[#F5F5F0]/55">
+              Staff will manually confirm your UID, name, or student ID at pickup.
+            </p>
+            <button
+              type="button"
+              onClick={onClose}
+              className="mt-5 inline-flex min-h-11 w-full items-center justify-center rounded-xl bg-[#CC0000] px-4 py-2 text-sm font-semibold text-white hover:bg-[#a80000]"
+            >
+              Got it
+            </button>
           </div>
         </div>
       ) : null}
