@@ -2,6 +2,21 @@ import { NextResponse } from "next/server";
 import { isStaffAuthenticated } from "@/lib/staff-api";
 import { createAdminSupabaseClient } from "@/lib/supabase-admin";
 
+type ClaimedItemWithJoin = {
+  id: string;
+  claim_id: string;
+  item_id: string;
+  item_name: string;
+  photo_path: string;
+  student_name: string;
+  student_id_number: string;
+  student_email: string;
+  date_claimed: string;
+  staff_notes: string | null;
+  created_at: string;
+  items: { status: "active" | "returned" | "surplus" } | Array<{ status: "active" | "returned" | "surplus" }> | null;
+};
+
 export async function GET() {
   if (!(await isStaffAuthenticated())) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -16,7 +31,8 @@ export async function GET() {
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
-  const claimedItems = (data ?? []).map((row) => ({
+  const rows = (data ?? []) as ClaimedItemWithJoin[];
+  const claimedItems = rows.map((row) => ({
     ...row,
     item_status: Array.isArray(row.items) ? row.items[0]?.status ?? null : row.items?.status ?? null,
     items: undefined,
