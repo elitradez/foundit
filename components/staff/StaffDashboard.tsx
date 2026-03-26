@@ -113,6 +113,12 @@ export function StaffDashboard() {
             >
               Student view
             </Link>
+            <Link
+              href="/staff/claims"
+              className="inline-flex min-h-11 items-center rounded-xl border border-white/15 px-4 py-2 text-sm text-[#F5F5F0]/80 hover:bg-white/5"
+            >
+              Claims
+            </Link>
             <button
               type="button"
               onClick={() => setShowForm(true)}
