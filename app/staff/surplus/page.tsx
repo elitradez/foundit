@@ -1,17 +1,15 @@
 import Image from "next/image";
 import Link from "next/link";
 import { createAdminSupabaseClient } from "@/lib/supabase-admin";
-import type { ItemRow } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
 export default async function StaffSurplusPage() {
   const supabase = createAdminSupabaseClient();
   const { data, error } = await supabase
-    .from("items")
-    .select("id, name, location, date_found, photo_path, surplus_sent_at")
-    .eq("status", "surplus")
-    .order("surplus_sent_at", { ascending: false });
+    .from("surplus_and_salvage")
+    .select("id, item_id, item_name, location_found, date_found, date_logged, date_sent_to_surplus")
+    .order("date_sent_to_surplus", { ascending: false });
 
   if (error) {
     return (
@@ -23,12 +21,20 @@ export default async function StaffSurplusPage() {
     );
   }
 
-  const items = (data ?? []) as Pick<ItemRow, "id" | "name" | "location" | "date_found" | "photo_path" | "surplus_sent_at">[];
+  const items = (data ?? []) as Array<{
+    id: string;
+    item_id: string;
+    item_name: string;
+    location_found: string;
+    date_found: string;
+    date_logged: string;
+    date_sent_to_surplus: string;
+  }>;
   // eslint-disable-next-line react-hooks/purity
   const now = Date.now();
   const past30 = items.filter((i) => {
-    if (!i.surplus_sent_at) return false;
-    const days = Math.floor((now - new Date(i.surplus_sent_at).getTime()) / (1000 * 60 * 60 * 24));
+    if (!i.date_sent_to_surplus) return false;
+    const days = Math.floor((now - new Date(i.date_sent_to_surplus).getTime()) / (1000 * 60 * 60 * 24));
     return days >= 30;
   }).length;
 
@@ -77,21 +83,28 @@ export default async function StaffSurplusPage() {
                 </tr>
               ) : null}
               {items.map((item) => {
-                const days = item.surplus_sent_at
-                  ? Math.floor((now - new Date(item.surplus_sent_at).getTime()) / (1000 * 60 * 60 * 24))
+                const days = item.date_sent_to_surplus
+                  ? Math.floor((now - new Date(item.date_sent_to_surplus).getTime()) / (1000 * 60 * 60 * 24))
                   : 0;
                 const ready = days >= 30;
                 return (
                   <tr key={item.id} className={ready ? "bg-red-500/5" : "bg-black/20"}>
                     <td className="px-4 py-3">
                       <div className="relative h-14 w-14 overflow-hidden rounded-lg border border-white/10">
-                        <Image src={`/api/staff/items/${item.id}/photo`} alt="" fill className="object-cover" sizes="56px" unoptimized />
+                        <Image
+                          src={`/api/staff/items/${item.item_id}/photo`}
+                          alt=""
+                          fill
+                          className="object-cover"
+                          sizes="56px"
+                          unoptimized
+                        />
                       </div>
                     </td>
-                    <td className="px-4 py-3 font-medium">{item.name}</td>
-                    <td className="px-4 py-3 text-[#F5F5F0]/80">{item.location}</td>
+                    <td className="px-4 py-3 font-medium">{item.item_name}</td>
+                    <td className="px-4 py-3 text-[#F5F5F0]/80">{item.location_found}</td>
                     <td className="px-4 py-3 text-[#F5F5F0]/80">{item.date_found}</td>
-                    <td className="px-4 py-3 text-[#F5F5F0]/80">{item.surplus_sent_at?.slice(0, 10) ?? "-"}</td>
+                    <td className="px-4 py-3 text-[#F5F5F0]/80">{item.date_sent_to_surplus?.slice(0, 10) ?? "-"}</td>
                     <td className="px-4 py-3">
                       {ready ? (
                         <span className="rounded-full bg-red-500/20 px-2 py-0.5 text-xs text-red-300">Ready for disposal</span>

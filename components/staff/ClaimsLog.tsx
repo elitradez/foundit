@@ -16,11 +16,21 @@ type ClaimApiRow = ClaimRow & {
   };
 };
 
+type StudentInfoDraft = {
+  claimId: string;
+  itemId: string;
+  studentName: string;
+  studentEmail: string;
+  studentIdNumber: string;
+  notes: string;
+};
+
 export function ClaimsLog() {
   const [claims, setClaims] = useState<ClaimApiRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [infoDraft, setInfoDraft] = useState<StudentInfoDraft | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -61,6 +71,40 @@ export function ClaimsLog() {
     }
   }
 
+  async function saveStudentInfo() {
+    if (!infoDraft) return;
+    const { claimId, itemId, studentName, studentEmail, studentIdNumber, notes } = infoDraft;
+    if (!studentName.trim() || !studentEmail.trim() || !studentIdNumber.trim()) {
+      alert("Name, email, and student ID are required.");
+      return;
+    }
+
+    setBusyId(claimId);
+    try {
+      const res = await fetch("/api/staff/student-info", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          claimId,
+          itemId,
+          studentName,
+          studentEmail,
+          studentIdNumber,
+          notes,
+        }),
+      });
+      const data = (await res.json().catch(() => ({}))) as { error?: string };
+      if (!res.ok) {
+        alert(data.error ?? "Could not save student info");
+        return;
+      }
+      setInfoDraft(null);
+      await load();
+    } finally {
+      setBusyId(null);
+    }
+  }
+
   return (
     <div className="min-h-screen bg-[#0c0c0c] text-[#F5F5F0]">
       <header className="border-b border-white/10 bg-[#0c0c0c]/90 backdrop-blur">
@@ -89,7 +133,7 @@ export function ClaimsLog() {
 
         {!loading ? (
           <div className="overflow-x-auto rounded-2xl border border-white/10">
-            <table className="w-full min-w-[1100px] text-left text-sm">
+            <table className="w-full min-w-[1200px] text-left text-sm">
               <thead className="border-b border-white/10 bg-white/[0.04] text-[#F5F5F0]/70">
                 <tr>
                   <th className="px-4 py-3 font-medium">Student name</th>
@@ -153,6 +197,23 @@ export function ClaimsLog() {
                       <div className="flex gap-2">
                         <button
                           type="button"
+                          disabled={busyId === claim.id}
+                          onClick={() =>
+                            setInfoDraft({
+                              claimId: claim.id,
+                              itemId: claim.item?.id ?? claim.item_id,
+                              studentName: claim.student_name,
+                              studentEmail: claim.student_email,
+                              studentIdNumber: claim.student_id_number,
+                              notes: "",
+                            })
+                          }
+                          className="inline-flex min-h-10 items-center rounded-lg border border-[#CC0000]/40 px-3 py-1 text-xs text-[#F5F5F0] hover:bg-[#CC0000]/10 disabled:opacity-50"
+                        >
+                          Add student info
+                        </button>
+                        <button
+                          type="button"
                           disabled={busyId === claim.id || claim.status === "approved"}
                           onClick={() => void updateStatus(claim.id, "approved")}
                           className="inline-flex min-h-10 items-center rounded-lg border border-white/15 px-3 py-1 text-xs hover:bg-white/5 disabled:opacity-50"
@@ -176,6 +237,57 @@ export function ClaimsLog() {
           </div>
         ) : null}
       </main>
+
+      {infoDraft ? (
+        <div className="anim-fade-in fixed inset-0 z-[80] flex items-center justify-center bg-black/75 p-4">
+          <div className="anim-pop-in w-full max-w-md rounded-2xl border border-white/10 bg-[#141414] p-5 shadow-2xl">
+            <h3 className="text-lg font-semibold">Add student info</h3>
+            <div className="mt-4 space-y-3">
+              <input
+                value={infoDraft.studentName}
+                onChange={(e) => setInfoDraft({ ...infoDraft, studentName: e.target.value })}
+                placeholder="Full name"
+                className="w-full rounded-xl border border-white/10 bg-black/40 px-3 py-2.5 text-sm outline-none focus:border-[#CC0000]/45 focus:ring-2 focus:ring-[#CC0000]/25"
+              />
+              <input
+                value={infoDraft.studentEmail}
+                onChange={(e) => setInfoDraft({ ...infoDraft, studentEmail: e.target.value })}
+                placeholder="University email"
+                className="w-full rounded-xl border border-white/10 bg-black/40 px-3 py-2.5 text-sm outline-none focus:border-[#CC0000]/45 focus:ring-2 focus:ring-[#CC0000]/25"
+              />
+              <input
+                value={infoDraft.studentIdNumber}
+                onChange={(e) => setInfoDraft({ ...infoDraft, studentIdNumber: e.target.value })}
+                placeholder="Student ID"
+                className="w-full rounded-xl border border-white/10 bg-black/40 px-3 py-2.5 text-sm outline-none focus:border-[#CC0000]/45 focus:ring-2 focus:ring-[#CC0000]/25"
+              />
+              <textarea
+                value={infoDraft.notes}
+                onChange={(e) => setInfoDraft({ ...infoDraft, notes: e.target.value })}
+                rows={3}
+                placeholder="Notes (optional)"
+                className="w-full rounded-xl border border-white/10 bg-black/40 px-3 py-2.5 text-sm outline-none focus:border-[#CC0000]/45 focus:ring-2 focus:ring-[#CC0000]/25"
+              />
+            </div>
+            <div className="mt-5 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setInfoDraft(null)}
+                className="inline-flex min-h-11 items-center rounded-xl border border-white/15 px-4 py-2 text-sm hover:bg-white/5"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => void saveStudentInfo()}
+                className="inline-flex min-h-11 items-center rounded-xl bg-[#CC0000] px-4 py-2 text-sm font-medium text-white hover:bg-[#a80000]"
+              >
+                Save
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

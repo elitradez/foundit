@@ -56,6 +56,35 @@ create index if not exists claims_item_id_idx on public.claims (item_id);
 create index if not exists claims_status_idx on public.claims (status);
 create index if not exists claims_created_at_idx on public.claims (created_at desc);
 
+create table if not exists public.student_info (
+  id uuid primary key default gen_random_uuid(),
+  claim_id uuid not null references public.claims(id) on delete cascade,
+  item_id uuid not null references public.items(id) on delete cascade,
+  student_name text not null,
+  student_email text not null,
+  student_id_number text not null,
+  notes text,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists student_info_claim_id_idx on public.student_info (claim_id);
+create index if not exists student_info_item_id_idx on public.student_info (item_id);
+create index if not exists student_info_created_at_idx on public.student_info (created_at desc);
+
+create table if not exists public.surplus_and_salvage (
+  id uuid primary key default gen_random_uuid(),
+  item_id uuid not null references public.items(id) on delete cascade,
+  item_name text not null,
+  photo_path text not null,
+  location_found text not null,
+  date_found date not null,
+  date_logged timestamptz not null,
+  date_sent_to_surplus timestamptz not null default now()
+);
+
+create index if not exists surplus_and_salvage_item_id_idx on public.surplus_and_salvage (item_id);
+create index if not exists surplus_and_salvage_date_sent_idx on public.surplus_and_salvage (date_sent_to_surplus desc);
+
 alter table public.items enable row level security;
 
 -- No anon SELECT on items (avoids exposing pin_hash). Public catalog is loaded in Next.js via the service role.
