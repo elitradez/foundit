@@ -6,13 +6,15 @@ import { LogItemForm } from "@/components/staff/LogItemForm";
 import { Spinner } from "@/components/ui/Spinner";
 import type { ItemRow } from "@/lib/types";
 
-function daysSinceFound(dateFound: string): number {
-  const found = new Date(`${dateFound}T00:00:00`).getTime();
-  const now = Date.now();
-  return Math.floor((now - found) / (1000 * 60 * 60 * 24));
-}
+type Tab = "active" | "claims" | "log" | "surplus";
 
-type Tab = "active" | "claims" | "log";
+type SurplusItemRow = {
+  id: string;
+  name: string;
+  location: string;
+  date_found: string;
+  sent_to_surplus_at: string;
+};
 
 type PendingClaim = {
   id: string;
@@ -48,6 +50,9 @@ export function StaffDashboard() {
   const [logRows, setLogRows] = useState<StudentLogRow[]>([]);
   const [logLoading, setLogLoading] = useState(false);
   const [logError, setLogError] = useState<string | null>(null);
+  const [surplusItems, setSurplusItems] = useState<SurplusItemRow[]>([]);
+  const [surplusLoading, setSurplusLoading] = useState(false);
+  const [surplusError, setSurplusError] = useState<string | null>(null);
   const [editReturnedItemId, setEditReturnedItemId] = useState<string | null>(null);
   const [editStudentName, setEditStudentName] = useState("");
   const [editStudentIdNumber, setEditStudentIdNumber] = useState("");
@@ -113,40 +118,27 @@ export function StaffDashboard() {
     }
   }, []);
 
+  const loadSurplus = useCallback(async () => {
+    setSurplusLoading(true);
+    setSurplusError(null);
+    try {
+      const res = await fetch("/api/staff/surplus");
+      const data = (await res.json().catch(() => ({}))) as { items?: SurplusItemRow[]; error?: string };
+      if (!res.ok) {
+        setSurplusError(data.error ?? "Could not load surplus items");
+        return;
+      }
+      setSurplusItems(data.items ?? []);
+    } finally {
+      setSurplusLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
     if (tab === "claims") void loadClaims();
     if (tab === "log") void loadStudentLog();
-  }, [tab, loadClaims, loadStudentLog]);
-
-  async function markReturned(itemId: string) {
-    setBusyId(itemId);
-    try {
-      const res = await fetch(`/api/staff/items/${itemId}/returned`, { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" });
-      if (!res.ok) {
-        const j = (await res.json().catch(() => ({}))) as { error?: string };
-        alert(j.error ?? "Failed to mark returned");
-        return;
-      }
-      await load();
-    } finally {
-      setBusyId(null);
-    }
-  }
-
-  async function sendToSurplus(id: string) {
-    setBusyId(id);
-    try {
-      const res = await fetch(`/api/staff/items/${id}/surplus`, { method: "POST" });
-      if (!res.ok) {
-        const j = (await res.json().catch(() => ({}))) as { error?: string };
-        alert(j.error ?? "Failed to send to surplus");
-        return;
-      }
-      await load();
-    } finally {
-      setBusyId(null);
-    }
-  }
+    if (tab === "surplus") void loadSurplus();
+  }, [tab, loadClaims, loadStudentLog, loadSurplus]);
 
   function openReturnClaimModal(c: PendingClaim) {
     setReturnClaimId(c.id);
@@ -222,6 +214,7 @@ export function StaffDashboard() {
       }
       await load();
       await loadClaims();
+      await loadSurplus();
     } finally {
       setBusyId(null);
     }
@@ -242,6 +235,7 @@ export function StaffDashboard() {
       }
       await load();
       await loadStudentLog();
+      await loadSurplus();
       if (tab === "claims") await loadClaims();
     } finally {
       setBusyId(null);
@@ -315,6 +309,7 @@ export function StaffDashboard() {
             <TabButton id="active" label="Active Items" />
             <TabButton id="claims" label="Claims" />
             <TabButton id="log" label="Student Log" />
+            <TabButton id="surplus" label="Surplus" />
           </div>
         </div>
       </header>
@@ -434,6 +429,70 @@ export function StaffDashboard() {
                         </td>
                       </tr>
                     ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : null}
+          </>
+        ) : null}
+
+        {tab === "surplus" ? (
+          <>
+            {surplusError ? (
+              <p className="mb-6 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-200">
+                {surplusError}
+              </p>
+            ) : null}
+            {surplusLoading ? (
+              <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.03] px-6 py-10 text-[#F5F5F0]/70">
+                <Spinner className="h-5 w-5 text-[#CC0000]" />
+                Loading surplus items...
+              </div>
+            ) : null}
+            {!surplusLoading ? (
+              <div className="overflow-x-auto rounded-2xl border border-white/10">
+                <table className="w-full min-w-[860px] text-left text-sm">
+                  <thead className="border-b border-white/10 bg-white/[0.04] text-[#F5F5F0]/70">
+                    <tr>
+                      <th className="px-4 py-3 font-medium">Photo</th>
+                      <th className="px-4 py-3 font-medium">Item</th>
+                      <th className="px-4 py-3 font-medium">Location</th>
+                      <th className="px-4 py-3 font-medium">Date found</th>
+                      <th className="px-4 py-3 font-medium">Sent to surplus</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-white/10">
+                    {surplusItems.length === 0 ? (
+                      <tr>
+                        <td colSpan={5} className="px-4 py-10 text-center text-[#F5F5F0]/50">
+                          No items in surplus yet.
+                        </td>
+                      </tr>
+                    ) : null}
+                    {surplusItems.map((s) => {
+                      const sent = new Date(s.sent_to_surplus_at).getTime();
+                      const daysInSurplus = Number.isFinite(sent)
+                        ? Math.max(0, Math.floor((Date.now() - sent) / (1000 * 60 * 60 * 24)))
+                        : null;
+                      return (
+                        <tr key={s.id} className="bg-black/20">
+                          <td className="px-4 py-3">
+                            <div className="relative h-12 w-12 overflow-hidden rounded-lg border border-white/10">
+                              <Image src={`/api/staff/items/${s.id}/photo`} alt="" fill className="object-cover" sizes="48px" unoptimized />
+                            </div>
+                          </td>
+                          <td className="px-4 py-3 font-medium">{s.name}</td>
+                          <td className="px-4 py-3 text-[#F5F5F0]/80">{s.location}</td>
+                          <td className="px-4 py-3 text-[#F5F5F0]/70">{s.date_found}</td>
+                          <td className="px-4 py-3 text-[#F5F5F0]/70">
+                            <span>{s.sent_to_surplus_at.slice(0, 10)}</span>
+                            {daysInSurplus !== null ? (
+                              <span className="ml-2 text-xs text-[#F5F5F0]/45">({daysInSurplus}d in surplus)</span>
+                            ) : null}
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
