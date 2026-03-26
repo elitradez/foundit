@@ -188,7 +188,7 @@ export function StaffDashboard() {
                       }}
                       className="inline-flex min-h-11 items-center rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition duration-200 hover:bg-emerald-500 active:scale-[0.99] disabled:opacity-50"
                     >
-                      {busyId === item.id ? "..." : "Returned"}
+                      {busyId === item.id ? "..." : "Returned?"}
                     </button>
 
                     <span title={!canSendToSurplus ? "Available after 30 days" : undefined} className="inline-flex">
@@ -219,6 +219,19 @@ export function StaffDashboard() {
           <div className="anim-pop-in w-full max-w-md rounded-2xl border border-white/10 bg-[#141414] p-5 shadow-2xl">
             <h3 className="text-lg font-semibold text-[#F5F5F0]">Confirm Return</h3>
             <p className="mt-2 text-sm text-[#F5F5F0]/75">Optional student info helps staff verify pickup.</p>
+
+            <div className="mt-4">
+              <div className="relative aspect-[4/3] w-full overflow-hidden rounded-xl border border-white/10 bg-black/30">
+                <Image
+                  src={`/api/staff/items/${returnCandidateId}/photo`}
+                  alt=""
+                  fill
+                  className="object-cover"
+                  sizes="(max-width: 768px) 100vw, 512px"
+                  unoptimized
+                />
+              </div>
+            </div>
 
             <div className="mt-4 space-y-3">
               <label className="block space-y-1">
