@@ -43,7 +43,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Student ID or phone number is required" }, { status: 400 });
     }
 
-    const { error: claimUpdateErr } = await supabase
+    const updateWithPhone = await supabase
       .from("claims")
       .update({
         student_name: studentName,
@@ -53,17 +53,24 @@ export async function POST(req: Request) {
         updated_at: new Date().toISOString(),
       })
       .eq("id", claimId);
-    if (claimUpdateErr) {
-      // Best-effort if updated_at doesn't exist.
-      await supabase
+
+    if (updateWithPhone.error) {
+      const msg = updateWithPhone.error.message || "";
+      const phoneMissing = msg.toLowerCase().includes("phone_number") && msg.toLowerCase().includes("does not exist");
+
+      // Best-effort if updated_at doesn't exist OR phone_number doesn't exist.
+      const updateWithoutUpdatedAt = await supabase
         .from("claims")
-        .update({
-          student_name: studentName,
-          student_id_number: studentIdNumber,
-          phone_number: phoneNumber,
-          status: "returned",
-        })
+        .update(
+          phoneMissing
+            ? { student_name: studentName, student_id_number: studentIdNumber, status: "returned" }
+            : { student_name: studentName, student_id_number: studentIdNumber, phone_number: phoneNumber, status: "returned" },
+        )
         .eq("id", claimId);
+
+      if (updateWithoutUpdatedAt.error) {
+        return NextResponse.json({ error: updateWithoutUpdatedAt.error.message }, { status: 500 });
+      }
     }
 
     const { error: itemErr } = await supabase

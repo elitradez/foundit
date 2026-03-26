@@ -47,14 +47,35 @@ export async function GET() {
     return NextResponse.json({ error: returnedErr.message }, { status: 500 });
   }
 
-  const { data: claimedData, error: claimedErr } = await supabase
+  // Some deployments may not have claims.phone_number yet. Fall back gracefully.
+  let claimedData:
+    | Array<ClaimedRow & { status?: "claimed" | "returned" }>
+    | null
+    | undefined = null;
+
+  const first = await supabase
     .from("claims")
     .select("id, item_id, student_name, student_id_number, phone_number, status, created_at, updated_at, items(name)")
     .in("status", ["claimed", "returned"])
     .order("updated_at", { ascending: false });
 
-  if (claimedErr) {
-    return NextResponse.json({ error: claimedErr.message }, { status: 500 });
+  if (!first.error) {
+    claimedData = first.data as Array<ClaimedRow & { status?: "claimed" | "returned" }>;
+  } else {
+    const msg = first.error.message || "";
+    if (msg.toLowerCase().includes("phone_number") && msg.toLowerCase().includes("does not exist")) {
+      const fallback = await supabase
+        .from("claims")
+        .select("id, item_id, student_name, student_id_number, status, created_at, updated_at, items(name)")
+        .in("status", ["claimed", "returned"])
+        .order("updated_at", { ascending: false });
+      if (fallback.error) return NextResponse.json({ error: fallback.error.message }, { status: 500 });
+      claimedData = (fallback.data ?? []).map((r) => ({ ...(r as any), phone_number: null })) as Array<
+        ClaimedRow & { status?: "claimed" | "returned" }
+      >;
+    } else {
+      return NextResponse.json({ error: first.error.message }, { status: 500 });
+    }
   }
 
   const returnedRows = (returnedData ?? []) as ReturnedItemRow[];

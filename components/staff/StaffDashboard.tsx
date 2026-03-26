@@ -342,11 +342,6 @@ export function StaffDashboard() {
             {!loading && activeItems.length > 0 ? (
               <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 {activeItems.map((item) => {
-                  const daysOld = daysSinceFound(item.date_found);
-                  const canSendToSurplus = daysOld >= 30;
-                  const daysRemaining = Math.max(0, 30 - daysOld);
-                  const surplusText = canSendToSurplus ? "Send to Surplus" : `Surplus in ${daysRemaining} days`;
-
                   return (
                     <li key={item.id} className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
                       <div className="flex gap-4">
@@ -358,27 +353,6 @@ export function StaffDashboard() {
                           <p className="truncate text-sm text-[#F5F5F0]/75">{item.location}</p>
                           <p className="text-xs text-[#F5F5F0]/45">Found {item.date_found}</p>
                         </div>
-                      </div>
-
-                      <div className="mt-4 flex flex-wrap gap-2">
-                        <button
-                          type="button"
-                          disabled={busyId === item.id}
-                          onClick={() => void markReturned(item.id)}
-                          className="inline-flex min-h-11 items-center rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-500 disabled:opacity-50"
-                        >
-                          {busyId === item.id ? "..." : "Returned"}
-                        </button>
-
-                        <button
-                          type="button"
-                          disabled={!canSendToSurplus || busyId === item.id}
-                          onClick={() => void sendToSurplus(item.id)}
-                          className="inline-flex min-h-11 items-center rounded-xl bg-zinc-700 px-4 py-2 text-sm font-semibold text-white hover:bg-zinc-600 disabled:opacity-40 disabled:cursor-not-allowed"
-                          title={!canSendToSurplus ? "Available after 30 days" : undefined}
-                        >
-                          {busyId === item.id ? "..." : surplusText}
-                        </button>
                       </div>
                     </li>
                   );
