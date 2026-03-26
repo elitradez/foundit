@@ -47,6 +47,9 @@ export function StaffDashboard() {
   const [logRows, setLogRows] = useState<StudentLogRow[]>([]);
   const [logLoading, setLogLoading] = useState(false);
   const [logError, setLogError] = useState<string | null>(null);
+  const [editReturnedItemId, setEditReturnedItemId] = useState<string | null>(null);
+  const [editStudentName, setEditStudentName] = useState("");
+  const [editStudentIdNumber, setEditStudentIdNumber] = useState("");
 
   const load = useCallback(async () => {
     setLoadError(null);
@@ -173,6 +176,37 @@ export function StaffDashboard() {
       await load();
       await loadStudentLog();
       if (tab === "claims") await loadClaims();
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  function openEditStudentInfo(row: StudentLogRow) {
+    if (row.kind !== "returned") return;
+    setEditReturnedItemId(row.item_id);
+    setEditStudentName(row.student_name ?? "");
+    setEditStudentIdNumber(row.student_id_number ?? "");
+  }
+
+  async function saveStudentInfo() {
+    if (!editReturnedItemId) return;
+    setBusyId(editReturnedItemId);
+    try {
+      const res = await fetch(`/api/staff/items/${editReturnedItemId}/return-info`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          studentName: editStudentName || null,
+          studentIdNumber: editStudentIdNumber || null,
+        }),
+      });
+      const data = (await res.json().catch(() => ({}))) as { error?: string };
+      if (!res.ok) {
+        alert(data.error ?? "Failed to save student info");
+        return;
+      }
+      setEditReturnedItemId(null);
+      await loadStudentLog();
     } finally {
       setBusyId(null);
     }
@@ -412,14 +446,26 @@ export function StaffDashboard() {
                         <td className="px-4 py-3 text-[#F5F5F0]/70">{r.date}</td>
                         <td className="px-4 py-3">{r.status}</td>
                         <td className="px-4 py-3">
-                          <button
-                            type="button"
-                            disabled={busyId === (r.kind === "claimed" ? r.claim_id ?? r.item_id : r.item_id)}
-                            onClick={() => void relist(r)}
-                            className="inline-flex min-h-10 items-center rounded-xl bg-zinc-700 px-3 py-2 text-xs font-semibold text-white hover:bg-zinc-600 disabled:opacity-50"
-                          >
-                            Relist
-                          </button>
+                          <div className="flex gap-2">
+                            {r.kind === "returned" ? (
+                              <button
+                                type="button"
+                                disabled={busyId === r.item_id}
+                                onClick={() => openEditStudentInfo(r)}
+                                className="inline-flex min-h-10 items-center rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2 text-xs font-semibold text-white hover:bg-white/[0.06] disabled:opacity-50"
+                              >
+                                Add/Edit student info
+                              </button>
+                            ) : null}
+                            <button
+                              type="button"
+                              disabled={busyId === (r.kind === "claimed" ? r.claim_id ?? r.item_id : r.item_id)}
+                              onClick={() => void relist(r)}
+                              className="inline-flex min-h-10 items-center rounded-xl bg-zinc-700 px-3 py-2 text-xs font-semibold text-white hover:bg-zinc-600 disabled:opacity-50"
+                            >
+                              Relist
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))}
@@ -432,6 +478,52 @@ export function StaffDashboard() {
       </main>
 
       {showForm ? <LogItemForm onClose={() => setShowForm(false)} onSaved={() => void load()} /> : null}
+
+      {editReturnedItemId ? (
+        <div className="anim-fade-in fixed inset-0 z-[90] flex items-center justify-center bg-black/75 p-4">
+          <div className="anim-pop-in w-full max-w-md rounded-2xl border border-white/10 bg-[#141414] p-5 shadow-2xl">
+            <h3 className="text-lg font-semibold text-[#F5F5F0]">Returned item student info</h3>
+            <p className="mt-2 text-sm text-[#F5F5F0]/70">This will appear in the Student Log.</p>
+
+            <div className="mt-4 space-y-3">
+              <label className="block space-y-1">
+                <span className="text-sm text-[#F5F5F0]/70">Student name</span>
+                <input
+                  value={editStudentName}
+                  onChange={(e) => setEditStudentName(e.target.value)}
+                  className="w-full rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-base outline-none focus:border-[#CC0000]/45 focus:ring-2 focus:ring-[#CC0000]/25"
+                />
+              </label>
+              <label className="block space-y-1">
+                <span className="text-sm text-[#F5F5F0]/70">Student ID</span>
+                <input
+                  value={editStudentIdNumber}
+                  onChange={(e) => setEditStudentIdNumber(e.target.value)}
+                  className="w-full rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-base outline-none focus:border-[#CC0000]/45 focus:ring-2 focus:ring-[#CC0000]/25"
+                />
+              </label>
+            </div>
+
+            <div className="mt-5 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setEditReturnedItemId(null)}
+                className="inline-flex min-h-11 items-center rounded-xl border border-white/15 px-4 py-2 text-sm text-[#F5F5F0]/85 hover:bg-white/5"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => void saveStudentInfo()}
+                disabled={busyId === editReturnedItemId}
+                className="inline-flex min-h-11 items-center rounded-xl bg-[#CC0000] px-5 py-2 text-sm font-semibold text-white hover:bg-[#a80000] disabled:opacity-50"
+              >
+                {busyId === editReturnedItemId ? "..." : "Save"}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }
