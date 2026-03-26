@@ -180,7 +180,7 @@ function ClaimModal({ item, onClose }: { item: PublicItem; onClose: () => void }
         return;
       }
       onClose();
-      alert("Claim submitted.");
+      alert("Claim submitted. Please go to the Lassonde Studios front desk to pick up your item.");
     } finally {
       setSubmitBusy(false);
     }
@@ -289,7 +289,7 @@ function ClaimModal({ item, onClose }: { item: PublicItem; onClose: () => void }
                 {item.location}
               </p>
               <p className="mb-5 rounded-xl border border-white/10 bg-black/30 p-3 text-sm text-[#F5F5F0]/75">
-                Bring your student ID to pick up your item. Staff will verify your identity at the front desk.
+                Pick up location: Lassonde Studios front desk. Bring your student ID for verification.
               </p>
               <button
                 type="button"
