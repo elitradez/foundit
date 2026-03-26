@@ -19,6 +19,9 @@ export function StaffDashboard() {
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [returnCandidateId, setReturnCandidateId] = useState<string | null>(null);
+  const [returnStudentName, setReturnStudentName] = useState("");
+  const [returnStudentIdNumber, setReturnStudentIdNumber] = useState("");
   const [surplusCandidateId, setSurplusCandidateId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
@@ -48,10 +51,17 @@ export function StaffDashboard() {
     window.location.href = "/staff/login";
   }
 
-  async function markReturned(id: string) {
+  async function confirmReturn(id: string) {
     setBusyId(id);
     try {
-      const res = await fetch(`/api/staff/items/${id}/returned`, { method: "POST" });
+      const res = await fetch(`/api/staff/items/${id}/returned`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          studentName: returnStudentName || undefined,
+          studentIdNumber: returnStudentIdNumber || undefined,
+        }),
+      });
       if (!res.ok) {
         const j = (await res.json().catch(() => ({}))) as { error?: string };
         alert(j.error ?? "Failed to update");
@@ -60,6 +70,7 @@ export function StaffDashboard() {
       await load();
     } finally {
       setBusyId(null);
+      setReturnCandidateId(null);
     }
   }
 
@@ -164,24 +175,29 @@ export function StaffDashboard() {
                     <button
                       type="button"
                       disabled={busyId === item.id}
-                      onClick={() => void markReturned(item.id)}
+                      onClick={() => {
+                        setReturnCandidateId(item.id);
+                        setReturnStudentName("");
+                        setReturnStudentIdNumber("");
+                      }}
                       className="inline-flex min-h-11 items-center rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition duration-200 hover:bg-emerald-500 active:scale-[0.99] disabled:opacity-50"
                     >
                       {busyId === item.id ? "..." : "Returned"}
                     </button>
 
-                    <button
-                      type="button"
-                      disabled={!canSendToSurplus || busyId === item.id}
-                      title={!canSendToSurplus ? "Available after 30 days" : undefined}
-                      onClick={() => {
-                        if (!canSendToSurplus) return;
-                        setSurplusCandidateId(item.id);
-                      }}
-                      className="inline-flex min-h-11 items-center rounded-xl border px-4 py-2 text-sm font-semibold transition duration-200 active:scale-[0.99] disabled:opacity-40 disabled:cursor-not-allowed border-white/15 bg-white/[0.02] text-[#F5F5F0]"
-                    >
-                      {busyId === item.id ? "..." : surplusText}
-                    </button>
+                    <span title={!canSendToSurplus ? "Available after 30 days" : undefined} className="inline-flex">
+                      <button
+                        type="button"
+                        disabled={!canSendToSurplus || busyId === item.id}
+                        onClick={() => {
+                          if (!canSendToSurplus) return;
+                          setSurplusCandidateId(item.id);
+                        }}
+                        className="inline-flex min-h-11 items-center rounded-xl border px-4 py-2 text-sm font-semibold transition duration-200 active:scale-[0.99] disabled:opacity-40 disabled:cursor-not-allowed border-white/15 bg-white/[0.02] text-[#F5F5F0]"
+                      >
+                        {busyId === item.id ? "..." : surplusText}
+                      </button>
+                    </span>
                   </div>
                 </li>
               );
@@ -191,6 +207,53 @@ export function StaffDashboard() {
       </main>
 
       {showForm ? <LogItemForm onClose={() => setShowForm(false)} onSaved={() => void load()} /> : null}
+
+      {returnCandidateId ? (
+        <div className="anim-fade-in fixed inset-0 z-[85] flex items-center justify-center bg-black/75 p-4">
+          <div className="anim-pop-in w-full max-w-md rounded-2xl border border-white/10 bg-[#141414] p-5 shadow-2xl">
+            <h3 className="text-lg font-semibold text-[#F5F5F0]">Confirm Return</h3>
+            <p className="mt-2 text-sm text-[#F5F5F0]/75">Optional student info helps staff verify pickup.</p>
+
+            <div className="mt-4 space-y-3">
+              <label className="block space-y-1">
+                <span className="text-sm text-[#F5F5F0]/70">Student name (optional)</span>
+                <input
+                  value={returnStudentName}
+                  onChange={(e) => setReturnStudentName(e.target.value)}
+                  className="w-full rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-base outline-none focus:border-[#CC0000]/45 focus:ring-2 focus:ring-[#CC0000]/25"
+                />
+              </label>
+
+              <label className="block space-y-1">
+                <span className="text-sm text-[#F5F5F0]/70">Student ID (optional)</span>
+                <input
+                  value={returnStudentIdNumber}
+                  onChange={(e) => setReturnStudentIdNumber(e.target.value)}
+                  className="w-full rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-base outline-none focus:border-[#CC0000]/45 focus:ring-2 focus:ring-[#CC0000]/25"
+                />
+              </label>
+            </div>
+
+            <div className="mt-5 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setReturnCandidateId(null)}
+                className="inline-flex min-h-11 items-center rounded-xl border border-white/15 px-4 py-2 text-sm text-[#F5F5F0]/85 hover:bg-white/5"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => void confirmReturn(returnCandidateId)}
+                disabled={busyId === returnCandidateId}
+                className="inline-flex min-h-11 items-center rounded-xl bg-emerald-600 px-5 py-2 text-sm font-semibold text-white hover:bg-emerald-500 disabled:opacity-50"
+              >
+                {busyId === returnCandidateId ? "..." : "Confirm Return"}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       {surplusCandidateId ? (
         <div className="anim-fade-in fixed inset-0 z-[80] flex items-center justify-center bg-black/75 p-4">

@@ -74,7 +74,11 @@ async function markAsClaimedAction(formData: FormData) {
 
   // Notes are optional UI input. Persisting is intentionally omitted here to avoid
   // hard-coding a column name that may not exist in your current Supabase schema.
-  void notes;
+  // Best-effort only: ignore if the column is missing.
+  if (notes) {
+    const { error: notesErr } = await supabase.from("claims").update({ staff_notes: notes }).eq("id", claimId);
+    void notesErr;
+  }
 
   revalidatePath("/staff/claims");
 }

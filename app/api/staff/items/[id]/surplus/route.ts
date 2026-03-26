@@ -20,7 +20,6 @@ export async function POST(_req: Request, ctx: Ctx) {
   const { error } = await supabase
     .from("items")
     .update({
-      status: "surplus",
       sent_to_surplus_at: new Date().toISOString(),
       returned_at: new Date().toISOString(),
     })
