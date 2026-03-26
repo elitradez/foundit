@@ -107,12 +107,20 @@ export default async function StaffClaimsInboxPage() {
             <h1 className="text-xl font-semibold">Claims inbox</h1>
           </div>
           <div>
-            <Link
-              href="/staff"
-              className="inline-flex min-h-11 items-center rounded-xl border border-white/15 px-4 py-2 text-sm text-[#F5F5F0]/85 hover:bg-white/5"
-            >
-              Back
-            </Link>
+            <div className="flex items-center gap-2">
+              <Link
+                href="/"
+                className="inline-flex min-h-11 items-center rounded-xl border border-white/15 px-4 py-2 text-sm text-[#F5F5F0]/85 hover:bg-white/5"
+              >
+                Return to student view
+              </Link>
+              <Link
+                href="/staff"
+                className="inline-flex min-h-11 items-center rounded-xl border border-white/15 px-4 py-2 text-sm text-[#F5F5F0]/85 hover:bg-white/5"
+              >
+                Back
+              </Link>
+            </div>
           </div>
         </div>
       </header>

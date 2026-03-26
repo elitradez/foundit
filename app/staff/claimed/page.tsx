@@ -3,6 +3,7 @@ import { isStaffAuthenticated } from "@/lib/staff-api";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { revalidatePath } from "next/cache";
+import Image from "next/image";
 
 export const dynamic = "force-dynamic";
 
@@ -11,8 +12,6 @@ type ReturnedItemRow = {
   name: string;
   returned_at: string;
   sent_to_surplus_at: string | null;
-  returned_student_name: string | null;
-  returned_student_id_number: string | null;
 };
 
 type ClaimedItemJoin = { name: string | null } | Array<{ name: string | null }> | null;
@@ -62,8 +61,6 @@ async function relistAction(formData: FormData) {
       .update({
         returned_at: null,
         sent_to_surplus_at: null,
-        returned_student_name: null,
-        returned_student_id_number: null,
         claim_description: null,
       })
       .eq("id", itemId);
@@ -113,8 +110,6 @@ async function relistAction(formData: FormData) {
         returned_at: null,
         sent_to_surplus_at: null,
         claim_description: null,
-        returned_student_name: null,
-        returned_student_id_number: null,
       })
       .eq("id", itemId);
 
@@ -134,7 +129,7 @@ export default async function StaffClaimedPage() {
 
   const { data: returnedData, error: returnedErr } = await supabase
     .from("items")
-    .select("id, name, returned_at, sent_to_surplus_at, returned_student_name, returned_student_id_number")
+    .select("id, name, returned_at, sent_to_surplus_at")
     .not("returned_at", "is", null)
     .is("sent_to_surplus_at", null)
     .order("returned_at", { ascending: false });
@@ -143,7 +138,7 @@ export default async function StaffClaimedPage() {
 
   const { data: claimedData, error: claimedErr } = await supabase
     .from("claims")
-    .select("id, item_id, student_name, student_id_number, student_email, created_at, updated_at, items(name)")
+    .select("id, item_id, student_name, student_id_number, student_email, created_at, updated_at, items(name, photo_path)")
     .eq("status", "claimed")
     .order("updated_at", { ascending: false });
 
@@ -157,8 +152,8 @@ export default async function StaffClaimedPage() {
       kind: "returned" as const,
       itemId: r.id,
       itemName: r.name,
-      studentName: r.returned_student_name,
-      studentIdNumber: r.returned_student_id_number,
+      studentName: null,
+      studentIdNumber: null,
       date: r.returned_at.slice(0, 10),
     })),
     ...claimedRows.map((r) => ({
@@ -176,12 +171,20 @@ export default async function StaffClaimedPage() {
     <div className="min-h-screen bg-[#0c0c0c] text-[#F5F5F0]">
       <header className="border-b border-white/10 bg-[#0c0c0c]/90 backdrop-blur">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4">
-          <Link
-            href="/staff"
-            className="inline-flex min-h-11 items-center rounded-xl border border-white/15 px-4 py-2 text-sm text-[#F5F5F0]/85 hover:bg-white/5"
-          >
-            Back
-          </Link>
+          <div className="flex items-center gap-2">
+            <Link
+              href="/"
+              className="inline-flex min-h-11 items-center rounded-xl border border-white/15 px-4 py-2 text-sm text-[#F5F5F0]/85 hover:bg-white/5"
+            >
+              Return to student view
+            </Link>
+            <Link
+              href="/staff"
+              className="inline-flex min-h-11 items-center rounded-xl border border-white/15 px-4 py-2 text-sm text-[#F5F5F0]/85 hover:bg-white/5"
+            >
+              Back
+            </Link>
+          </div>
         </div>
       </header>
 
@@ -190,6 +193,7 @@ export default async function StaffClaimedPage() {
           <table className="w-full min-w-[1000px] text-left text-sm">
             <thead className="border-b border-white/10 bg-white/[0.04] text-[#F5F5F0]/70">
               <tr>
+                <th className="px-4 py-3 font-medium">Photo</th>
                 <th className="px-4 py-3 font-medium">Item name</th>
                 <th className="px-4 py-3 font-medium">Student name</th>
                 <th className="px-4 py-3 font-medium">Student ID</th>
@@ -201,7 +205,7 @@ export default async function StaffClaimedPage() {
             <tbody className="divide-y divide-white/10">
               {rows.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-4 py-10 text-center text-[#F5F5F0]/50">
+                  <td colSpan={7} className="px-4 py-10 text-center text-[#F5F5F0]/50">
                     No claimed or returned items.
                   </td>
                 </tr>
@@ -209,6 +213,18 @@ export default async function StaffClaimedPage() {
 
               {rows.map((row) => (
                 <tr key={row.kind === "returned" ? `r-${row.itemId}` : `c-${row.claimId}`} className="bg-black/20">
+                  <td className="px-4 py-4">
+                    <div className="relative h-12 w-12 overflow-hidden rounded-lg border border-white/10">
+                      <Image
+                        src={`/api/staff/items/${row.itemId}/photo`}
+                        alt=""
+                        fill
+                        className="object-cover"
+                        sizes="48px"
+                        unoptimized
+                      />
+                    </div>
+                  </td>
                   <td className="px-4 py-4 text-[#F5F5F0]/85">{row.itemName}</td>
                   <td className="px-4 py-4">{isPendingStaffEntry(row.studentName) ? <span className="font-semibold text-red-300">Pending staff entry</span> : row.studentName}</td>
                   <td className="px-4 py-4">{isPendingStaffEntry(row.studentIdNumber) ? <span className="font-semibold text-red-300">Pending staff entry</span> : row.studentIdNumber}</td>

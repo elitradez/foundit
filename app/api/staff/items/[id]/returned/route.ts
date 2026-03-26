@@ -17,8 +17,9 @@ export async function POST(req: Request, ctx: Ctx) {
     studentName?: string;
     studentIdNumber?: string;
   };
-  const studentName = body.studentName?.trim() || null;
-  const studentIdNumber = body.studentIdNumber?.trim() || null;
+  // Student fields are optional. If your DB schema doesn't include returned-student columns,
+  // we just don't persist them (the item will still be marked returned).
+  void body;
 
   const supabase = createAdminSupabaseClient();
   const { error } = await supabase
@@ -26,8 +27,6 @@ export async function POST(req: Request, ctx: Ctx) {
     .update({
       returned_at: new Date().toISOString(),
       sent_to_surplus_at: null,
-      returned_student_name: studentName,
-      returned_student_id_number: studentIdNumber,
     })
     .eq("id", id);
   if (error) {
