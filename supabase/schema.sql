@@ -33,6 +33,10 @@ alter table public.items add constraint items_status_check check (status in ('ac
 -- Remove legacy email column (if it exists from older schema versions).
 alter table public.items drop column if exists claim_email;
 
+-- Claims: used for multiple claim submissions per item.
+-- Add phone number support for non-students.
+alter table public.claims add column if not exists phone_number text;
+
 create index if not exists items_returned_at_idx on public.items (returned_at);
 create index if not exists items_created_at_idx on public.items (created_at desc);
 

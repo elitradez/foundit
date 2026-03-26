@@ -10,6 +10,9 @@ export async function POST(req: Request) {
   const body = (await req.json().catch(() => ({}))) as {
     claimId?: string;
     action?: "returned" | "surplus";
+    studentName?: string;
+    studentIdNumber?: string;
+    phoneNumber?: string;
   };
   const claimId = body.claimId?.trim();
   const action = body.action;
@@ -29,13 +32,44 @@ export async function POST(req: Request) {
   }
 
   if (action === "returned") {
+    const studentName = body.studentName?.trim() || "";
+    const studentIdNumber = body.studentIdNumber?.trim() || null;
+    const phoneNumber = body.phoneNumber?.trim() || null;
+
+    if (!studentName) {
+      return NextResponse.json({ error: "Student name is required" }, { status: 400 });
+    }
+
+    const { error: claimUpdateErr } = await supabase
+      .from("claims")
+      .update({
+        student_name: studentName,
+        student_id_number: studentIdNumber,
+        phone_number: phoneNumber,
+        status: "returned",
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", claimId);
+    if (claimUpdateErr) {
+      // Best-effort if updated_at doesn't exist.
+      await supabase
+        .from("claims")
+        .update({
+          student_name: studentName,
+          student_id_number: studentIdNumber,
+          phone_number: phoneNumber,
+          status: "returned",
+        })
+        .eq("id", claimId);
+    }
+
     const { error: itemErr } = await supabase
       .from("items")
       .update({
         returned_at: new Date().toISOString(),
         sent_to_surplus_at: null,
-        returned_student_name: claim.student_name ?? null,
-        returned_student_id_number: claim.student_id_number ?? null,
+        returned_student_name: studentName,
+        returned_student_id_number: studentIdNumber,
       })
       .eq("id", claim.item_id);
     if (itemErr) return NextResponse.json({ error: itemErr.message }, { status: 500 });
@@ -50,14 +84,16 @@ export async function POST(req: Request) {
     if (itemErr) return NextResponse.json({ error: itemErr.message }, { status: 500 });
   }
 
-  // Remove from pending list
-  const { error: claimErr } = await supabase
-    .from("claims")
-    .update({ status: "claimed", updated_at: new Date().toISOString() })
-    .eq("id", claimId);
-  if (claimErr) {
-    // Best-effort: some schemas may not have updated_at
-    await supabase.from("claims").update({ status: "claimed" }).eq("id", claimId);
+  if (action === "surplus") {
+    // Remove from pending list
+    const { error: claimErr } = await supabase
+      .from("claims")
+      .update({ status: "claimed", updated_at: new Date().toISOString() })
+      .eq("id", claimId);
+    if (claimErr) {
+      // Best-effort: some schemas may not have updated_at
+      await supabase.from("claims").update({ status: "claimed" }).eq("id", claimId);
+    }
   }
 
   return NextResponse.json({ ok: true });

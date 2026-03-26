@@ -29,6 +29,7 @@ type StudentLogRow = {
   item_name: string;
   student_name: string | null;
   student_id_number: string | null;
+  phone_number?: string | null;
   date: string;
   status: "Returned" | "Claimed";
   claim_id?: string;
@@ -50,6 +51,13 @@ export function StaffDashboard() {
   const [editReturnedItemId, setEditReturnedItemId] = useState<string | null>(null);
   const [editStudentName, setEditStudentName] = useState("");
   const [editStudentIdNumber, setEditStudentIdNumber] = useState("");
+
+  const [returnClaimId, setReturnClaimId] = useState<string | null>(null);
+  const [returnClaimItemId, setReturnClaimItemId] = useState<string | null>(null);
+  const [returnClaimItemName, setReturnClaimItemName] = useState<string>("");
+  const [returnStudentName, setReturnStudentName] = useState("");
+  const [returnStudentIdNumber, setReturnStudentIdNumber] = useState("");
+  const [returnPhoneNumber, setReturnPhoneNumber] = useState("");
 
   const load = useCallback(async () => {
     setLoadError(null);
@@ -140,7 +148,60 @@ export function StaffDashboard() {
     }
   }
 
-  async function resolveClaim(claimId: string, action: "returned" | "surplus") {
+  function openReturnClaimModal(c: PendingClaim) {
+    setReturnClaimId(c.id);
+    setReturnClaimItemId(c.item_id);
+    setReturnClaimItemName(c.item_name);
+    setReturnStudentName(c.student_name ?? "");
+    setReturnStudentIdNumber(c.student_id_number ?? "");
+    setReturnPhoneNumber("");
+  }
+
+  function closeReturnClaimModal() {
+    setReturnClaimId(null);
+    setReturnClaimItemId(null);
+    setReturnClaimItemName("");
+    setReturnStudentName("");
+    setReturnStudentIdNumber("");
+    setReturnPhoneNumber("");
+  }
+
+  async function confirmReturnClaim() {
+    if (!returnClaimId || !returnClaimItemId) return;
+    const name = returnStudentName.trim();
+    if (!name) {
+      alert("Student name is required");
+      return;
+    }
+
+    setBusyId(returnClaimId);
+    try {
+      const res = await fetch("/api/staff/claims/resolve", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          claimId: returnClaimId,
+          action: "returned",
+          studentName: name,
+          studentIdNumber: returnStudentIdNumber.trim() || null,
+          phoneNumber: returnPhoneNumber.trim() || null,
+        }),
+      });
+      if (!res.ok) {
+        const j = (await res.json().catch(() => ({}))) as { error?: string };
+        alert(j.error ?? "Failed to mark returned");
+        return;
+      }
+      closeReturnClaimModal();
+      await load();
+      await loadClaims();
+      await loadStudentLog();
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  async function resolveClaim(claimId: string, action: "surplus") {
     setBusyId(claimId);
     try {
       const res = await fetch("/api/staff/claims/resolve", {
@@ -376,7 +437,7 @@ export function StaffDashboard() {
                             <button
                               type="button"
                               disabled={busyId === c.id}
-                              onClick={() => void resolveClaim(c.id, "returned")}
+                              onClick={() => openReturnClaimModal(c)}
                               className="inline-flex min-h-10 items-center rounded-xl bg-emerald-600 px-3 py-2 text-xs font-semibold text-white hover:bg-emerald-500 disabled:opacity-50"
                             >
                               Mark as Returned
@@ -419,8 +480,9 @@ export function StaffDashboard() {
                   <thead className="border-b border-white/10 bg-white/[0.04] text-[#F5F5F0]/70">
                     <tr>
                       <th className="px-4 py-3 font-medium">Item name</th>
-                      <th className="px-4 py-3 font-medium">Student name</th>
+                      <th className="px-4 py-3 font-medium">Name</th>
                       <th className="px-4 py-3 font-medium">Student ID</th>
+                      <th className="px-4 py-3 font-medium">Phone number</th>
                       <th className="px-4 py-3 font-medium">Date</th>
                       <th className="px-4 py-3 font-medium">Status</th>
                       <th className="px-4 py-3 font-medium" />
@@ -429,7 +491,7 @@ export function StaffDashboard() {
                   <tbody className="divide-y divide-white/10">
                     {logRows.length === 0 ? (
                       <tr>
-                        <td colSpan={6} className="px-4 py-10 text-center text-[#F5F5F0]/50">
+                        <td colSpan={7} className="px-4 py-10 text-center text-[#F5F5F0]/50">
                           No returned or claimed items.
                         </td>
                       </tr>
@@ -442,6 +504,9 @@ export function StaffDashboard() {
                         </td>
                         <td className="px-4 py-3 text-[#F5F5F0]/85">
                           {r.student_id_number?.trim() ? r.student_id_number : <span className="text-[#F5F5F0]/55">Not provided</span>}
+                        </td>
+                        <td className="px-4 py-3 text-[#F5F5F0]/85">
+                          {r.phone_number?.trim() ? r.phone_number : <span className="text-[#F5F5F0]/55">Not provided</span>}
                         </td>
                         <td className="px-4 py-3 text-[#F5F5F0]/70">{r.date}</td>
                         <td className="px-4 py-3">{r.status}</td>
@@ -528,6 +593,66 @@ export function StaffDashboard() {
                 className="inline-flex min-h-11 items-center rounded-xl bg-[#CC0000] px-5 py-2 text-sm font-semibold text-white hover:bg-[#a80000] disabled:opacity-50"
               >
                 {busyId === editReturnedItemId ? "..." : "Save"}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {returnClaimId && returnClaimItemId ? (
+        <div className="anim-fade-in fixed inset-0 z-[90] flex items-center justify-center bg-black/75 p-4">
+          <div className="anim-pop-in w-full max-w-md rounded-2xl border border-white/10 bg-[#141414] p-5 shadow-2xl">
+            <h3 className="text-lg font-semibold text-[#F5F5F0]">Confirm return</h3>
+            <p className="mt-2 text-sm text-[#F5F5F0]/70">This will move the item into the Student Log.</p>
+
+            <div className="mt-4 space-y-3">
+              <div className="rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2 text-sm text-[#F5F5F0]/80">
+                <span className="text-[#F5F5F0]/55">Item:</span> {returnClaimItemName}
+              </div>
+
+              <label className="block space-y-1">
+                <span className="text-sm text-[#F5F5F0]/70">Student name</span>
+                <input
+                  value={returnStudentName}
+                  onChange={(e) => setReturnStudentName(e.target.value)}
+                  className="w-full rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-base outline-none focus:border-[#CC0000]/45 focus:ring-2 focus:ring-[#CC0000]/25"
+                />
+              </label>
+
+              <label className="block space-y-1">
+                <span className="text-sm text-[#F5F5F0]/70">Student ID (optional)</span>
+                <input
+                  value={returnStudentIdNumber}
+                  onChange={(e) => setReturnStudentIdNumber(e.target.value)}
+                  className="w-full rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-base outline-none focus:border-[#CC0000]/45 focus:ring-2 focus:ring-[#CC0000]/25"
+                />
+              </label>
+
+              <label className="block space-y-1">
+                <span className="text-sm text-[#F5F5F0]/70">Phone number (optional)</span>
+                <input
+                  value={returnPhoneNumber}
+                  onChange={(e) => setReturnPhoneNumber(e.target.value)}
+                  className="w-full rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-base outline-none focus:border-[#CC0000]/45 focus:ring-2 focus:ring-[#CC0000]/25"
+                />
+              </label>
+            </div>
+
+            <div className="mt-5 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={closeReturnClaimModal}
+                className="inline-flex min-h-11 items-center rounded-xl border border-white/15 px-4 py-2 text-sm text-[#F5F5F0]/85 hover:bg-white/5"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => void confirmReturnClaim()}
+                disabled={busyId === returnClaimId}
+                className="inline-flex min-h-11 items-center rounded-xl bg-emerald-600 px-5 py-2 text-sm font-semibold text-white hover:bg-emerald-500 disabled:opacity-50"
+              >
+                {busyId === returnClaimId ? "..." : "Confirm Return"}
               </button>
             </div>
           </div>

@@ -9,6 +9,7 @@ type ClaimedRow = {
   item_id: string;
   student_name: string | null;
   student_id_number: string | null;
+  phone_number?: string | null;
   created_at: string;
   updated_at: string | null;
   items: ClaimJoin;
@@ -48,8 +49,8 @@ export async function GET() {
 
   const { data: claimedData, error: claimedErr } = await supabase
     .from("claims")
-    .select("id, item_id, student_name, student_id_number, created_at, updated_at, items(name)")
-    .eq("status", "claimed")
+    .select("id, item_id, student_name, student_id_number, phone_number, status, created_at, updated_at, items(name)")
+    .in("status", ["claimed", "returned"])
     .order("updated_at", { ascending: false });
 
   if (claimedErr) {
@@ -57,7 +58,7 @@ export async function GET() {
   }
 
   const returnedRows = (returnedData ?? []) as ReturnedItemRow[];
-  const claimedRows = (claimedData ?? []) as ClaimedRow[];
+  const claimedRows = (claimedData ?? []) as Array<ClaimedRow & { status?: "claimed" | "returned" }>;
 
   const rows = [
     ...returnedRows.map((r) => ({
@@ -70,14 +71,15 @@ export async function GET() {
       status: "Returned" as const,
     })),
     ...claimedRows.map((c) => ({
-      kind: "claimed" as const,
+      kind: c.status === "returned" ? ("returned" as "returned") : ("claimed" as "claimed"),
       claim_id: c.id,
       item_id: c.item_id,
       item_name: joinedItemName(c.items),
       student_name: c.student_name,
       student_id_number: c.student_id_number,
+      phone_number: c.phone_number ?? null,
       date: (c.updated_at ?? c.created_at).slice(0, 10),
-      status: "Claimed" as const,
+      status: c.status === "returned" ? ("Returned" as "Returned") : ("Claimed" as "Claimed"),
     })),
   ].sort((a, b) => (a.date < b.date ? 1 : -1));
 
