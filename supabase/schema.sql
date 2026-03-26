@@ -47,7 +47,7 @@ create table if not exists public.claims (
   student_email text not null,
   student_id_number text not null,
   claim_description text not null,
-  status text not null default 'pending' check (status in ('pending', 'approved', 'returned')),
+  status text not null default 'pending' check (status in ('pending', 'claimed', 'returned')),
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
@@ -61,11 +61,29 @@ alter table public.claims add column if not exists status text not null default 
 alter table public.claims add column if not exists created_at timestamptz not null default now();
 alter table public.claims add column if not exists updated_at timestamptz not null default now();
 alter table public.claims drop constraint if exists claims_status_check;
-alter table public.claims add constraint claims_status_check check (status in ('pending', 'approved', 'returned'));
+alter table public.claims add constraint claims_status_check check (status in ('pending', 'claimed', 'returned'));
 
 create index if not exists claims_item_id_idx on public.claims (item_id);
 create index if not exists claims_status_idx on public.claims (status);
 create index if not exists claims_created_at_idx on public.claims (created_at desc);
+
+create table if not exists public.claimed_items (
+  id uuid primary key default gen_random_uuid(),
+  claim_id uuid not null references public.claims(id) on delete cascade,
+  item_id uuid not null references public.items(id) on delete cascade,
+  item_name text not null,
+  photo_path text not null,
+  student_name text not null,
+  student_id_number text not null,
+  student_email text not null,
+  date_claimed date not null,
+  staff_notes text,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists claimed_items_claim_id_idx on public.claimed_items (claim_id);
+create index if not exists claimed_items_item_id_idx on public.claimed_items (item_id);
+create index if not exists claimed_items_date_claimed_idx on public.claimed_items (date_claimed desc);
 
 create table if not exists public.student_info (
   id uuid primary key default gen_random_uuid(),

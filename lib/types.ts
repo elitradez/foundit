@@ -28,8 +28,22 @@ export type ClaimRow = {
   student_email: string;
   student_id_number: string;
   claim_description: string;
-  status: "pending" | "approved" | "returned";
+  status: "pending" | "claimed" | "returned";
   created_at: string;
   updated_at: string;
   item?: Pick<ItemRow, "id" | "name" | "photo_path" | "location" | "date_found">;
+};
+
+export type ClaimedItemRow = {
+  id: string;
+  claim_id: string;
+  item_id: string;
+  item_name: string;
+  photo_path: string;
+  student_name: string;
+  student_id_number: string;
+  student_email: string;
+  date_claimed: string;
+  staff_notes: string | null;
+  created_at: string;
 };
