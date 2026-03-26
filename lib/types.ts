@@ -46,4 +46,5 @@ export type ClaimedItemRow = {
   date_claimed: string;
   staff_notes: string | null;
   created_at: string;
+  item_status?: ItemRow["status"] | null;
 };

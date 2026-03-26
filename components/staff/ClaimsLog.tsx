@@ -66,6 +66,10 @@ export function ClaimsLog() {
 
   async function markAsClaimed() {
     if (!claiming) return;
+    if (!formStudentName.trim() || !formStudentId.trim()) {
+      alert("Student name and Student ID are required.");
+      return;
+    }
     setBusyId(claiming.id);
     try {
       const res = await fetch("/api/staff/claims", {
@@ -224,7 +228,9 @@ export function ClaimsLog() {
                 />
               </label>
               <label className="block space-y-1">
-                <span className="text-sm text-[#F5F5F0]/70">Student email</span>
+                <span className="text-sm text-[#F5F5F0]/70">
+                  Student email <span className="text-[#F5F5F0]/45">optional</span>
+                </span>
                 <input
                   value={formStudentEmail}
                   onChange={(e) => setFormStudentEmail(e.target.value)}
@@ -249,7 +255,9 @@ export function ClaimsLog() {
                 />
               </label>
               <label className="block space-y-1">
-                <span className="text-sm text-[#F5F5F0]/70">Notes</span>
+                <span className="text-sm text-[#F5F5F0]/70">
+                  Notes <span className="text-[#F5F5F0]/45">optional</span>
+                </span>
                 <textarea
                   value={formNotes}
                   onChange={(e) => setFormNotes(e.target.value)}

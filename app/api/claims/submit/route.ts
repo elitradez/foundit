@@ -6,9 +6,11 @@ export async function POST(req: Request) {
     const body = (await req.json()) as {
       itemId?: string;
       studentDescription?: string;
+      studentEmail?: string;
     };
     const itemId = body.itemId?.trim();
     const studentDescription = body.studentDescription?.trim();
+    const studentEmail = body.studentEmail?.trim();
 
     if (!itemId || !studentDescription) {
       return NextResponse.json({ error: "Missing fields" }, { status: 400 });
@@ -37,7 +39,7 @@ export async function POST(req: Request) {
     const { error: claimErr } = await supabase.from("claims").insert({
       item_id: itemId,
       student_name: "Pending staff entry",
-      student_email: "pending@staff-entry.edu",
+      student_email: studentEmail || "pending@staff-entry.edu",
       student_id_number: "pending",
       claim_description: studentDescription,
       status: "pending",

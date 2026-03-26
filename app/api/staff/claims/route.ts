@@ -47,14 +47,14 @@ export async function PATCH(req: Request) {
   const status = body.status;
   const studentName = body.studentName?.trim();
   const studentIdNumber = body.studentIdNumber?.trim();
-  const studentEmail = body.studentEmail?.trim();
+  const studentEmail = body.studentEmail?.trim() ?? "";
   const itemName = body.itemName?.trim();
   const dateClaimed = body.dateClaimed?.trim();
   const notes = body.notes?.trim() ?? "";
   if (!claimId || status !== "claimed") {
     return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
   }
-  if (!studentName || !studentIdNumber || !studentEmail || !itemName || !dateClaimed) {
+  if (!studentName || !studentIdNumber || !itemName || !dateClaimed) {
     return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
   }
   if (!/^\d{4}-\d{2}-\d{2}$/.test(dateClaimed)) {

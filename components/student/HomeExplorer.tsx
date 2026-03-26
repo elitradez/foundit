@@ -162,6 +162,7 @@ export function HomeExplorer({ initialItems, loadError }: Props) {
 
 function ClaimModal({ item, onClose }: { item: PublicItem; onClose: () => void }) {
   const [studentDescription, setStudentDescription] = useState("");
+  const [studentEmail, setStudentEmail] = useState("");
   const [score, setScore] = useState<number | null>(null);
   const [revealUrl, setRevealUrl] = useState<string | null>(null);
   const [showFoundPopup, setShowFoundPopup] = useState(false);
@@ -215,6 +216,7 @@ function ClaimModal({ item, onClose }: { item: PublicItem; onClose: () => void }
         body: JSON.stringify({
           itemId: item.id,
           studentDescription,
+          studentEmail,
         }),
       });
       const data = (await res.json().catch(() => ({}))) as { error?: string };
@@ -272,6 +274,18 @@ function ClaimModal({ item, onClose }: { item: PublicItem; onClose: () => void }
               onChange={(e) => setStudentDescription(e.target.value)}
               rows={4}
               placeholder="Color, brand, stickers, wear, what makes it yours..."
+              className="w-full rounded-xl border border-white/10 bg-black/40 px-4 py-3 text-[#F5F5F0] outline-none focus:border-[#CC0000]/45 focus:ring-2 focus:ring-[#CC0000]/25"
+            />
+          </label>
+          <label className="block space-y-2">
+            <span className="text-sm text-[#F5F5F0]/80">
+              Email <span className="text-[#F5F5F0]/45">optional</span>
+            </span>
+            <input
+              type="email"
+              value={studentEmail}
+              onChange={(e) => setStudentEmail(e.target.value)}
+              placeholder="you@school.edu"
               className="w-full rounded-xl border border-white/10 bg-black/40 px-4 py-3 text-[#F5F5F0] outline-none focus:border-[#CC0000]/45 focus:ring-2 focus:ring-[#CC0000]/25"
             />
           </label>
