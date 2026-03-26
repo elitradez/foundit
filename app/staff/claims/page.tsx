@@ -9,6 +9,7 @@ type PendingClaimRow = {
   id: string;
   student_name: string | null;
   student_id_number: string | null;
+  student_email: string | null;
   created_at: string;
   items?: { name: string | null } | Array<{ name: string | null }> | null;
 };
@@ -17,7 +18,7 @@ async function getPendingClaims(): Promise<PendingClaimRow[]> {
   const supabase = createAdminSupabaseClient();
   const { data, error } = await supabase
     .from("claims")
-    .select("id, student_name, student_id_number, created_at, items(name)")
+    .select("id, student_name, student_id_number, student_email, created_at, items(name)")
     .eq("status", "pending")
     .order("created_at", { ascending: false });
 
@@ -33,6 +34,7 @@ async function markAsClaimedAction(formData: FormData) {
   const claimId = String(formData.get("claimId") ?? "").trim();
   const studentName = String(formData.get("studentName") ?? "").trim();
   const studentIdNumber = String(formData.get("studentIdNumber") ?? "").trim();
+  const studentEmail = String(formData.get("studentEmail") ?? "").trim();
   const notes = String(formData.get("notes") ?? "").trim();
 
   if (!claimId) return;
@@ -50,6 +52,8 @@ async function markAsClaimedAction(formData: FormData) {
       status: "claimed",
       student_name: studentName || null,
       student_id_number: studentIdNumber || null,
+      student_email: studentEmail || null,
+      updated_at: new Date().toISOString(),
     })
     .eq("id", claimId);
 
@@ -157,6 +161,7 @@ export default async function StaffClaimsInboxPage() {
                                   <input
                                     name="studentName"
                                     defaultValue={claim.student_name ?? ""}
+                                    required
                                     className="w-full rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-base outline-none focus:border-[#CC0000]/45 focus:ring-2 focus:ring-[#CC0000]/25"
                                   />
                                 </label>
@@ -166,6 +171,19 @@ export default async function StaffClaimsInboxPage() {
                                   <input
                                     name="studentIdNumber"
                                     defaultValue={claim.student_id_number ?? ""}
+                                    required
+                                    className="w-full rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-base outline-none focus:border-[#CC0000]/45 focus:ring-2 focus:ring-[#CC0000]/25"
+                                  />
+                                </label>
+
+                                <label className="block space-y-1">
+                                  <span className="text-sm text-[#F5F5F0]/70">
+                                    Student email <span className="text-[#F5F5F0]/45">(optional)</span>
+                                  </span>
+                                  <input
+                                    type="email"
+                                    name="studentEmail"
+                                    defaultValue={claim.student_email ?? ""}
                                     className="w-full rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-base outline-none focus:border-[#CC0000]/45 focus:ring-2 focus:ring-[#CC0000]/25"
                                   />
                                 </label>
