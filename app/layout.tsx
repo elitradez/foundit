@@ -12,9 +12,29 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+function siteUrl(): string {
+  const fromEnv = process.env.NEXT_PUBLIC_APP_URL?.trim();
+  if (fromEnv) return fromEnv.replace(/\/$/, "");
+  const vercel = process.env.VERCEL_URL?.trim();
+  if (vercel) return `https://${vercel.replace(/\/$/, "")}`;
+  return "http://localhost:3000";
+}
+
 export const metadata: Metadata = {
+  metadataBase: new URL(siteUrl()),
   title: "Foundit — Campus lost & found",
   description: "Browse and claim items turned in at the University of Utah.",
+  openGraph: {
+    title: "Foundit — University of Utah",
+    description: "Campus lost and found — browse active items and submit a claim.",
+    type: "website",
+    siteName: "Foundit",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Foundit — University of Utah",
+    description: "Campus lost and found — browse active items and submit a claim.",
+  },
 };
 
 export const viewport = {
