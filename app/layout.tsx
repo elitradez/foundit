@@ -24,16 +24,30 @@ export const metadata: Metadata = {
   metadataBase: new URL(siteUrl()),
   title: "Foundit — Campus lost & found",
   description: "Browse and claim items turned in at the University of Utah.",
+  icons: {
+    icon: [{ url: "/foundit-logo.png", type: "image/png" }],
+    apple: [{ url: "/foundit-logo.png", type: "image/png" }],
+  },
   openGraph: {
     title: "Foundit — University of Utah",
     description: "Campus lost and found — browse active items and submit a claim.",
     type: "website",
     siteName: "Foundit",
+    images: [
+      {
+        url: "/foundit-logo.png",
+        width: 1024,
+        height: 1024,
+        type: "image/png",
+        alt: "Foundit — campus lost and found logo",
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
     title: "Foundit — University of Utah",
     description: "Campus lost and found — browse active items and submit a claim.",
+    images: ["/foundit-logo.png"],
   },
 };
 
