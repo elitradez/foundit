@@ -57,7 +57,7 @@ export async function POST(req: Request) {
     const supabase = createAdminSupabaseClient();
     const { data: item, error: fetchErr } = await supabase
       .from("items")
-      .select("id, name, description, returned_at, claim_description, pin_hash, pin_salt")
+      .select("id, name, description, returned_at, pin_hash, pin_salt")
       .eq("id", itemId)
       .maybeSingle();
 
@@ -66,9 +66,6 @@ export async function POST(req: Request) {
     }
     if (item.returned_at) {
       return NextResponse.json({ error: "Item no longer available" }, { status: 410 });
-    }
-    if (item.claim_description) {
-      return NextResponse.json({ error: "This item already has a submitted claim" }, { status: 409 });
     }
 
     if (item.pin_hash && item.pin_salt) {
@@ -85,16 +82,19 @@ export async function POST(req: Request) {
       );
     }
 
-    const { error: upErr } = await supabase
-      .from("items")
-      .update({
-        claim_description: studentDescription,
-      })
-      .eq("id", itemId)
-      .is("claim_description", null);
+    // Allow multiple people to submit claims for the same item by inserting
+    // a new claim row each time (instead of writing to items.claim_description).
+    const { error: claimErr } = await supabase.from("claims").insert({
+      item_id: itemId,
+      student_name: "Pending staff entry",
+      student_email: "pending@staff-entry.edu",
+      student_id_number: "pending",
+      claim_description: studentDescription,
+      status: "pending",
+    });
 
-    if (upErr) {
-      return NextResponse.json({ error: upErr.message }, { status: 500 });
+    if (claimErr) {
+      return NextResponse.json({ error: claimErr.message }, { status: 500 });
     }
 
     return NextResponse.json({ ok: true, score });

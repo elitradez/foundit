@@ -122,6 +122,50 @@ async function relistAction(formData: FormData) {
   revalidatePath("/staff/claims");
 }
 
+async function deleteLogRowAction(formData: FormData) {
+  "use server";
+
+  const kind = String(formData.get("kind") ?? "").trim();
+  const itemId = String(formData.get("itemId") ?? "").trim();
+  const claimId = String(formData.get("claimId") ?? "").trim();
+
+  if (!(await isStaffAuthenticated())) redirect("/staff/login");
+
+  const supabase = createAdminSupabaseClient();
+
+  if (kind === "returned") {
+    if (!itemId) return;
+
+    const { data: item, error: fetchErr } = await supabase
+      .from("items")
+      .select("id, photo_path, returned_at")
+      .eq("id", itemId)
+      .maybeSingle();
+
+    if (fetchErr || !item) {
+      throw new Error("Item not found");
+    }
+    if (!item.returned_at) {
+      throw new Error("Only returned items can be deleted");
+    }
+
+    const { error: rmErr } = await supabase.storage.from("items").remove([item.photo_path]);
+    // Best-effort: even if storage remove fails, still delete row.
+    void rmErr;
+
+    const { error: delErr } = await supabase.from("items").delete().eq("id", itemId);
+    if (delErr) throw delErr;
+  } else if (kind === "claimed") {
+    if (!claimId) return;
+    const { error: delErr } = await supabase.from("claims").delete().eq("id", claimId);
+    if (delErr) throw delErr;
+  }
+
+  revalidatePath("/staff/claimed");
+  revalidatePath("/staff");
+  revalidatePath("/staff/claims");
+}
+
 export default async function StaffClaimedPage() {
   if (!(await isStaffAuthenticated())) redirect("/staff/login");
 
@@ -200,12 +244,13 @@ export default async function StaffClaimedPage() {
                 <th className="px-4 py-3 font-medium">Date claimed</th>
                 <th className="px-4 py-3 font-medium">Status</th>
                 <th className="px-4 py-3 font-medium" />
+                <th className="px-4 py-3 font-medium" />
               </tr>
             </thead>
             <tbody className="divide-y divide-white/10">
               {rows.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-4 py-10 text-center text-[#F5F5F0]/50">
+                  <td colSpan={8} className="px-4 py-10 text-center text-[#F5F5F0]/50">
                     No claimed or returned items.
                   </td>
                 </tr>
@@ -253,6 +298,42 @@ export default async function StaffClaimedPage() {
                                 className="inline-flex min-h-11 items-center rounded-xl bg-[#CC0000] px-5 py-2 text-sm font-semibold text-white hover:bg-[#a80000]"
                               >
                                 Confirm
+                              </button>
+                            </div>
+                          </form>
+                        </div>
+                      </div>
+                    </details>
+                  </td>
+                  <td className="px-4 py-4">
+                    <details className="relative">
+                      <summary className="cursor-pointer list-none inline-flex items-center rounded-lg border border-white/10 px-2.5 py-1.5 text-xs text-[#F5F5F0]/70 hover:bg-white/5">
+                        Delete
+                      </summary>
+                      <div className="fixed inset-0 z-[90] flex items-center justify-center bg-black/75 p-4">
+                        <div className="anim-pop-in w-full max-w-md rounded-2xl border border-white/10 bg-[#141414] p-5 shadow-2xl">
+                          <h3 className="text-lg font-semibold text-[#F5F5F0]">Delete this log entry?</h3>
+                          <p className="mt-2 text-sm text-[#F5F5F0]/75">
+                            {row.kind === "returned"
+                              ? "This permanently deletes the returned item and its photo."
+                              : "This removes the claim record from the log."}
+                          </p>
+                          <form action={deleteLogRowAction} className="mt-5">
+                            <input type="hidden" name="kind" value={row.kind} />
+                            <input type="hidden" name="itemId" value={row.itemId} />
+                            {row.kind === "claimed" ? <input type="hidden" name="claimId" value={row.claimId} /> : null}
+                            <div className="mt-5 flex justify-end gap-2">
+                              <Link
+                                href="/staff/claimed"
+                                className="inline-flex min-h-11 items-center rounded-xl border border-white/15 px-4 py-2 text-sm text-[#F5F5F0]/85 hover:bg-white/5"
+                              >
+                                Cancel
+                              </Link>
+                              <button
+                                type="submit"
+                                className="inline-flex min-h-11 items-center rounded-xl bg-red-600 px-5 py-2 text-sm font-semibold text-white hover:bg-red-500"
+                              >
+                                Confirm delete
                               </button>
                             </div>
                           </form>

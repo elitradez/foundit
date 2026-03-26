@@ -14,7 +14,12 @@
 }
 
 body {
-  background: var(--background);
+  background:
+    radial-gradient(1200px 800px at 15% -10%, rgba(204, 0, 0, 0.14), transparent 60%),
+    radial-gradient(900px 650px at 110% 10%, rgba(255, 255, 255, 0.06), transparent 55%),
+    radial-gradient(700px 500px at 30% 110%, rgba(204, 0, 0, 0.08), transparent 55%),
+    linear-gradient(180deg, #0b0b0b 0%, #0c0c0c 45%, #090909 100%);
+  background-attachment: fixed;
   color: var(--foreground);
   font-family: var(--font-sans);
 }
