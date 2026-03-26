@@ -30,7 +30,7 @@ export default async function Home() {
   let items: PublicItem[] = [];
   let loadError: string | null = null;
   try {
-    items = await fetchActiveItemsForPublic({ limit: 24 });
+    items = await fetchActiveItemsForPublic();
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Unknown error";
     loadError = `Could not load items (${msg}). Set NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY, and apply supabase/schema.sql.`;

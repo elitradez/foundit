@@ -15,7 +15,7 @@ export async function POST(_req: Request, ctx: Ctx) {
   const supabase = createAdminSupabaseClient();
   const { error } = await supabase
     .from("items")
-    .update({ returned_at: new Date().toISOString(), status: "returned" })
+    .update({ returned_at: new Date().toISOString() })
     .eq("id", id);
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
