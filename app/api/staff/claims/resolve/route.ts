@@ -39,6 +39,9 @@ export async function POST(req: Request) {
     if (!studentName) {
       return NextResponse.json({ error: "Student name is required" }, { status: 400 });
     }
+    if (!studentIdNumber && !phoneNumber) {
+      return NextResponse.json({ error: "Student ID or phone number is required" }, { status: 400 });
+    }
 
     const { error: claimUpdateErr } = await supabase
       .from("claims")

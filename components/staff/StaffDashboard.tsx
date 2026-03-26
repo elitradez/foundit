@@ -173,6 +173,12 @@ export function StaffDashboard() {
       alert("Student name is required");
       return;
     }
+    const studentId = returnStudentIdNumber.trim();
+    const phone = returnPhoneNumber.trim();
+    if (!studentId && !phone) {
+      alert("Enter a Student ID or phone number.");
+      return;
+    }
 
     setBusyId(returnClaimId);
     try {
@@ -183,8 +189,8 @@ export function StaffDashboard() {
           claimId: returnClaimId,
           action: "returned",
           studentName: name,
-          studentIdNumber: returnStudentIdNumber.trim() || null,
-          phoneNumber: returnPhoneNumber.trim() || null,
+          studentIdNumber: studentId || null,
+          phoneNumber: phone || null,
         }),
       });
       if (!res.ok) {
