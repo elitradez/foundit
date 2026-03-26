@@ -477,6 +477,15 @@ export function StaffDashboard() {
         ) : null}
       </main>
 
+      <footer className="mx-auto max-w-6xl px-4 pb-10 pt-2 text-center">
+        <a
+          href="/"
+          className="text-sm font-medium text-[#CC0000] underline decoration-[#CC0000]/40 underline-offset-4 hover:text-[#e02020] hover:decoration-[#CC0000]/70"
+        >
+          Return to student view
+        </a>
+      </footer>
+
       {showForm ? <LogItemForm onClose={() => setShowForm(false)} onSaved={() => void load()} /> : null}
 
       {editReturnedItemId ? (
