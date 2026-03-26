@@ -48,6 +48,24 @@ export function StaffDashboard() {
     }
   }
 
+  async function deleteReturned(id: string) {
+    if (!confirm("Permanently delete this returned item and its photo? This cannot be undone.")) {
+      return;
+    }
+    setBusyId(id);
+    try {
+      const res = await fetch(`/api/staff/items/${id}`, { method: "DELETE" });
+      if (!res.ok) {
+        const j = (await res.json().catch(() => ({}))) as { error?: string };
+        alert(j.error ?? "Failed to delete");
+        return;
+      }
+      await load();
+    } finally {
+      setBusyId(null);
+    }
+  }
+
   return (
     <div className="min-h-screen bg-[#0c0c0c] text-[#F5F5F0]">
       <header className="sticky top-0 z-20 border-b border-white/10 bg-[#0c0c0c]/90 backdrop-blur">
@@ -129,7 +147,9 @@ export function StaffDashboard() {
                   </button>
                 </div>
 
-                {showReturned ? <ItemsTable items={returnedItems} busyId={busyId} /> : null}
+                {showReturned ? (
+                  <ItemsTable items={returnedItems} busyId={busyId} onDeleteReturned={deleteReturned} />
+                ) : null}
               </section>
             </div>
           );
@@ -145,10 +165,12 @@ function ItemsTable({
   items,
   busyId,
   onMarkReturned,
+  onDeleteReturned,
 }: {
   items: ItemRow[];
   busyId: string | null;
   onMarkReturned?: (id: string) => void;
+  onDeleteReturned?: (id: string) => void;
 }) {
   return (
     <div className="overflow-hidden rounded-2xl border border-white/10">
@@ -214,16 +236,28 @@ function ItemsTable({
                   )}
                 </td>
                 <td className="px-4 py-3 text-right">
-                  {!returned && onMarkReturned ? (
-                    <button
-                      type="button"
-                      disabled={busyId === item.id}
-                      onClick={() => void onMarkReturned(item.id)}
-                      className="rounded-lg border border-white/15 px-3 py-1.5 text-xs hover:bg-white/5 disabled:opacity-50"
-                    >
-                      {busyId === item.id ? "…" : "Mark returned"}
-                    </button>
-                  ) : null}
+                  <div className="flex flex-wrap justify-end gap-2">
+                    {!returned && onMarkReturned ? (
+                      <button
+                        type="button"
+                        disabled={busyId === item.id}
+                        onClick={() => void onMarkReturned(item.id)}
+                        className="rounded-lg border border-white/15 px-3 py-1.5 text-xs hover:bg-white/5 disabled:opacity-50"
+                      >
+                        {busyId === item.id ? "…" : "Mark returned"}
+                      </button>
+                    ) : null}
+                    {returned && onDeleteReturned ? (
+                      <button
+                        type="button"
+                        disabled={busyId === item.id}
+                        onClick={() => void onDeleteReturned(item.id)}
+                        className="rounded-lg border border-red-500/35 px-3 py-1.5 text-xs text-red-300 hover:bg-red-500/10 disabled:opacity-50"
+                      >
+                        {busyId === item.id ? "…" : "Delete"}
+                      </button>
+                    ) : null}
+                  </div>
                 </td>
               </tr>
             );
