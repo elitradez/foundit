@@ -5,7 +5,6 @@ import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { LogItemForm } from "@/components/staff/LogItemForm";
 import type { ItemRow } from "@/lib/types";
-import { publicItemPhotoUrl } from "@/lib/storage-url";
 
 export function StaffDashboard() {
   const [items, setItems] = useState<ItemRow[]>([]);
@@ -175,15 +174,19 @@ function ItemsTable({
             </tr>
           ) : null}
           {items.map((item) => {
-            const url = publicItemPhotoUrl(item.photo_path);
             const returned = Boolean(item.returned_at);
             return (
               <tr key={item.id} className="bg-black/20">
                 <td className="px-4 py-3">
                   <div className="relative h-14 w-14 overflow-hidden rounded-lg border border-white/10">
-                    {url ? (
-                      <Image src={url} alt="" fill className="object-cover" sizes="56px" unoptimized />
-                    ) : null}
+                    <Image
+                      src={`/api/staff/items/${item.id}/photo`}
+                      alt=""
+                      fill
+                      className="object-cover"
+                      sizes="56px"
+                      unoptimized
+                    />
                   </div>
                 </td>
                 <td className="px-4 py-3 font-medium">{item.name}</td>

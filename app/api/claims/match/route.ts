@@ -22,7 +22,7 @@ export async function POST(req: Request) {
     const supabase = createAdminSupabaseClient();
     const { data: item, error } = await supabase
       .from("items")
-      .select("id, description, returned_at")
+      .select("id, description, returned_at, photo_path")
       .eq("id", itemId)
       .maybeSingle();
 
@@ -67,7 +67,18 @@ Return ONLY valid JSON: {"score": <number>} where score is an integer from 0 to 
     const raw = Number((parsed as { score: unknown }).score);
     const score = Number.isFinite(raw) ? Math.round(raw) : 0;
     const clamped = Math.min(100, Math.max(0, score));
-    return NextResponse.json({ score: clamped });
+
+    let revealUrl: string | null = null;
+    if (clamped > 60) {
+      const { data: signed, error: signErr } = await supabase.storage
+        .from("items")
+        .createSignedUrl(item.photo_path, 60 * 10);
+      if (!signErr && signed?.signedUrl) {
+        revealUrl = signed.signedUrl;
+      }
+    }
+
+    return NextResponse.json({ score: clamped, revealUrl });
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Match failed";
     return NextResponse.json({ error: msg }, { status: 500 });

@@ -34,11 +34,10 @@ alter table public.items enable row level security;
 -- Mutations go through the Next.js API using the service role key (bypasses RLS).
 
 insert into storage.buckets (id, name, public)
-values ('items', 'items', true)
+values ('items', 'items', false)
 on conflict (id) do update set public = excluded.public;
 
 drop policy if exists "Public read item photos" on storage.objects;
-create policy "Public read item photos"
-  on storage.objects for select
-  to public
-  using (bucket_id = 'items');
+-- No public read policy for originals. Images are served via Next.js APIs:
+-- - public: blurred proxy
+-- - staff: authenticated proxy

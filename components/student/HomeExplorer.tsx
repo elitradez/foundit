@@ -4,7 +4,6 @@ import Image from "next/image";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import type { PublicItem } from "@/lib/types";
-import { publicItemPhotoUrl } from "@/lib/storage-url";
 
 type Props = {
   initialItems: PublicItem[];
@@ -77,7 +76,7 @@ export function HomeExplorer({ initialItems, loadError }: Props) {
                 >
                   <div className="relative aspect-[4/3] w-full overflow-hidden bg-black/50">
                     <Image
-                      src={publicItemPhotoUrl(item.photo_path)}
+                      src={`/api/items/${item.id}/blur`}
                       alt=""
                       fill
                       className="object-cover blur-xl transition duration-300 group-hover:blur-lg"
@@ -119,6 +118,7 @@ function ClaimModal({ item, onClose }: { item: PublicItem; onClose: () => void }
   const [studentDescription, setStudentDescription] = useState("");
   const [pin, setPin] = useState("");
   const [score, setScore] = useState<number | null>(null);
+  const [revealUrl, setRevealUrl] = useState<string | null>(null);
   const [matchBusy, setMatchBusy] = useState(false);
   const [submitBusy, setSubmitBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -129,13 +129,18 @@ function ClaimModal({ item, onClose }: { item: PublicItem; onClose: () => void }
     setError(null);
     setMatchBusy(true);
     setScore(null);
+    setRevealUrl(null);
     try {
       const res = await fetch("/api/claims/match", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ itemId: item.id, studentDescription }),
       });
-      const data = (await res.json().catch(() => ({}))) as { score?: number; error?: string };
+      const data = (await res.json().catch(() => ({}))) as {
+        score?: number;
+        revealUrl?: string | null;
+        error?: string;
+      };
       if (!res.ok) {
         setError(data.error ?? "Could not verify description");
         return;
@@ -145,6 +150,7 @@ function ClaimModal({ item, onClose }: { item: PublicItem; onClose: () => void }
         return;
       }
       setScore(data.score);
+      if (data.revealUrl) setRevealUrl(data.revealUrl);
     } finally {
       setMatchBusy(false);
     }
@@ -202,7 +208,7 @@ function ClaimModal({ item, onClose }: { item: PublicItem; onClose: () => void }
         <div className="space-y-5 px-5 py-5">
           <div className="relative aspect-[4/3] w-full overflow-hidden rounded-xl border border-white/10 bg-black/40">
             <Image
-              src={publicItemPhotoUrl(item.photo_path)}
+              src={revealed && revealUrl ? revealUrl : `/api/items/${item.id}/blur`}
               alt=""
               fill
               className={`object-cover transition duration-500 ${revealed ? "blur-0" : "blur-2xl scale-105"}`}
