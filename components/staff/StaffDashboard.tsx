@@ -64,6 +64,24 @@ export function StaffDashboard() {
   const [returnStudentIdNumber, setReturnStudentIdNumber] = useState("");
   const [returnPhoneNumber, setReturnPhoneNumber] = useState("");
 
+  const [editActiveItem, setEditActiveItem] = useState<ItemRow | null>(null);
+  const [editActiveName, setEditActiveName] = useState("");
+  const [editActiveDescription, setEditActiveDescription] = useState("");
+  const [editActiveLocation, setEditActiveLocation] = useState("");
+  const [editActiveDateFound, setEditActiveDateFound] = useState("");
+  const [editActivePhotoFile, setEditActivePhotoFile] = useState<File | null>(null);
+  const [editActivePhotoPreview, setEditActivePhotoPreview] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!editActivePhotoFile) {
+      setEditActivePhotoPreview(null);
+      return;
+    }
+    const url = URL.createObjectURL(editActivePhotoFile);
+    setEditActivePhotoPreview(url);
+    return () => URL.revokeObjectURL(url);
+  }, [editActivePhotoFile]);
+
   const load = useCallback(async () => {
     setLoadError(null);
     setLoading(true);
@@ -139,6 +157,62 @@ export function StaffDashboard() {
     if (tab === "log") void loadStudentLog();
     if (tab === "surplus") void loadSurplus();
   }, [tab, loadClaims, loadStudentLog, loadSurplus]);
+
+  function openEditActiveItem(item: ItemRow) {
+    setEditActiveItem(item);
+    setEditActiveName(item.name);
+    setEditActiveDescription(item.description);
+    setEditActiveLocation(item.location);
+    setEditActiveDateFound(item.date_found);
+    setEditActivePhotoFile(null);
+  }
+
+  function closeEditActiveItem() {
+    setEditActiveItem(null);
+    setEditActivePhotoFile(null);
+  }
+
+  async function saveActiveItem() {
+    if (!editActiveItem) return;
+    const id = editActiveItem.id;
+    const name = editActiveName.trim();
+    const description = editActiveDescription.trim();
+    const location = editActiveLocation.trim();
+    const date_found = editActiveDateFound.trim();
+    if (!name || !description || !location || !date_found) {
+      alert("Please fill in name, description, location, and date found.");
+      return;
+    }
+
+    setBusyId(id);
+    try {
+      let res: Response;
+      if (editActivePhotoFile) {
+        const fd = new FormData();
+        fd.set("name", name);
+        fd.set("description", description);
+        fd.set("location", location);
+        fd.set("date_found", date_found);
+        fd.set("photo", editActivePhotoFile);
+        res = await fetch(`/api/staff/items/${id}`, { method: "PATCH", body: fd });
+      } else {
+        res = await fetch(`/api/staff/items/${id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name, description, location, date_found }),
+        });
+      }
+      const data = (await res.json().catch(() => ({}))) as { error?: string };
+      if (!res.ok) {
+        alert(data.error ?? "Could not save changes");
+        return;
+      }
+      closeEditActiveItem();
+      await load();
+    } finally {
+      setBusyId(null);
+    }
+  }
 
   function openReturnClaimModal(c: PendingClaim) {
     setReturnClaimId(c.id);
@@ -347,6 +421,13 @@ export function StaffDashboard() {
                           <p className="truncate text-base font-semibold text-[#F5F5F0]">{item.name}</p>
                           <p className="truncate text-sm text-[#F5F5F0]/75">{item.location}</p>
                           <p className="text-xs text-[#F5F5F0]/45">Found {item.date_found}</p>
+                          <button
+                            type="button"
+                            onClick={() => openEditActiveItem(item)}
+                            className="mt-2 inline-flex min-h-9 items-center rounded-lg border border-white/15 bg-white/[0.04] px-3 py-1.5 text-xs font-medium text-[#F5F5F0]/90 hover:bg-white/[0.08]"
+                          >
+                            Edit details
+                          </button>
                         </div>
                       </div>
                     </li>
@@ -591,6 +672,95 @@ export function StaffDashboard() {
       </footer>
 
       {showForm ? <LogItemForm onClose={() => setShowForm(false)} onSaved={() => void load()} /> : null}
+
+      {editActiveItem ? (
+        <div className="anim-fade-in fixed inset-0 z-[85] flex items-end justify-center bg-black/75 p-0 sm:items-center sm:p-4">
+          <div className="anim-pop-in max-h-[95vh] w-full overflow-y-auto rounded-none border border-white/10 bg-[#141414] p-5 shadow-2xl sm:max-h-[90vh] sm:max-w-lg sm:rounded-2xl">
+            <h3 className="text-lg font-semibold text-[#F5F5F0]">Edit item</h3>
+            <p className="mt-1 text-sm text-[#F5F5F0]/55">Update how this listing appears for staff and on the student site.</p>
+
+            <div className="mt-4 space-y-3">
+              <div className="flex gap-4">
+                <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-lg border border-white/10">
+                  <Image
+                    src={editActivePhotoPreview ?? `/api/staff/items/${editActiveItem.id}/photo`}
+                    alt=""
+                    fill
+                    className="object-cover"
+                    sizes="96px"
+                    unoptimized
+                  />
+                </div>
+                <label className="min-w-0 flex-1 cursor-pointer space-y-1">
+                  <span className="text-sm text-[#F5F5F0]/70">Replace photo (optional)</span>
+                  <input
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp,image/gif"
+                    onChange={(e) => setEditActivePhotoFile(e.target.files?.[0] ?? null)}
+                    className="w-full text-sm text-[#F5F5F0]/80 file:mr-3 file:rounded-lg file:border-0 file:bg-white/10 file:px-3 file:py-2 file:text-sm file:text-[#F5F5F0]"
+                  />
+                </label>
+              </div>
+
+              <label className="block space-y-1">
+                <span className="text-sm text-[#F5F5F0]/70">Name</span>
+                <input
+                  value={editActiveName}
+                  onChange={(e) => setEditActiveName(e.target.value)}
+                  className="w-full rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-base outline-none focus:border-[#CC0000]/45 focus:ring-2 focus:ring-[#CC0000]/25"
+                />
+              </label>
+
+              <label className="block space-y-1">
+                <span className="text-sm text-[#F5F5F0]/70">Description</span>
+                <textarea
+                  value={editActiveDescription}
+                  onChange={(e) => setEditActiveDescription(e.target.value)}
+                  rows={4}
+                  className="w-full resize-y rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-base outline-none focus:border-[#CC0000]/45 focus:ring-2 focus:ring-[#CC0000]/25"
+                />
+              </label>
+
+              <label className="block space-y-1">
+                <span className="text-sm text-[#F5F5F0]/70">Location found</span>
+                <input
+                  value={editActiveLocation}
+                  onChange={(e) => setEditActiveLocation(e.target.value)}
+                  className="w-full rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-base outline-none focus:border-[#CC0000]/45 focus:ring-2 focus:ring-[#CC0000]/25"
+                />
+              </label>
+
+              <label className="block space-y-1">
+                <span className="text-sm text-[#F5F5F0]/70">Date found</span>
+                <input
+                  type="date"
+                  value={editActiveDateFound}
+                  onChange={(e) => setEditActiveDateFound(e.target.value)}
+                  className="w-full rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-base outline-none focus:border-[#CC0000]/45 focus:ring-2 focus:ring-[#CC0000]/25"
+                />
+              </label>
+            </div>
+
+            <div className="mt-5 flex flex-wrap justify-end gap-2">
+              <button
+                type="button"
+                onClick={closeEditActiveItem}
+                className="inline-flex min-h-11 items-center rounded-xl border border-white/15 px-4 py-2 text-sm text-[#F5F5F0]/85 hover:bg-white/5"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => void saveActiveItem()}
+                disabled={busyId === editActiveItem.id}
+                className="inline-flex min-h-11 items-center rounded-xl bg-[#CC0000] px-5 py-2 text-sm font-semibold text-white hover:bg-[#a80000] disabled:opacity-50"
+              >
+                {busyId === editActiveItem.id ? "Saving…" : "Save changes"}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       {editReturnedItemId ? (
         <div className="anim-fade-in fixed inset-0 z-[90] flex items-center justify-center bg-black/75 p-4">
