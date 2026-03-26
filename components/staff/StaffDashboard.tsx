@@ -16,18 +16,25 @@ export function StaffDashboard() {
   const [showForm, setShowForm] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [filter, setFilter] = useState<StaffFilter>("all");
+  const [pendingClaimsTotal, setPendingClaimsTotal] = useState(0);
+  const [surplusCandidate, setSurplusCandidate] = useState<ItemRow | null>(null);
 
   const load = useCallback(async () => {
     setLoadError(null);
     setLoading(true);
     try {
       const res = await fetch("/api/staff/items");
-      const data = (await res.json().catch(() => ({}))) as { items?: ItemRow[]; error?: string };
+      const data = (await res.json().catch(() => ({}))) as {
+        items?: ItemRow[];
+        pendingClaimsTotal?: number;
+        error?: string;
+      };
       if (!res.ok) {
         setLoadError(data.error ?? "Could not load items");
         return;
       }
       setItems(data.items ?? []);
+      setPendingClaimsTotal(data.pendingClaimsTotal ?? 0);
     } finally {
       setLoading(false);
     }
@@ -38,24 +45,25 @@ export function StaffDashboard() {
   }, [load]);
 
   const visibleItems = useMemo(() => {
+    const nonSurplus = items.filter((i) => i.status !== "surplus");
     switch (filter) {
       case "active":
-        return items.filter((i) => !i.returned_at);
+        return nonSurplus.filter((i) => i.status === "active");
       case "claimed":
-        return items.filter((i) => !i.returned_at && Boolean(i.claim_description));
+        return nonSurplus.filter((i) => (i.pending_claims_count ?? 0) > 0);
       case "returned":
-        return items.filter((i) => Boolean(i.returned_at));
+        return nonSurplus.filter((i) => i.status === "returned");
       default:
-        return items;
+        return nonSurplus;
     }
   }, [filter, items]);
 
   const counts = useMemo(
     () => ({
-      all: items.length,
-      active: items.filter((i) => !i.returned_at).length,
-      claimed: items.filter((i) => !i.returned_at && Boolean(i.claim_description)).length,
-      returned: items.filter((i) => Boolean(i.returned_at)).length,
+      all: items.filter((i) => i.status !== "surplus").length,
+      active: items.filter((i) => i.status === "active").length,
+      claimed: items.filter((i) => i.status !== "surplus" && (i.pending_claims_count ?? 0) > 0).length,
+      returned: items.filter((i) => i.status === "returned").length,
     }),
     [items],
   );
@@ -80,18 +88,17 @@ export function StaffDashboard() {
     }
   }
 
-  async function deleteReturned(id: string) {
-    if (!confirm("Permanently delete this returned item and its photo? This cannot be undone.")) {
-      return;
-    }
-    setBusyId(id);
+  async function confirmSendToSurplus() {
+    if (!surplusCandidate) return;
+    setBusyId(surplusCandidate.id);
     try {
-      const res = await fetch(`/api/staff/items/${id}`, { method: "DELETE" });
+      const res = await fetch(`/api/staff/items/${surplusCandidate.id}/surplus`, { method: "POST" });
       if (!res.ok) {
         const j = (await res.json().catch(() => ({}))) as { error?: string };
-        alert(j.error ?? "Failed to delete");
+        alert(j.error ?? "Failed to send to surplus");
         return;
       }
+      setSurplusCandidate(null);
       await load();
     } finally {
       setBusyId(null);
@@ -107,6 +114,23 @@ export function StaffDashboard() {
             <h1 className="text-xl font-semibold">Foundit dashboard</h1>
           </div>
           <div className="flex flex-wrap items-center gap-2">
+            <Link
+              href="/staff/claims"
+              className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-white/15 px-4 py-2 text-sm text-[#F5F5F0]/85 hover:bg-white/5"
+            >
+              Claims
+              {pendingClaimsTotal > 0 ? (
+                <span className="rounded-full bg-[#CC0000] px-2 py-0.5 text-xs text-white">
+                  {pendingClaimsTotal}
+                </span>
+              ) : null}
+            </Link>
+            <Link
+              href="/staff/surplus"
+              className="inline-flex min-h-11 items-center rounded-xl border border-white/15 px-4 py-2 text-sm text-[#F5F5F0]/85 hover:bg-white/5"
+            >
+              Surplus log
+            </Link>
             <Link
               href="/"
               className="inline-flex min-h-11 items-center rounded-xl border border-white/15 px-4 py-2 text-sm text-[#F5F5F0]/80 hover:bg-white/5"
@@ -176,8 +200,13 @@ export function StaffDashboard() {
         {!loading && visibleItems.length > 0 ? (
           <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             {visibleItems.map((item) => {
-              const returned = Boolean(item.returned_at);
-              const pendingClaims = !returned && item.claim_description ? 1 : 0;
+              const returned = item.status === "returned";
+              const pendingClaims = item.pending_claims_count ?? 0;
+              const daysOld = Math.floor(
+                (Date.now() - new Date(`${item.date_found}T00:00:00`).getTime()) / (1000 * 60 * 60 * 24),
+              );
+              const warn30 = item.status === "active" && pendingClaims === 0 && daysOld >= 30;
+
               return (
                 <li
                   key={item.id}
@@ -209,6 +238,11 @@ export function StaffDashboard() {
                             {pendingClaims} claim pending
                           </span>
                         ) : null}
+                        {warn30 ? (
+                          <span className="rounded-full bg-red-500/15 px-2 py-0.5 text-xs text-red-300">
+                            30 days - consider sending to surplus
+                          </span>
+                        ) : null}
                       </div>
                     </div>
                   </div>
@@ -223,16 +257,15 @@ export function StaffDashboard() {
                       >
                         {busyId === item.id ? "..." : "Mark as returned"}
                       </button>
-                    ) : (
-                      <button
-                        type="button"
-                        disabled={busyId === item.id}
-                        onClick={() => void deleteReturned(item.id)}
-                        className="inline-flex min-h-11 items-center rounded-xl border border-red-500/35 px-4 py-2 text-sm text-red-300 transition duration-200 hover:bg-red-500/10 active:scale-[0.99] disabled:opacity-50"
-                      >
-                        {busyId === item.id ? "..." : "Delete"}
-                      </button>
-                    )}
+                    ) : null}
+                    <button
+                      type="button"
+                      disabled={busyId === item.id}
+                      onClick={() => setSurplusCandidate(item)}
+                      className="inline-flex min-h-11 items-center rounded-xl border border-[#CC0000]/35 px-4 py-2 text-sm text-[#F5F5F0] transition duration-200 hover:bg-[#CC0000]/10 active:scale-[0.99] disabled:opacity-50"
+                    >
+                      {busyId === item.id ? "..." : "Send to Surplus"}
+                    </button>
                   </div>
                 </li>
               );
@@ -242,6 +275,33 @@ export function StaffDashboard() {
       </main>
 
       {showForm ? <LogItemForm onClose={() => setShowForm(false)} onSaved={() => void load()} /> : null}
+
+      {surplusCandidate ? (
+        <div className="anim-fade-in fixed inset-0 z-[70] flex items-center justify-center bg-black/75 p-4">
+          <div className="anim-pop-in w-full max-w-md rounded-2xl border border-white/10 bg-[#141414] p-5 shadow-2xl">
+            <h3 className="text-lg font-semibold text-[#F5F5F0]">Send to surplus</h3>
+            <p className="mt-2 text-sm text-[#F5F5F0]/70">
+              Are you sure you want to send this item to surplus?
+            </p>
+            <div className="mt-5 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setSurplusCandidate(null)}
+                className="inline-flex min-h-11 items-center rounded-xl border border-white/15 px-4 py-2 text-sm text-[#F5F5F0]/85 hover:bg-white/5"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => void confirmSendToSurplus()}
+                className="inline-flex min-h-11 items-center rounded-xl bg-[#CC0000] px-4 py-2 text-sm font-medium text-white hover:bg-[#a80000]"
+              >
+                Confirm
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

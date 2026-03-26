@@ -6,6 +6,7 @@ import {
   getAnthropicModel,
   parseJsonFromModel,
 } from "@/lib/anthropic";
+import { isEduEmail } from "@/lib/edu-email";
 import { verifyPin } from "@/lib/pin";
 
 async function computeMatchScore(
@@ -40,15 +41,24 @@ export async function POST(req: Request) {
   try {
     const body = (await req.json()) as {
       itemId?: string;
+      studentName?: string;
+      studentEmail?: string;
+      studentIdNumber?: string;
       studentDescription?: string;
       pin?: string;
     };
     const itemId = body.itemId?.trim();
+    const studentName = body.studentName?.trim();
+    const studentEmail = body.studentEmail?.trim();
+    const studentIdNumber = body.studentIdNumber?.trim();
     const studentDescription = body.studentDescription?.trim();
     const pin = body.pin?.trim() ?? "";
 
-    if (!itemId || !studentDescription) {
+    if (!itemId || !studentName || !studentEmail || !studentIdNumber || !studentDescription) {
       return NextResponse.json({ error: "Missing fields" }, { status: 400 });
+    }
+    if (!isEduEmail(studentEmail)) {
+      return NextResponse.json({ error: "Use your .edu email address" }, { status: 400 });
     }
     if (studentDescription.length > 4000) {
       return NextResponse.json({ error: "Description too long" }, { status: 400 });
@@ -57,7 +67,7 @@ export async function POST(req: Request) {
     const supabase = createAdminSupabaseClient();
     const { data: item, error: fetchErr } = await supabase
       .from("items")
-      .select("id, name, description, returned_at, claim_description, pin_hash, pin_salt")
+      .select("id, name, description, status, returned_at, pin_hash, pin_salt")
       .eq("id", itemId)
       .maybeSingle();
 
@@ -67,8 +77,8 @@ export async function POST(req: Request) {
     if (item.returned_at) {
       return NextResponse.json({ error: "Item no longer available" }, { status: 410 });
     }
-    if (item.claim_description) {
-      return NextResponse.json({ error: "This item already has a submitted claim" }, { status: 409 });
+    if (item.status === "surplus") {
+      return NextResponse.json({ error: "Item already moved to surplus" }, { status: 410 });
     }
 
     if (item.pin_hash && item.pin_salt) {
@@ -85,13 +95,22 @@ export async function POST(req: Request) {
       );
     }
 
-    const { error: upErr } = await supabase
-      .from("items")
-      .update({
+    const { error: claimErr } = await supabase.from("claims").insert({
+      item_id: itemId,
+      student_name: studentName,
+      student_email: studentEmail,
+      student_id_number: studentIdNumber,
+      claim_description: studentDescription,
+      status: "pending",
+    });
+
+    if (claimErr) {
+      return NextResponse.json({ error: claimErr.message }, { status: 500 });
+    }
+
+    const { error: upErr } = await supabase.from("items").update({
         claim_description: studentDescription,
-      })
-      .eq("id", itemId)
-      .is("claim_description", null);
+      }).eq("id", itemId);
 
     if (upErr) {
       return NextResponse.json({ error: upErr.message }, { status: 500 });

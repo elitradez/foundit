@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { Spinner } from "@/components/ui/Spinner";
 import type { PublicItem } from "@/lib/types";
 
@@ -13,18 +13,49 @@ type Props = {
 
 export function HomeExplorer({ initialItems, loadError }: Props) {
   const [query, setQuery] = useState("");
+  const [items, setItems] = useState<PublicItem[]>(initialItems);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [searchError, setSearchError] = useState<string | null>(null);
   const [openItem, setOpenItem] = useState<PublicItem | null>(null);
 
-  const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (!q) return initialItems;
-    return initialItems.filter(
-      (i) =>
-        i.name.toLowerCase().includes(q) ||
-        i.location.toLowerCase().includes(q) ||
-        i.date_found.toLowerCase().includes(q),
-    );
-  }, [initialItems, query]);
+  useEffect(() => {
+    const controller = new AbortController();
+    const timeout = setTimeout(async () => {
+      setSearchLoading(true);
+      setSearchError(null);
+      try {
+        const params = new URLSearchParams({
+          q: query.trim(),
+          limit: "40",
+        });
+        const res = await fetch(`/api/items/search?${params.toString()}`, {
+          signal: controller.signal,
+        });
+        const data = (await res.json().catch(() => ({}))) as {
+          items?: PublicItem[];
+          error?: string;
+        };
+        if (!res.ok) {
+          setSearchError(data.error ?? "Search failed");
+          return;
+        }
+        setItems(data.items ?? []);
+      } catch {
+        if (!controller.signal.aborted) {
+          setSearchError("Search failed. Please try again.");
+        }
+      } finally {
+        if (!controller.signal.aborted) {
+          setSearchLoading(false);
+        }
+      }
+    }, 250);
+
+    return () => {
+      controller.abort();
+      clearTimeout(timeout);
+    };
+  }, [query]);
 
   return (
     <div className="min-h-screen bg-[#0c0c0c] text-[#F5F5F0]">
@@ -59,16 +90,29 @@ export function HomeExplorer({ initialItems, loadError }: Props) {
             {loadError}
           </p>
         ) : null}
+        {searchError ? (
+          <p className="mb-6 rounded-2xl border border-red-500/25 bg-red-500/10 px-4 py-3 text-sm text-red-100">
+            {searchError}
+          </p>
+        ) : null}
+        {searchLoading ? (
+          <div className="mb-6 inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2 text-sm text-[#F5F5F0]/70">
+            <Spinner className="h-4 w-4 text-[#CC0000]" />
+            Searching items...
+          </div>
+        ) : null}
 
-        {filtered.length === 0 && !loadError ? (
+        {items.length === 0 && !loadError ? (
           <p className="rounded-2xl border border-white/10 bg-white/[0.03] px-6 py-16 text-center text-[#F5F5F0]/55">
-            {initialItems.length === 0
+            {query.trim().length > 0
+              ? "No items found matching your search. Try different keywords or check back later."
+              : initialItems.length === 0
               ? "No active items right now. Check back soon."
-              : "No items found matching your search. Try different keywords or check back later."}
+              : "No items found right now. Try again in a moment."}
           </p>
         ) : (
           <ul className="grid grid-cols-1 gap-6 sm:grid-cols-2">
-            {filtered.map((item) => (
+            {items.map((item) => (
               <li key={item.id}>
                 <button
                   type="button"
@@ -117,6 +161,9 @@ export function HomeExplorer({ initialItems, loadError }: Props) {
 }
 
 function ClaimModal({ item, onClose }: { item: PublicItem; onClose: () => void }) {
+  const [studentName, setStudentName] = useState("");
+  const [studentEmail, setStudentEmail] = useState("");
+  const [studentIdNumber, setStudentIdNumber] = useState("");
   const [studentDescription, setStudentDescription] = useState("");
   const [pin, setPin] = useState("");
   const [score, setScore] = useState<number | null>(null);
@@ -170,6 +217,9 @@ function ClaimModal({ item, onClose }: { item: PublicItem; onClose: () => void }
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           itemId: item.id,
+          studentName,
+          studentEmail,
+          studentIdNumber,
           studentDescription,
           pin: item.requires_pin ? pin : undefined,
         }),
@@ -221,6 +271,36 @@ function ClaimModal({ item, onClose }: { item: PublicItem; onClose: () => void }
               )}
             </p>
           ) : null}
+
+          <label className="block space-y-2">
+            <span className="text-sm text-[#F5F5F0]/80">Full name</span>
+            <input
+              value={studentName}
+              onChange={(e) => setStudentName(e.target.value)}
+              className="w-full rounded-xl border border-white/10 bg-black/40 px-4 py-3 text-[#F5F5F0] outline-none focus:border-[#CC0000]/45 focus:ring-2 focus:ring-[#CC0000]/25"
+              placeholder="First Last"
+            />
+          </label>
+
+          <label className="block space-y-2">
+            <span className="text-sm text-[#F5F5F0]/80">University email (.edu)</span>
+            <input
+              value={studentEmail}
+              onChange={(e) => setStudentEmail(e.target.value)}
+              className="w-full rounded-xl border border-white/10 bg-black/40 px-4 py-3 text-[#F5F5F0] outline-none focus:border-[#CC0000]/45 focus:ring-2 focus:ring-[#CC0000]/25"
+              placeholder="you@utah.edu"
+            />
+          </label>
+
+          <label className="block space-y-2">
+            <span className="text-sm text-[#F5F5F0]/80">Student ID number</span>
+            <input
+              value={studentIdNumber}
+              onChange={(e) => setStudentIdNumber(e.target.value)}
+              className="w-full rounded-xl border border-white/10 bg-black/40 px-4 py-3 text-[#F5F5F0] outline-none focus:border-[#CC0000]/45 focus:ring-2 focus:ring-[#CC0000]/25"
+              placeholder="u1234567"
+            />
+          </label>
 
           <label className="block space-y-2">
             <span className="text-sm text-[#F5F5F0]/80">Describe your lost item</span>
@@ -294,7 +374,13 @@ function ClaimModal({ item, onClose }: { item: PublicItem; onClose: () => void }
               <button
                 type="button"
                 onClick={() => void submitClaim()}
-                disabled={submitBusy}
+                disabled={
+                  submitBusy ||
+                  !studentName.trim() ||
+                  !studentEmail.trim() ||
+                  !studentIdNumber.trim() ||
+                  !studentDescription.trim()
+                }
                 className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-[#CC0000] py-3 text-sm font-semibold text-white transition duration-200 hover:scale-[1.01] hover:bg-[#a80000] active:scale-[0.99] disabled:opacity-50"
               >
                 {submitBusy ? (

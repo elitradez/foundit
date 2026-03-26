@@ -16,13 +16,32 @@ export async function GET() {
   const { data, error } = await supabase
     .from("items")
     .select(
-      "id, name, description, location, date_found, photo_path, returned_at, claim_description, pin_hash, pin_salt, created_at",
+      "id, name, description, location, date_found, photo_path, status, returned_at, surplus_sent_at, claim_description, pin_hash, pin_salt, created_at",
     )
     .order("created_at", { ascending: false });
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
-  return NextResponse.json({ items: data ?? [] });
+  const itemIds = (data ?? []).map((i) => i.id);
+  const countsByItem: Record<string, { pending: number; total: number }> = {};
+  if (itemIds.length > 0) {
+    const { data: claims } = await supabase
+      .from("claims")
+      .select("item_id, status")
+      .in("item_id", itemIds);
+    for (const c of claims ?? []) {
+      const row = (countsByItem[c.item_id] ??= { pending: 0, total: 0 });
+      row.total += 1;
+      if (c.status === "pending") row.pending += 1;
+    }
+  }
+  const items = (data ?? []).map((item) => ({
+    ...item,
+    pending_claims_count: countsByItem[item.id]?.pending ?? 0,
+    total_claims_count: countsByItem[item.id]?.total ?? 0,
+  }));
+  const pendingClaimsTotal = items.reduce((acc, i) => acc + (i.pending_claims_count ?? 0), 0);
+  return NextResponse.json({ items, pendingClaimsTotal });
 }
 
 export async function POST(req: Request) {

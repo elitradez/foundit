@@ -12,13 +12,20 @@ export async function POST(_req: Request, ctx: Ctx) {
   if (!id) {
     return NextResponse.json({ error: "Missing id" }, { status: 400 });
   }
+
+  const now = new Date().toISOString();
   const supabase = createAdminSupabaseClient();
   const { error } = await supabase
     .from("items")
-    .update({ returned_at: new Date().toISOString(), status: "returned" })
+    .update({
+      status: "surplus",
+      surplus_sent_at: now,
+    })
     .eq("id", id);
+
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
   return NextResponse.json({ ok: true });
 }
+
