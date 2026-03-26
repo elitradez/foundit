@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { Spinner } from "@/components/ui/Spinner";
 
 type Props = {
   onClose: () => void;
@@ -77,8 +78,8 @@ export function LogItemForm({ onClose, onSaved }: Props) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/70 p-0 backdrop-blur-sm sm:items-center sm:p-4">
-      <div className="max-h-[95vh] w-full overflow-y-auto rounded-none border border-white/10 bg-[#141414] p-6 shadow-xl sm:max-h-[90vh] sm:max-w-lg sm:rounded-2xl">
+    <div className="anim-fade-in fixed inset-0 z-50 flex items-end justify-center bg-black/70 p-0 backdrop-blur-sm sm:items-center sm:p-4">
+      <div className="anim-pop-in max-h-[95vh] w-full overflow-y-auto rounded-none border border-white/10 bg-[#141414] p-6 shadow-xl sm:max-h-[90vh] sm:max-w-lg sm:rounded-2xl">
         <div className="mb-6 flex items-start justify-between gap-4">
           <div>
             <h2 className="text-lg font-semibold text-[#F5F5F0]">Log new item</h2>
@@ -89,7 +90,7 @@ export function LogItemForm({ onClose, onSaved }: Props) {
           <button
             type="button"
             onClick={onClose}
-            className="rounded-lg border border-white/10 px-3 py-1 text-sm text-[#F5F5F0]/70 hover:bg-white/5"
+            className="min-h-11 rounded-lg border border-white/10 px-3 py-2 text-sm text-[#F5F5F0]/70 hover:bg-white/5"
           >
             Close
           </button>
@@ -99,7 +100,7 @@ export function LogItemForm({ onClose, onSaved }: Props) {
           <label className="block space-y-2">
             <span className="text-sm text-[#F5F5F0]/80">Photo</span>
             <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-              <label className="cursor-pointer rounded-xl border border-white/10 bg-black/30 px-4 py-3 text-center text-sm text-[#F5F5F0]/80 hover:bg-white/5">
+              <label className="cursor-pointer rounded-xl border border-white/10 bg-black/30 px-4 py-3 text-center text-sm text-[#F5F5F0]/80 transition duration-200 hover:bg-white/5">
                 <span className="font-medium">Upload photo</span>
                 <input
                   type="file"
@@ -109,7 +110,7 @@ export function LogItemForm({ onClose, onSaved }: Props) {
                 />
               </label>
 
-              <label className="cursor-pointer rounded-xl bg-[#CC0000]/15 px-4 py-3 text-center text-sm font-medium text-[#F5F5F0] hover:bg-[#CC0000]/25">
+              <label className="cursor-pointer rounded-xl bg-[#CC0000]/15 px-4 py-3 text-center text-sm font-medium text-[#F5F5F0] transition duration-200 hover:bg-[#CC0000]/25">
                 <span>Take photo</span>
                 <input
                   type="file"
@@ -121,7 +122,10 @@ export function LogItemForm({ onClose, onSaved }: Props) {
               </label>
             </div>
             {identifyBusy ? (
-              <p className="text-xs text-[#F5F5F0]/50">Identifying with AI…</p>
+              <p className="inline-flex items-center gap-2 text-xs text-[#F5F5F0]/60">
+                <Spinner className="h-3.5 w-3.5 text-[#CC0000]" />
+                AI is analyzing the photo...
+              </p>
             ) : null}
           </label>
 
@@ -187,16 +191,23 @@ export function LogItemForm({ onClose, onSaved }: Props) {
             <button
               type="button"
               onClick={onClose}
-              className="rounded-xl border border-white/15 px-4 py-2.5 text-sm hover:bg-white/5"
+              className="inline-flex min-h-11 items-center rounded-xl border border-white/15 px-4 py-2.5 text-sm transition duration-200 hover:bg-white/5 active:scale-[0.99]"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={saveBusy}
-              className="rounded-xl bg-[#CC0000] px-4 py-2.5 text-sm font-medium text-white hover:bg-[#a80000] disabled:opacity-50"
+              className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-[#CC0000] px-4 py-2.5 text-sm font-medium text-white transition duration-200 hover:bg-[#a80000] active:scale-[0.99] disabled:opacity-50"
             >
-              {saveBusy ? "Saving…" : "Save item"}
+              {saveBusy ? (
+                <>
+                  <Spinner className="h-4 w-4 text-white" />
+                  Saving...
+                </>
+              ) : (
+                "Save item"
+              )}
             </button>
           </div>
         </form>

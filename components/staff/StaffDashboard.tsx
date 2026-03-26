@@ -2,31 +2,63 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { LogItemForm } from "@/components/staff/LogItemForm";
+import { Spinner } from "@/components/ui/Spinner";
 import type { ItemRow } from "@/lib/types";
+
+type StaffFilter = "all" | "active" | "claimed" | "returned";
 
 export function StaffDashboard() {
   const [items, setItems] = useState<ItemRow[]>([]);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
-  const [showReturned, setShowReturned] = useState(false);
+  const [filter, setFilter] = useState<StaffFilter>("all");
 
   const load = useCallback(async () => {
     setLoadError(null);
-    const res = await fetch("/api/staff/items");
-    const data = (await res.json().catch(() => ({}))) as { items?: ItemRow[]; error?: string };
-    if (!res.ok) {
-      setLoadError(data.error ?? "Could not load items");
-      return;
+    setLoading(true);
+    try {
+      const res = await fetch("/api/staff/items");
+      const data = (await res.json().catch(() => ({}))) as { items?: ItemRow[]; error?: string };
+      if (!res.ok) {
+        setLoadError(data.error ?? "Could not load items");
+        return;
+      }
+      setItems(data.items ?? []);
+    } finally {
+      setLoading(false);
     }
-    setItems(data.items ?? []);
   }, []);
 
   useEffect(() => {
     void load();
   }, [load]);
+
+  const visibleItems = useMemo(() => {
+    switch (filter) {
+      case "active":
+        return items.filter((i) => !i.returned_at);
+      case "claimed":
+        return items.filter((i) => !i.returned_at && Boolean(i.claim_description));
+      case "returned":
+        return items.filter((i) => Boolean(i.returned_at));
+      default:
+        return items;
+    }
+  }, [filter, items]);
+
+  const counts = useMemo(
+    () => ({
+      all: items.length,
+      active: items.filter((i) => !i.returned_at).length,
+      claimed: items.filter((i) => !i.returned_at && Boolean(i.claim_description)).length,
+      returned: items.filter((i) => Boolean(i.returned_at)).length,
+    }),
+    [items],
+  );
 
   async function logout() {
     await fetch("/api/staff/logout", { method: "POST" });
@@ -69,7 +101,7 @@ export function StaffDashboard() {
   return (
     <div className="min-h-screen bg-[#0c0c0c] text-[#F5F5F0]">
       <header className="sticky top-0 z-20 border-b border-white/10 bg-[#0c0c0c]/90 backdrop-blur">
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-4">
+        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-4">
           <div>
             <p className="text-xs font-semibold uppercase tracking-wider text-[#CC0000]">Staff</p>
             <h1 className="text-xl font-semibold">Foundit dashboard</h1>
@@ -77,21 +109,21 @@ export function StaffDashboard() {
           <div className="flex flex-wrap items-center gap-2">
             <Link
               href="/"
-              className="rounded-xl border border-white/15 px-4 py-2 text-sm text-[#F5F5F0]/80 hover:bg-white/5"
+              className="inline-flex min-h-11 items-center rounded-xl border border-white/15 px-4 py-2 text-sm text-[#F5F5F0]/80 hover:bg-white/5"
             >
               Student view
             </Link>
             <button
               type="button"
               onClick={() => setShowForm(true)}
-              className="rounded-xl bg-[#CC0000] px-4 py-2 text-sm font-medium text-white hover:bg-[#a80000]"
+              className="inline-flex min-h-11 items-center rounded-xl bg-[#CC0000] px-4 py-2 text-sm font-medium text-white hover:bg-[#a80000]"
             >
               Log new item
             </button>
             <button
               type="button"
               onClick={() => void logout()}
-              className="rounded-xl border border-white/15 px-4 py-2 text-sm text-[#F5F5F0]/80 hover:bg-white/5"
+              className="inline-flex min-h-11 items-center rounded-xl border border-white/15 px-4 py-2 text-sm text-[#F5F5F0]/80 hover:bg-white/5"
             >
               Log out
             </button>
@@ -106,164 +138,110 @@ export function StaffDashboard() {
           </p>
         ) : null}
 
-        {(() => {
-          const activeItems = items.filter((i) => !i.returned_at);
-          const returnedItems = items.filter((i) => Boolean(i.returned_at));
+        <div className="mb-6 flex flex-wrap gap-2">
+          {([
+            ["all", `All (${counts.all})`],
+            ["active", `Active (${counts.active})`],
+            ["claimed", `Claimed (${counts.claimed})`],
+            ["returned", `Returned (${counts.returned})`],
+          ] as const).map(([value, label]) => (
+            <button
+              key={value}
+              type="button"
+              onClick={() => setFilter(value)}
+              className={`inline-flex min-h-11 items-center rounded-xl border px-4 py-2 text-sm transition duration-200 ${
+                filter === value
+                  ? "border-[#CC0000]/70 bg-[#CC0000]/20 text-[#F5F5F0]"
+                  : "border-white/15 text-[#F5F5F0]/80 hover:bg-white/5"
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
 
-          if (items.length === 0 && !loadError) {
-            return (
-              <p className="rounded-2xl border border-white/10 bg-white/[0.03] px-6 py-16 text-center text-[#F5F5F0]/55">
-                No items yet. Log your first find.
-              </p>
-            );
-          }
+        {loading ? (
+          <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.03] px-6 py-10 text-[#F5F5F0]/70">
+            <Spinner className="h-5 w-5 text-[#CC0000]" />
+            Loading staff items...
+          </div>
+        ) : null}
 
-          return (
-            <div className="space-y-10">
-              <section className="space-y-3">
-                <div className="flex items-end justify-between gap-4">
-                  <div>
-                    <h2 className="text-sm font-semibold text-[#F5F5F0]">Active items</h2>
-                    <p className="text-xs text-[#F5F5F0]/50">{activeItems.length} active</p>
+        {!loading && visibleItems.length === 0 ? (
+          <p className="rounded-2xl border border-white/10 bg-white/[0.03] px-6 py-16 text-center text-[#F5F5F0]/55">
+            No items in this filter yet.
+          </p>
+        ) : null}
+
+        {!loading && visibleItems.length > 0 ? (
+          <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            {visibleItems.map((item) => {
+              const returned = Boolean(item.returned_at);
+              const pendingClaims = !returned && item.claim_description ? 1 : 0;
+              return (
+                <li
+                  key={item.id}
+                  className="rounded-2xl border border-white/10 bg-white/[0.04] p-4 transition duration-200 hover:-translate-y-0.5 hover:border-[#CC0000]/25"
+                >
+                  <div className="flex gap-4">
+                    <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-lg border border-white/10">
+                      <Image src={`/api/staff/items/${item.id}/photo`} alt="" fill className="object-cover" sizes="80px" unoptimized />
+                    </div>
+                    <div className="min-w-0 flex-1 space-y-1">
+                      <p className="truncate text-base font-semibold text-[#F5F5F0]">{item.name}</p>
+                      <p className="truncate text-sm text-[#F5F5F0]/75">{item.location}</p>
+                      <p className="text-xs text-[#F5F5F0]/45">Found {item.date_found}</p>
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        <span
+                          className={`rounded-full px-2 py-0.5 text-xs ${
+                            returned
+                              ? "bg-emerald-500/15 text-emerald-300"
+                              : "bg-amber-500/15 text-amber-200"
+                          }`}
+                        >
+                          {returned ? "Returned" : "Active"}
+                        </span>
+                        {item.pin_hash ? (
+                          <span className="rounded-full bg-violet-500/15 px-2 py-0.5 text-xs text-violet-200">PIN protected</span>
+                        ) : null}
+                        {pendingClaims > 0 ? (
+                          <span className="rounded-full bg-sky-500/15 px-2 py-0.5 text-xs text-sky-200">
+                            {pendingClaims} claim pending
+                          </span>
+                        ) : null}
+                      </div>
+                    </div>
                   </div>
-                </div>
 
-                <ItemsTable items={activeItems} busyId={busyId} onMarkReturned={markReturned} />
-              </section>
-
-              <section className="space-y-3">
-                <div className="flex items-center justify-between gap-4">
-                  <div>
-                    <h2 className="text-sm font-semibold text-[#F5F5F0]">Returned items</h2>
-                    <p className="text-xs text-[#F5F5F0]/50">{returnedItems.length} returned</p>
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    {!returned ? (
+                      <button
+                        type="button"
+                        disabled={busyId === item.id}
+                        onClick={() => void markReturned(item.id)}
+                        className="inline-flex min-h-11 items-center rounded-xl border border-white/15 px-4 py-2 text-sm transition duration-200 hover:bg-white/5 active:scale-[0.99] disabled:opacity-50"
+                      >
+                        {busyId === item.id ? "..." : "Mark as returned"}
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        disabled={busyId === item.id}
+                        onClick={() => void deleteReturned(item.id)}
+                        className="inline-flex min-h-11 items-center rounded-xl border border-red-500/35 px-4 py-2 text-sm text-red-300 transition duration-200 hover:bg-red-500/10 active:scale-[0.99] disabled:opacity-50"
+                      >
+                        {busyId === item.id ? "..." : "Delete"}
+                      </button>
+                    )}
                   </div>
-
-                  <button
-                    type="button"
-                    onClick={() => setShowReturned((v) => !v)}
-                    className="rounded-xl border border-white/15 px-4 py-2 text-xs text-[#F5F5F0]/80 hover:bg-white/5"
-                  >
-                    {showReturned ? "Hide" : "Show"}
-                  </button>
-                </div>
-
-                {showReturned ? (
-                  <ItemsTable items={returnedItems} busyId={busyId} onDeleteReturned={deleteReturned} />
-                ) : null}
-              </section>
-            </div>
-          );
-        })()}
+                </li>
+              );
+            })}
+          </ul>
+        ) : null}
       </main>
 
       {showForm ? <LogItemForm onClose={() => setShowForm(false)} onSaved={() => void load()} /> : null}
-    </div>
-  );
-}
-
-function ItemsTable({
-  items,
-  busyId,
-  onMarkReturned,
-  onDeleteReturned,
-}: {
-  items: ItemRow[];
-  busyId: string | null;
-  onMarkReturned?: (id: string) => void;
-  onDeleteReturned?: (id: string) => void;
-}) {
-  return (
-    <div className="overflow-hidden rounded-2xl border border-white/10">
-      <table className="w-full text-left text-sm">
-        <thead className="border-b border-white/10 bg-white/[0.04] text-[#F5F5F0]/70">
-          <tr>
-            <th className="px-4 py-3 font-medium">Photo</th>
-            <th className="px-4 py-3 font-medium">Name</th>
-            <th className="px-4 py-3 font-medium">Location</th>
-            <th className="px-4 py-3 font-medium">Date</th>
-            <th className="px-4 py-3 font-medium">PIN</th>
-            <th className="px-4 py-3 font-medium">Status</th>
-            <th className="px-4 py-3 font-medium">Claim</th>
-            <th className="px-4 py-3 font-medium" />
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-white/10">
-          {items.length === 0 ? (
-            <tr>
-              <td colSpan={8} className="px-4 py-8 text-center text-[#F5F5F0]/45">
-                None.
-              </td>
-            </tr>
-          ) : null}
-          {items.map((item) => {
-            const returned = Boolean(item.returned_at);
-            return (
-              <tr key={item.id} className="bg-black/20">
-                <td className="px-4 py-3">
-                  <div className="relative h-14 w-14 overflow-hidden rounded-lg border border-white/10">
-                    <Image
-                      src={`/api/staff/items/${item.id}/photo`}
-                      alt=""
-                      fill
-                      className="object-cover"
-                      sizes="56px"
-                      unoptimized
-                    />
-                  </div>
-                </td>
-                <td className="px-4 py-3 font-medium">{item.name}</td>
-                <td className="px-4 py-3 text-[#F5F5F0]/80">{item.location}</td>
-                <td className="px-4 py-3 text-[#F5F5F0]/80">{item.date_found}</td>
-                <td className="px-4 py-3 text-[#F5F5F0]/80">{item.pin_hash ? "Yes" : "—"}</td>
-                <td className="px-4 py-3">
-                  {returned ? (
-                    <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-xs text-emerald-300">
-                      Returned
-                    </span>
-                  ) : (
-                    <span className="rounded-full bg-amber-500/15 px-2 py-0.5 text-xs text-amber-200">
-                      Active
-                    </span>
-                  )}
-                </td>
-                <td className="max-w-[140px] truncate px-4 py-3 text-xs text-[#F5F5F0]/60">
-                  {item.claim_description ? (
-                    <span className="rounded-full bg-sky-500/15 px-2 py-0.5 text-[11px] text-sky-200">
-                      Submitted
-                    </span>
-                  ) : (
-                    "—"
-                  )}
-                </td>
-                <td className="px-4 py-3 text-right">
-                  <div className="flex flex-wrap justify-end gap-2">
-                    {!returned && onMarkReturned ? (
-                      <button
-                        type="button"
-                        disabled={busyId === item.id}
-                        onClick={() => void onMarkReturned(item.id)}
-                        className="rounded-lg border border-white/15 px-3 py-1.5 text-xs hover:bg-white/5 disabled:opacity-50"
-                      >
-                        {busyId === item.id ? "…" : "Mark returned"}
-                      </button>
-                    ) : null}
-                    {returned && onDeleteReturned ? (
-                      <button
-                        type="button"
-                        disabled={busyId === item.id}
-                        onClick={() => void onDeleteReturned(item.id)}
-                        className="rounded-lg border border-red-500/35 px-3 py-1.5 text-xs text-red-300 hover:bg-red-500/10 disabled:opacity-50"
-                      >
-                        {busyId === item.id ? "…" : "Delete"}
-                      </button>
-                    ) : null}
-                  </div>
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
     </div>
   );
 }
