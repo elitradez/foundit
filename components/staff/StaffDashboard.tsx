@@ -12,6 +12,7 @@ export function StaffDashboard() {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [showReturned, setShowReturned] = useState(false);
 
   const load = useCallback(async () => {
     setLoadError(null);
@@ -88,85 +89,144 @@ export function StaffDashboard() {
           </p>
         ) : null}
 
-        <div className="overflow-hidden rounded-2xl border border-white/10">
-          <table className="w-full text-left text-sm">
-            <thead className="border-b border-white/10 bg-white/[0.04] text-[#F5F5F0]/70">
-              <tr>
-                <th className="px-4 py-3 font-medium">Photo</th>
-                <th className="px-4 py-3 font-medium">Name</th>
-                <th className="px-4 py-3 font-medium">Location</th>
-                <th className="px-4 py-3 font-medium">Date</th>
-                <th className="px-4 py-3 font-medium">PIN</th>
-                <th className="px-4 py-3 font-medium">Status</th>
-                <th className="px-4 py-3 font-medium">Claim</th>
-                <th className="px-4 py-3 font-medium" />
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-white/10">
-              {items.length === 0 && !loadError ? (
-                <tr>
-                  <td colSpan={8} className="px-4 py-10 text-center text-[#F5F5F0]/50">
-                    No items yet. Log your first find.
-                  </td>
-                </tr>
-              ) : null}
-              {items.map((item) => {
-                const url = publicItemPhotoUrl(item.photo_path);
-                const returned = Boolean(item.returned_at);
-                return (
-                  <tr key={item.id} className="bg-black/20">
-                    <td className="px-4 py-3">
-                      <div className="relative h-14 w-14 overflow-hidden rounded-lg border border-white/10">
-                        {url ? (
-                          <Image src={url} alt="" fill className="object-cover" sizes="56px" unoptimized />
-                        ) : null}
-                      </div>
-                    </td>
-                    <td className="px-4 py-3 font-medium">{item.name}</td>
-                    <td className="px-4 py-3 text-[#F5F5F0]/80">{item.location}</td>
-                    <td className="px-4 py-3 text-[#F5F5F0]/80">{item.date_found}</td>
-                    <td className="px-4 py-3 text-[#F5F5F0]/80">{item.pin_hash ? "Yes" : "—"}</td>
-                    <td className="px-4 py-3">
-                      {returned ? (
-                        <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-xs text-emerald-300">
-                          Returned
-                        </span>
-                      ) : (
-                        <span className="rounded-full bg-amber-500/15 px-2 py-0.5 text-xs text-amber-200">
-                          Active
-                        </span>
-                      )}
-                    </td>
-                    <td className="max-w-[140px] truncate px-4 py-3 text-xs text-[#F5F5F0]/60">
-                      {item.claim_description ? (
-                        <span className="rounded-full bg-sky-500/15 px-2 py-0.5 text-[11px] text-sky-200">
-                          Submitted
-                        </span>
-                      ) : (
-                        "—"
-                      )}
-                    </td>
-                    <td className="px-4 py-3 text-right">
-                      {!returned ? (
-                        <button
-                          type="button"
-                          disabled={busyId === item.id}
-                          onClick={() => void markReturned(item.id)}
-                          className="rounded-lg border border-white/15 px-3 py-1.5 text-xs hover:bg-white/5 disabled:opacity-50"
-                        >
-                          {busyId === item.id ? "…" : "Mark returned"}
-                        </button>
-                      ) : null}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+        {(() => {
+          const activeItems = items.filter((i) => !i.returned_at);
+          const returnedItems = items.filter((i) => Boolean(i.returned_at));
+
+          if (items.length === 0 && !loadError) {
+            return (
+              <p className="rounded-2xl border border-white/10 bg-white/[0.03] px-6 py-16 text-center text-[#F5F5F0]/55">
+                No items yet. Log your first find.
+              </p>
+            );
+          }
+
+          return (
+            <div className="space-y-10">
+              <section className="space-y-3">
+                <div className="flex items-end justify-between gap-4">
+                  <div>
+                    <h2 className="text-sm font-semibold text-[#F5F5F0]">Active items</h2>
+                    <p className="text-xs text-[#F5F5F0]/50">{activeItems.length} active</p>
+                  </div>
+                </div>
+
+                <ItemsTable items={activeItems} busyId={busyId} onMarkReturned={markReturned} />
+              </section>
+
+              <section className="space-y-3">
+                <div className="flex items-center justify-between gap-4">
+                  <div>
+                    <h2 className="text-sm font-semibold text-[#F5F5F0]">Returned items</h2>
+                    <p className="text-xs text-[#F5F5F0]/50">{returnedItems.length} returned</p>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => setShowReturned((v) => !v)}
+                    className="rounded-xl border border-white/15 px-4 py-2 text-xs text-[#F5F5F0]/80 hover:bg-white/5"
+                  >
+                    {showReturned ? "Hide" : "Show"}
+                  </button>
+                </div>
+
+                {showReturned ? <ItemsTable items={returnedItems} busyId={busyId} /> : null}
+              </section>
+            </div>
+          );
+        })()}
       </main>
 
       {showForm ? <LogItemForm onClose={() => setShowForm(false)} onSaved={() => void load()} /> : null}
+    </div>
+  );
+}
+
+function ItemsTable({
+  items,
+  busyId,
+  onMarkReturned,
+}: {
+  items: ItemRow[];
+  busyId: string | null;
+  onMarkReturned?: (id: string) => void;
+}) {
+  return (
+    <div className="overflow-hidden rounded-2xl border border-white/10">
+      <table className="w-full text-left text-sm">
+        <thead className="border-b border-white/10 bg-white/[0.04] text-[#F5F5F0]/70">
+          <tr>
+            <th className="px-4 py-3 font-medium">Photo</th>
+            <th className="px-4 py-3 font-medium">Name</th>
+            <th className="px-4 py-3 font-medium">Location</th>
+            <th className="px-4 py-3 font-medium">Date</th>
+            <th className="px-4 py-3 font-medium">PIN</th>
+            <th className="px-4 py-3 font-medium">Status</th>
+            <th className="px-4 py-3 font-medium">Claim</th>
+            <th className="px-4 py-3 font-medium" />
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-white/10">
+          {items.length === 0 ? (
+            <tr>
+              <td colSpan={8} className="px-4 py-8 text-center text-[#F5F5F0]/45">
+                None.
+              </td>
+            </tr>
+          ) : null}
+          {items.map((item) => {
+            const url = publicItemPhotoUrl(item.photo_path);
+            const returned = Boolean(item.returned_at);
+            return (
+              <tr key={item.id} className="bg-black/20">
+                <td className="px-4 py-3">
+                  <div className="relative h-14 w-14 overflow-hidden rounded-lg border border-white/10">
+                    {url ? (
+                      <Image src={url} alt="" fill className="object-cover" sizes="56px" unoptimized />
+                    ) : null}
+                  </div>
+                </td>
+                <td className="px-4 py-3 font-medium">{item.name}</td>
+                <td className="px-4 py-3 text-[#F5F5F0]/80">{item.location}</td>
+                <td className="px-4 py-3 text-[#F5F5F0]/80">{item.date_found}</td>
+                <td className="px-4 py-3 text-[#F5F5F0]/80">{item.pin_hash ? "Yes" : "—"}</td>
+                <td className="px-4 py-3">
+                  {returned ? (
+                    <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-xs text-emerald-300">
+                      Returned
+                    </span>
+                  ) : (
+                    <span className="rounded-full bg-amber-500/15 px-2 py-0.5 text-xs text-amber-200">
+                      Active
+                    </span>
+                  )}
+                </td>
+                <td className="max-w-[140px] truncate px-4 py-3 text-xs text-[#F5F5F0]/60">
+                  {item.claim_description ? (
+                    <span className="rounded-full bg-sky-500/15 px-2 py-0.5 text-[11px] text-sky-200">
+                      Submitted
+                    </span>
+                  ) : (
+                    "—"
+                  )}
+                </td>
+                <td className="px-4 py-3 text-right">
+                  {!returned && onMarkReturned ? (
+                    <button
+                      type="button"
+                      disabled={busyId === item.id}
+                      onClick={() => void onMarkReturned(item.id)}
+                      className="rounded-lg border border-white/15 px-3 py-1.5 text-xs hover:bg-white/5 disabled:opacity-50"
+                    >
+                      {busyId === item.id ? "…" : "Mark returned"}
+                    </button>
+                  ) : null}
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
     </div>
   );
 }
