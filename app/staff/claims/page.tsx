@@ -14,6 +14,13 @@ type PendingClaimRow = {
   items?: { name: string | null } | Array<{ name: string | null }> | null;
 };
 
+function isPendingStaffEntry(value: string | null): boolean {
+  if (!value) return true;
+  const v = value.trim().toLowerCase();
+  if (!v) return true;
+  return v === "pending" || v === "pending staff entry" || v === "pending@staff-entry.edu";
+}
+
 async function getPendingClaims(): Promise<PendingClaimRow[]> {
   const supabase = createAdminSupabaseClient();
   const { data, error } = await supabase
@@ -43,6 +50,10 @@ async function markAsClaimedAction(formData: FormData) {
     redirect("/staff/login");
   }
 
+  if (!studentName || !studentIdNumber) {
+    throw new Error("Student name and Student ID are required.");
+  }
+
   const supabase = createAdminSupabaseClient();
 
   // Update the claim to claimed + capture student info the staff confirmed.
@@ -61,10 +72,9 @@ async function markAsClaimedAction(formData: FormData) {
     throw statusErr;
   }
 
-  // Notes are optional. Best-effort only (ignore if your schema doesn't have a notes column).
-  if (notes) {
-    await supabase.from("claims").update({ staff_notes: notes }).eq("id", claimId);
-  }
+  // Notes are optional UI input. Persisting is intentionally omitted here to avoid
+  // hard-coding a column name that may not exist in your current Supabase schema.
+  void notes;
 
   revalidatePath("/staff/claims");
 }
@@ -123,8 +133,8 @@ export default async function StaffClaimsInboxPage() {
                 <tr>
                   <th className="px-4 py-3 font-medium">Student name</th>
                   <th className="px-4 py-3 font-medium">Student ID</th>
-                  <th className="px-4 py-3 font-medium">Item name</th>
-                  <th className="px-4 py-3 font-medium">Date submitted</th>
+                  <th className="px-4 py-3 font-medium">Item</th>
+                  <th className="px-4 py-3 font-medium">Date</th>
                   <th className="px-4 py-3 font-medium" />
                 </tr>
               </thead>
@@ -136,8 +146,20 @@ export default async function StaffClaimsInboxPage() {
                     : itemJoin?.name ?? "-";
                   return (
                     <tr key={claim.id} className="bg-black/20">
-                      <td className="px-4 py-4 font-medium">{claim.student_name ?? "Not provided"}</td>
-                      <td className="px-4 py-4">{claim.student_id_number ?? "Not provided"}</td>
+                      <td className="px-4 py-4 font-medium">
+                        {isPendingStaffEntry(claim.student_name) ? (
+                          <span className="font-semibold text-red-300">Pending staff entry</span>
+                        ) : (
+                          claim.student_name
+                        )}
+                      </td>
+                      <td className="px-4 py-4">
+                        {isPendingStaffEntry(claim.student_id_number) ? (
+                          <span className="font-semibold text-red-300">Pending staff entry</span>
+                        ) : (
+                          claim.student_id_number
+                        )}
+                      </td>
                       <td className="px-4 py-4 text-[#F5F5F0]/80">{itemName}</td>
                       <td className="px-4 py-4 text-[#F5F5F0]/80">{claim.created_at.slice(0, 10)}</td>
                       <td className="px-4 py-4">
@@ -160,7 +182,7 @@ export default async function StaffClaimsInboxPage() {
                                   <span className="text-sm text-[#F5F5F0]/70">Student name</span>
                                   <input
                                     name="studentName"
-                                    defaultValue={claim.student_name ?? ""}
+                                    defaultValue={isPendingStaffEntry(claim.student_name) ? "" : claim.student_name ?? ""}
                                     required
                                     className="w-full rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-base outline-none focus:border-[#CC0000]/45 focus:ring-2 focus:ring-[#CC0000]/25"
                                   />
@@ -170,7 +192,7 @@ export default async function StaffClaimsInboxPage() {
                                   <span className="text-sm text-[#F5F5F0]/70">Student ID</span>
                                   <input
                                     name="studentIdNumber"
-                                    defaultValue={claim.student_id_number ?? ""}
+                                    defaultValue={isPendingStaffEntry(claim.student_id_number) ? "" : claim.student_id_number ?? ""}
                                     required
                                     className="w-full rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-base outline-none focus:border-[#CC0000]/45 focus:ring-2 focus:ring-[#CC0000]/25"
                                   />
