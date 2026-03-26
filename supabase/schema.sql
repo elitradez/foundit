@@ -19,7 +19,13 @@ alter table public.items add column if not exists pin_hash text;
 alter table public.items add column if not exists pin_salt text;
 alter table public.items add column if not exists claim_description text;
 alter table public.items add column if not exists returned_at timestamptz;
+alter table public.items add column if not exists status text not null default 'active';
+alter table public.items add column if not exists sent_to_surplus_at timestamptz;
 alter table public.items add column if not exists created_at timestamptz not null default now();
+
+-- Keep status values constrained and safe for existing rows.
+alter table public.items drop constraint if exists items_status_check;
+alter table public.items add constraint items_status_check check (status in ('active', 'returned', 'surplus'));
 
 -- Remove legacy email column (if it exists from older schema versions).
 alter table public.items drop column if exists claim_email;

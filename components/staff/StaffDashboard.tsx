@@ -15,6 +15,7 @@ export function StaffDashboard() {
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [surplusCandidateId, setSurplusCandidateId] = useState<string | null>(null);
   const [filter, setFilter] = useState<StaffFilter>("all");
 
   const load = useCallback(async () => {
@@ -80,21 +81,19 @@ export function StaffDashboard() {
     }
   }
 
-  async function deleteReturned(id: string) {
-    if (!confirm("Permanently delete this returned item and its photo? This cannot be undone.")) {
-      return;
-    }
+  async function sendToSurplus(id: string) {
     setBusyId(id);
     try {
-      const res = await fetch(`/api/staff/items/${id}`, { method: "DELETE" });
+      const res = await fetch(`/api/staff/items/${id}/surplus`, { method: "POST" });
       if (!res.ok) {
         const j = (await res.json().catch(() => ({}))) as { error?: string };
-        alert(j.error ?? "Failed to delete");
+        alert(j.error ?? "Failed to send to surplus");
         return;
       }
       await load();
     } finally {
       setBusyId(null);
+      setSurplusCandidateId(null);
     }
   }
 
@@ -233,10 +232,10 @@ export function StaffDashboard() {
                       <button
                         type="button"
                         disabled={busyId === item.id}
-                        onClick={() => void deleteReturned(item.id)}
-                        className="inline-flex min-h-11 items-center rounded-xl border border-red-500/35 px-4 py-2 text-sm text-red-300 transition duration-200 hover:bg-red-500/10 active:scale-[0.99] disabled:opacity-50"
+                        onClick={() => setSurplusCandidateId(item.id)}
+                        className="inline-flex min-h-11 items-center rounded-xl border border-white/15 px-4 py-2 text-sm text-[#F5F5F0] transition duration-200 hover:bg-white/5 active:scale-[0.99] disabled:opacity-50"
                       >
-                        {busyId === item.id ? "..." : "Delete"}
+                        {busyId === item.id ? "..." : "Send to Surplus"}
                       </button>
                     )}
                   </div>
@@ -248,6 +247,34 @@ export function StaffDashboard() {
       </main>
 
       {showForm ? <LogItemForm onClose={() => setShowForm(false)} onSaved={() => void load()} /> : null}
+
+      {surplusCandidateId ? (
+        <div className="anim-fade-in fixed inset-0 z-[80] flex items-center justify-center bg-black/75 p-4">
+          <div className="anim-pop-in w-full max-w-md rounded-2xl border border-white/10 bg-[#141414] p-5 shadow-2xl">
+            <h3 className="text-lg font-semibold text-[#F5F5F0]">Send to Surplus</h3>
+            <p className="mt-2 text-sm text-[#F5F5F0]/75">
+              Send this item to surplus? It will be removed from the active list.
+            </p>
+            <div className="mt-5 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setSurplusCandidateId(null)}
+                className="inline-flex min-h-11 items-center rounded-xl border border-white/15 px-4 py-2 text-sm text-[#F5F5F0]/85 hover:bg-white/5"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => void sendToSurplus(surplusCandidateId)}
+                disabled={busyId === surplusCandidateId}
+                className="inline-flex min-h-11 items-center rounded-xl bg-zinc-700 px-4 py-2 text-sm font-semibold text-white hover:bg-zinc-600 disabled:opacity-50"
+              >
+                Confirm
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }
