@@ -459,7 +459,7 @@ export function StaffDashboard() {
               <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 {activeItems.map((item) => {
                   const daysOld = daysSince(item.date_found);
-                  const daysUntilEligible = Math.max(0, 30 - daysOld);
+                  const daysUntilEligible = Math.max(0, Math.min(30, 30 - daysOld));
                   const isEligible = daysOld >= 30;
                   return (
                     <li key={item.id} className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
@@ -485,7 +485,7 @@ export function StaffDashboard() {
                             <button
                               type="button"
                               onClick={() => setDeleteConfirmItem(item)}
-                              className="inline-flex min-h-8 items-center rounded-lg px-2 py-1 text-xs font-medium text-red-400/90 underline decoration-red-400/30 underline-offset-2 hover:text-red-300"
+                              className="ml-auto inline-flex min-h-8 items-center rounded-lg px-2 py-1 text-xs font-medium text-red-400/90 underline decoration-red-400/30 underline-offset-2 hover:text-red-300"
                             >
                               Delete
                             </button>
