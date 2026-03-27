@@ -223,12 +223,12 @@ function ClaimModal({ item, onClose }: { item: PublicItem; onClose: () => void }
           ) : null}
 
           <label className="block space-y-2">
-            <span className="text-sm text-[#F5F5F0]/80">Describe your item so we can verify its yours</span>
+            <span className="text-sm text-[#F5F5F0]/80">Describe your item so we can verify it&apos;s yours</span>
             <textarea
               value={studentDescription}
               onChange={(e) => setStudentDescription(e.target.value)}
               rows={4}
-              placeholder="Describe your item so we can verify its yours"
+              placeholder="Describe your item so we can verify it&apos;s yours"
               className="w-full rounded-xl border border-white/10 bg-black/40 px-4 py-3 text-[#F5F5F0] outline-none focus:border-[#CC0000]/45 focus:ring-2 focus:ring-[#CC0000]/25"
             />
           </label>
