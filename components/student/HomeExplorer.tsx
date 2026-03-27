@@ -27,8 +27,8 @@ export function HomeExplorer({ initialItems, loadError }: Props) {
   }, [initialItems, query]);
 
   return (
-    <div className="min-h-screen bg-[#0c0c0c] text-[#F5F5F0]">
-      <header className="border-b border-white/10 bg-[#0c0c0c]/95 backdrop-blur">
+    <div className="min-h-screen bg-transparent text-[#F5F5F0]">
+      <header className="border-b border-white/10 bg-black/35 backdrop-blur">
         <div className="mx-auto flex max-w-6xl flex-col gap-6 px-4 py-10">
           <div className="space-y-2">
             <p className="text-sm font-semibold uppercase tracking-[0.15em] text-[#F5F5F0]/70">Foundit</p>
