@@ -20,6 +20,7 @@ type PendingClaim = {
   id: string;
   item_id: string;
   item_name: string;
+  date_found: string | null;
   student_name: string | null;
   student_id_number: string | null;
   created_at: string;
@@ -544,6 +545,11 @@ export function StaffDashboard() {
                       </tr>
                     ) : null}
                     {claims.map((c) => (
+                      (() => {
+                        const daysOld = c.date_found ? daysSince(c.date_found) : 0;
+                        const daysUntilEligible = Math.max(0, Math.min(30, 30 - daysOld));
+                        const canSendToSurplus = c.date_found ? daysOld >= 30 : false;
+                        return (
                       <tr key={c.id} className="bg-black/20">
                         <td className="px-4 py-3">
                           <div className="relative h-12 w-12 overflow-hidden rounded-lg border border-white/10">
@@ -570,15 +576,17 @@ export function StaffDashboard() {
                             </button>
                             <button
                               type="button"
-                              disabled={busyId === c.id}
+                              disabled={!canSendToSurplus || busyId === c.id}
                               onClick={() => void resolveClaim(c.id, "surplus")}
-                              className="inline-flex min-h-10 items-center rounded-xl bg-zinc-700 px-3 py-2 text-xs font-semibold text-white hover:bg-zinc-600 disabled:opacity-50"
+                              className="inline-flex min-h-10 items-center rounded-xl bg-zinc-700 px-3 py-2 text-xs font-semibold text-white hover:bg-zinc-600 disabled:cursor-not-allowed disabled:opacity-40"
                             >
-                              Send to Surplus
+                              {canSendToSurplus ? "Send to Surplus" : `Surplus in ${daysUntilEligible} days`}
                             </button>
                           </div>
                         </td>
                       </tr>
+                        );
+                      })()
                     ))}
                   </tbody>
                 </table>
