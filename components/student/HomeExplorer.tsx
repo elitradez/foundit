@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Spinner } from "@/components/ui/Spinner";
 import type { PublicItem } from "@/lib/types";
 
@@ -16,11 +16,20 @@ export function HomeExplorer({ initialItems, loadError }: Props) {
   const [openItem, setOpenItem] = useState<PublicItem | null>(null);
   const [searchBusy, setSearchBusy] = useState(false);
   const [aiItemIds, setAiItemIds] = useState<string[] | null>(null);
+  const searchCacheRef = useRef<Map<string, string[]>>(new Map());
 
   useEffect(() => {
     const q = query.trim();
     if (!q) {
       setAiItemIds(null);
+      setSearchBusy(false);
+      return;
+    }
+
+    const key = q.toLowerCase();
+    const cached = searchCacheRef.current.get(key);
+    if (cached) {
+      setAiItemIds(cached);
       setSearchBusy(false);
       return;
     }
@@ -37,7 +46,9 @@ export function HomeExplorer({ initialItems, loadError }: Props) {
         });
         const data = (await res.json().catch(() => ({}))) as { itemIds?: string[] };
         if (res.ok) {
-          setAiItemIds(Array.isArray(data.itemIds) ? data.itemIds : []);
+          const ids = Array.isArray(data.itemIds) ? data.itemIds : [];
+          searchCacheRef.current.set(key, ids);
+          setAiItemIds(ids);
         } else {
           setAiItemIds([]);
         }
@@ -46,7 +57,7 @@ export function HomeExplorer({ initialItems, loadError }: Props) {
       } finally {
         if (!controller.signal.aborted) setSearchBusy(false);
       }
-    }, 250);
+    }, 325);
 
     return () => {
       controller.abort();
