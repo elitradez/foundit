@@ -80,6 +80,7 @@ export function StaffDashboard() {
   const [editActivePhotoPreview, setEditActivePhotoPreview] = useState<string | null>(null);
   const [deleteConfirmItem, setDeleteConfirmItem] = useState<ItemRow | null>(null);
   const [activeSurplusConfirmItem, setActiveSurplusConfirmItem] = useState<ItemRow | null>(null);
+  const [deleteLogRow, setDeleteLogRow] = useState<StudentLogRow | null>(null);
 
   useEffect(() => {
     if (!editActivePhotoFile) {
@@ -359,6 +360,27 @@ export function StaffDashboard() {
       await loadStudentLog();
       await loadSurplus();
       if (tab === "claims") await loadClaims();
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  async function confirmDeleteLogRow() {
+    if (!deleteLogRow) return;
+    const id = deleteLogRow.item_id;
+    setBusyId(id);
+    try {
+      const res = await fetch(`/api/staff/items/${id}`, { method: "DELETE" });
+      const data = (await res.json().catch(() => ({}))) as { error?: string };
+      if (!res.ok) {
+        alert(data.error ?? "Failed to delete item");
+        return;
+      }
+      setDeleteLogRow(null);
+      await load();
+      await loadStudentLog();
+      await loadClaims();
+      await loadSurplus();
     } finally {
       setBusyId(null);
     }
@@ -728,6 +750,14 @@ export function StaffDashboard() {
                             >
                               Relist
                             </button>
+                            <button
+                              type="button"
+                              disabled={busyId === r.item_id}
+                              onClick={() => setDeleteLogRow(r)}
+                              className="inline-flex min-h-10 items-center rounded-xl border border-red-500/35 px-3 py-2 text-xs font-semibold text-red-300 hover:bg-red-500/10 disabled:opacity-50"
+                            >
+                              Delete
+                            </button>
                           </div>
                         </td>
                       </tr>
@@ -803,6 +833,34 @@ export function StaffDashboard() {
                 className="inline-flex min-h-11 items-center rounded-xl bg-zinc-700 px-4 py-2 text-sm font-semibold text-white hover:bg-zinc-600 disabled:opacity-50"
               >
                 {busyId === activeSurplusConfirmItem.id ? "Sending..." : "Confirm"}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {deleteLogRow ? (
+        <div className="anim-fade-in fixed inset-0 z-[89] flex items-center justify-center bg-black/75 p-4">
+          <div className="anim-pop-in w-full max-w-sm rounded-2xl border border-white/10 bg-[#141414] p-5 shadow-2xl">
+            <h3 className="text-lg font-semibold text-[#F5F5F0]">Delete this log entry?</h3>
+            <p className="mt-2 text-sm text-[#F5F5F0]/65">
+              This will permanently delete <span className="font-medium text-[#F5F5F0]/90">{deleteLogRow.item_name}</span>.
+            </p>
+            <div className="mt-5 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setDeleteLogRow(null)}
+                className="inline-flex min-h-11 items-center rounded-xl border border-white/15 px-4 py-2 text-sm text-[#F5F5F0]/85 hover:bg-white/5"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => void confirmDeleteLogRow()}
+                disabled={busyId === deleteLogRow.item_id}
+                className="inline-flex min-h-11 items-center rounded-xl bg-red-700 px-4 py-2 text-sm font-semibold text-white hover:bg-red-600 disabled:opacity-50"
+              >
+                {busyId === deleteLogRow.item_id ? "Deleting..." : "Delete"}
               </button>
             </div>
           </div>
