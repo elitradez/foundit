@@ -3,7 +3,6 @@
 import Image from "next/image";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { LogItemForm } from "@/components/staff/LogItemForm";
-import { Spinner } from "@/components/ui/Spinner";
 import type { ItemRow } from "@/lib/types";
 
 type Tab = "active" | "claims" | "log" | "surplus";
@@ -54,12 +53,15 @@ export function StaffDashboard() {
   const [claims, setClaims] = useState<PendingClaim[]>([]);
   const [claimsLoading, setClaimsLoading] = useState(false);
   const [claimsError, setClaimsError] = useState<string | null>(null);
+  const [claimsLoaded, setClaimsLoaded] = useState(false);
   const [logRows, setLogRows] = useState<StudentLogRow[]>([]);
   const [logLoading, setLogLoading] = useState(false);
   const [logError, setLogError] = useState<string | null>(null);
+  const [logLoaded, setLogLoaded] = useState(false);
   const [surplusItems, setSurplusItems] = useState<SurplusItemRow[]>([]);
   const [surplusLoading, setSurplusLoading] = useState(false);
   const [surplusError, setSurplusError] = useState<string | null>(null);
+  const [surplusLoaded, setSurplusLoaded] = useState(false);
   const [editReturnedItemId, setEditReturnedItemId] = useState<string | null>(null);
   const [editStudentName, setEditStudentName] = useState("");
   const [editStudentIdNumber, setEditStudentIdNumber] = useState("");
@@ -125,6 +127,7 @@ export function StaffDashboard() {
         return;
       }
       setClaims(data.claims ?? []);
+      setClaimsLoaded(true);
     } finally {
       setClaimsLoading(false);
     }
@@ -141,6 +144,7 @@ export function StaffDashboard() {
         return;
       }
       setLogRows(data.rows ?? []);
+      setLogLoaded(true);
     } finally {
       setLogLoading(false);
     }
@@ -157,16 +161,17 @@ export function StaffDashboard() {
         return;
       }
       setSurplusItems(data.items ?? []);
+      setSurplusLoaded(true);
     } finally {
       setSurplusLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    if (tab === "claims") void loadClaims();
-    if (tab === "log") void loadStudentLog();
-    if (tab === "surplus") void loadSurplus();
-  }, [tab, loadClaims, loadStudentLog, loadSurplus]);
+    if (tab === "claims" && !claimsLoaded) void loadClaims();
+    if (tab === "log" && !logLoaded) void loadStudentLog();
+    if (tab === "surplus" && !surplusLoaded) void loadSurplus();
+  }, [tab, claimsLoaded, logLoaded, surplusLoaded, loadClaims, loadStudentLog, loadSurplus]);
 
   function openEditActiveItem(item: ItemRow) {
     setEditActiveItem(item);
@@ -434,6 +439,46 @@ export function StaffDashboard() {
     );
   }
 
+  function ActiveItemsSkeleton() {
+    return (
+      <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <li key={`active-skel-${i}`} className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
+            <div className="flex gap-4">
+              <div className="h-20 w-20 shrink-0 animate-pulse rounded-lg bg-white/10" />
+              <div className="flex-1 space-y-2">
+                <div className="h-4 w-2/3 animate-pulse rounded bg-white/10" />
+                <div className="h-3 w-1/2 animate-pulse rounded bg-white/10" />
+                <div className="h-3 w-1/3 animate-pulse rounded bg-white/10" />
+                <div className="mt-2 h-8 w-full animate-pulse rounded bg-white/10" />
+              </div>
+            </div>
+          </li>
+        ))}
+      </ul>
+    );
+  }
+
+  function TableSkeleton({ rows = 6, cols = 6 }: { rows?: number; cols?: number }) {
+    return (
+      <div className="overflow-x-auto rounded-2xl border border-white/10">
+        <table className="w-full min-w-[860px] text-left text-sm">
+          <tbody className="divide-y divide-white/10">
+            {Array.from({ length: rows }).map((_, r) => (
+              <tr key={`tbl-skel-${r}`} className="bg-black/20">
+                {Array.from({ length: cols }).map((__, c) => (
+                  <td key={`tbl-skel-${r}-${c}`} className="px-4 py-3">
+                    <div className="h-4 w-full animate-pulse rounded bg-white/10" />
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-transparent text-[#F5F5F0]">
       <header className="sticky top-0 z-20 border-b border-white/10 bg-[#0c0c0c]/90 backdrop-blur">
@@ -466,10 +511,7 @@ export function StaffDashboard() {
         {tab === "active" ? (
           <>
             {loading ? (
-              <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.03] px-6 py-10 text-[#F5F5F0]/70">
-                <Spinner className="h-5 w-5 text-[#CC0000]" />
-                Loading active items...
-              </div>
+              <ActiveItemsSkeleton />
             ) : null}
 
             {!loading && activeItems.length === 0 ? (
@@ -539,10 +581,7 @@ export function StaffDashboard() {
               </p>
             ) : null}
             {claimsLoading ? (
-              <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.03] px-6 py-10 text-[#F5F5F0]/70">
-                <Spinner className="h-5 w-5 text-[#CC0000]" />
-                Loading pending claims...
-              </div>
+              <TableSkeleton rows={6} cols={6} />
             ) : null}
 
             {!claimsLoading ? (
@@ -625,10 +664,7 @@ export function StaffDashboard() {
               </p>
             ) : null}
             {surplusLoading ? (
-              <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.03] px-6 py-10 text-[#F5F5F0]/70">
-                <Spinner className="h-5 w-5 text-[#CC0000]" />
-                Loading surplus items...
-              </div>
+              <TableSkeleton rows={6} cols={5} />
             ) : null}
             {!surplusLoading ? (
               <div className="overflow-x-auto rounded-2xl border border-white/10">
@@ -689,10 +725,7 @@ export function StaffDashboard() {
               </p>
             ) : null}
             {logLoading ? (
-              <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.03] px-6 py-10 text-[#F5F5F0]/70">
-                <Spinner className="h-5 w-5 text-[#CC0000]" />
-                Loading student log...
-              </div>
+              <TableSkeleton rows={6} cols={7} />
             ) : null}
             {!logLoading ? (
               <div className="overflow-x-auto rounded-2xl border border-white/10">
