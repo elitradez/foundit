@@ -37,6 +37,12 @@ type StudentLogRow = {
   claim_id?: string;
 };
 
+function daysSince(dateString: string): number {
+  const then = new Date(`${dateString}T00:00:00`).getTime();
+  const now = Date.now();
+  return Math.floor((now - then) / (1000 * 60 * 60 * 24));
+}
+
 export function StaffDashboard() {
   const [items, setItems] = useState<ItemRow[]>([]);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -72,6 +78,7 @@ export function StaffDashboard() {
   const [editActivePhotoFile, setEditActivePhotoFile] = useState<File | null>(null);
   const [editActivePhotoPreview, setEditActivePhotoPreview] = useState<string | null>(null);
   const [deleteConfirmItem, setDeleteConfirmItem] = useState<ItemRow | null>(null);
+  const [activeSurplusConfirmItem, setActiveSurplusConfirmItem] = useState<ItemRow | null>(null);
 
   useEffect(() => {
     if (!editActivePhotoFile) {
@@ -230,6 +237,25 @@ export function StaffDashboard() {
       }
       closeEditActiveItem();
       await load();
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  async function confirmSendActiveItemToSurplus() {
+    if (!activeSurplusConfirmItem) return;
+    const id = activeSurplusConfirmItem.id;
+    setBusyId(id);
+    try {
+      const res = await fetch(`/api/staff/items/${id}/surplus`, { method: "POST" });
+      const data = (await res.json().catch(() => ({}))) as { error?: string };
+      if (!res.ok) {
+        alert(data.error ?? "Failed to send item to surplus");
+        return;
+      }
+      setActiveSurplusConfirmItem(null);
+      await load();
+      await loadSurplus();
     } finally {
       setBusyId(null);
     }
@@ -432,6 +458,9 @@ export function StaffDashboard() {
             {!loading && activeItems.length > 0 ? (
               <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 {activeItems.map((item) => {
+                  const daysOld = daysSince(item.date_found);
+                  const daysUntilEligible = Math.max(0, 30 - daysOld);
+                  const isEligible = daysOld >= 30;
                   return (
                     <li key={item.id} className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
                       <div className="flex gap-4">
@@ -442,6 +471,9 @@ export function StaffDashboard() {
                           <p className="truncate text-base font-semibold text-[#F5F5F0]">{item.name}</p>
                           <p className="truncate text-sm text-[#F5F5F0]/75">{item.location}</p>
                           <p className="text-xs text-[#F5F5F0]/45">Found {item.date_found}</p>
+                          <p className={`text-xs ${isEligible ? "text-red-300" : "text-[#F5F5F0]/55"}`}>
+                            {isEligible ? "Eligible for surplus" : `${daysUntilEligible} days until surplus eligible`}
+                          </p>
                           <div className="mt-2 flex flex-wrap items-center gap-2">
                             <button
                               type="button"
@@ -456,6 +488,14 @@ export function StaffDashboard() {
                               className="inline-flex min-h-8 items-center rounded-lg px-2 py-1 text-xs font-medium text-red-400/90 underline decoration-red-400/30 underline-offset-2 hover:text-red-300"
                             >
                               Delete
+                            </button>
+                            <button
+                              type="button"
+                              disabled={!isEligible || busyId === item.id}
+                              onClick={() => setActiveSurplusConfirmItem(item)}
+                              className="inline-flex min-h-8 items-center rounded-lg bg-zinc-700 px-2.5 py-1 text-xs font-medium text-white hover:bg-zinc-600 disabled:cursor-not-allowed disabled:opacity-40"
+                            >
+                              {isEligible ? "Send to Surplus" : `Surplus in ${daysUntilEligible} days`}
                             </button>
                           </div>
                         </div>
@@ -727,6 +767,34 @@ export function StaffDashboard() {
                 className="inline-flex min-h-11 items-center rounded-xl bg-red-700 px-4 py-2 text-sm font-semibold text-white hover:bg-red-600 disabled:opacity-50"
               >
                 {busyId === deleteConfirmItem.id ? "Deleting…" : "Delete"}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {activeSurplusConfirmItem ? (
+        <div className="anim-fade-in fixed inset-0 z-[89] flex items-center justify-center bg-black/75 p-4">
+          <div className="anim-pop-in w-full max-w-sm rounded-2xl border border-white/10 bg-[#141414] p-5 shadow-2xl">
+            <h3 className="text-lg font-semibold text-[#F5F5F0]">Send this item to surplus?</h3>
+            <p className="mt-2 text-sm text-[#F5F5F0]/65">
+              Send this item to surplus? It will be removed from the active list.
+            </p>
+            <div className="mt-5 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setActiveSurplusConfirmItem(null)}
+                className="inline-flex min-h-11 items-center rounded-xl border border-white/15 px-4 py-2 text-sm text-[#F5F5F0]/85 hover:bg-white/5"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => void confirmSendActiveItemToSurplus()}
+                disabled={busyId === activeSurplusConfirmItem.id}
+                className="inline-flex min-h-11 items-center rounded-xl bg-zinc-700 px-4 py-2 text-sm font-semibold text-white hover:bg-zinc-600 disabled:opacity-50"
+              >
+                {busyId === activeSurplusConfirmItem.id ? "Sending..." : "Confirm"}
               </button>
             </div>
           </div>
