@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 :root {
-  --background: #0c0c0c;
+  --background: #0a0a0f;
   --foreground: #f5f5f0;
   --accent: #cc0000;
 }
@@ -14,14 +14,35 @@
 }
 
 body {
+  background-color: #0a0a0f;
   background:
-    radial-gradient(1100px 760px at -5% -8%, rgba(204, 0, 0, 0.2), transparent 62%),
-    radial-gradient(900px 620px at 105% -5%, rgba(212, 57, 57, 0.16), transparent 60%),
-    radial-gradient(780px 520px at 50% 115%, rgba(255, 255, 255, 0.06), transparent 58%),
-    linear-gradient(180deg, #0a0a0a 0%, #0d0d0f 45%, #08080a 100%);
+    radial-gradient(1400px 900px at 8% 12%, rgba(204, 0, 0, 0.12), transparent 62%),
+    radial-gradient(1200px 840px at 92% 18%, rgba(204, 0, 0, 0.1), transparent 66%),
+    radial-gradient(1000px 760px at 50% 100%, rgba(204, 0, 0, 0.06), transparent 68%),
+    radial-gradient(900px 700px at 28% 78%, rgba(0, 0, 0, 0.34), transparent 72%),
+    radial-gradient(1200px 900px at 72% 86%, rgba(0, 0, 0, 0.32), transparent 70%),
+    radial-gradient(rgba(255, 255, 255, 0.035) 0.5px, transparent 0.5px),
+    radial-gradient(rgba(0, 0, 0, 0.05) 0.5px, transparent 0.5px),
+    linear-gradient(180deg, #0a0a0f 0%, #09090d 52%, #08080c 100%);
+  /* Layer-specific sizing/position for a subtle animated mesh effect. */
+  background-size: 175% 175%, 160% 160%, 145% 145%, 190% 190%, 170% 170%, 3px 3px, 2px 2px, 100% 100%;
+  background-position: 0% 0%, 100% 0%, 50% 100%, 22% 78%, 78% 82%, 0 0, 1px 1px, 50% 50%;
   background-attachment: fixed;
+  animation: mesh-drift 80s ease-in-out infinite alternate;
   color: var(--foreground);
   font-family: var(--font-sans);
+}
+
+@keyframes mesh-drift {
+  0% {
+    background-position: 0% 0%, 100% 0%, 50% 100%, 22% 78%, 78% 82%, 50% 50%;
+  }
+  50% {
+    background-position: 10% 16%, 92% 14%, 44% 90%, 30% 70%, 68% 74%, 50% 50%;
+  }
+  100% {
+    background-position: 18% 24%, 84% 26%, 40% 84%, 36% 64%, 62% 68%, 50% 50%;
+  }
 }
 
 @keyframes fade-in {
@@ -60,5 +81,9 @@ body {
     animation-iteration-count: 1 !important;
     transition-duration: 1ms !important;
     scroll-behavior: auto !important;
+  }
+
+  body {
+    animation: none !important;
   }
 }
