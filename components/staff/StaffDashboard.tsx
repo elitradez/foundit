@@ -386,7 +386,7 @@ export function StaffDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0c0c0c] text-[#F5F5F0]">
+    <div className="min-h-screen bg-transparent text-[#F5F5F0]">
       <header className="sticky top-0 z-20 border-b border-white/10 bg-[#0c0c0c]/90 backdrop-blur">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-4">
           <div>
