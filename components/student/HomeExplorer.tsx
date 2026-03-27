@@ -223,7 +223,7 @@ function ClaimModal({ item, onClose }: { item: PublicItem; onClose: () => void }
           ) : null}
 
           <label className="block space-y-2">
-            <span className="text-sm text-[#F5F5F0]/80">Describe your lost item</span>
+            <span className="text-sm text-[#F5F5F0]/80">What makes the item yours...</span>
             <textarea
               value={studentDescription}
               onChange={(e) => setStudentDescription(e.target.value)}
