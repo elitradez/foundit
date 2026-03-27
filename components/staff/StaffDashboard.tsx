@@ -474,7 +474,7 @@ export function StaffDashboard() {
                           <p className={`text-xs ${isEligible ? "text-red-300" : "text-[#F5F5F0]/55"}`}>
                             {isEligible ? "Eligible for surplus" : `${daysUntilEligible} days until surplus eligible`}
                           </p>
-                          <div className="mt-2 flex flex-wrap items-center gap-2">
+                          <div className="mt-2 flex items-center gap-2">
                             <button
                               type="button"
                               onClick={() => openEditActiveItem(item)}
@@ -484,18 +484,18 @@ export function StaffDashboard() {
                             </button>
                             <button
                               type="button"
-                              onClick={() => setDeleteConfirmItem(item)}
-                              className="ml-auto inline-flex min-h-8 items-center rounded-lg px-2 py-1 text-xs font-medium text-red-400/90 underline decoration-red-400/30 underline-offset-2 hover:text-red-300"
-                            >
-                              Delete
-                            </button>
-                            <button
-                              type="button"
                               disabled={!isEligible || busyId === item.id}
                               onClick={() => setActiveSurplusConfirmItem(item)}
                               className="inline-flex min-h-8 items-center rounded-lg bg-zinc-700 px-2.5 py-1 text-xs font-medium text-white hover:bg-zinc-600 disabled:cursor-not-allowed disabled:opacity-40"
                             >
                               {isEligible ? "Send to Surplus" : `Surplus in ${daysUntilEligible} days`}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setDeleteConfirmItem(item)}
+                              className="ml-auto inline-flex min-h-8 items-center rounded-lg px-2 py-1 text-xs font-medium text-red-400/90 underline decoration-red-400/30 underline-offset-2 hover:text-red-300"
+                            >
+                              Delete
                             </button>
                           </div>
                         </div>
