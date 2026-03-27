@@ -121,11 +121,10 @@ export async function DELETE(_req: Request, ctx: Ctx) {
   if (fetchErr || !item) {
     return NextResponse.json({ error: "Item not found" }, { status: 404 });
   }
-  if (!item.returned_at) {
-    return NextResponse.json(
-      { error: "Only returned items can be deleted" },
-      { status: 400 },
-    );
+
+  const { error: claimDelErr } = await supabase.from("claims").delete().eq("item_id", id);
+  if (claimDelErr) {
+    console.error("claims delete (continuing):", claimDelErr.message);
   }
 
   const { error: rmErr } = await supabase.storage.from("items").remove([item.photo_path]);

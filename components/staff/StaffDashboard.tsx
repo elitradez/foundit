@@ -71,6 +71,7 @@ export function StaffDashboard() {
   const [editActiveDateFound, setEditActiveDateFound] = useState("");
   const [editActivePhotoFile, setEditActivePhotoFile] = useState<File | null>(null);
   const [editActivePhotoPreview, setEditActivePhotoPreview] = useState<string | null>(null);
+  const [deleteConfirmItem, setDeleteConfirmItem] = useState<ItemRow | null>(null);
 
   useEffect(() => {
     if (!editActivePhotoFile) {
@@ -170,6 +171,26 @@ export function StaffDashboard() {
   function closeEditActiveItem() {
     setEditActiveItem(null);
     setEditActivePhotoFile(null);
+  }
+
+  async function confirmDeleteActiveItem() {
+    if (!deleteConfirmItem) return;
+    const id = deleteConfirmItem.id;
+    setBusyId(id);
+    try {
+      const res = await fetch(`/api/staff/items/${id}`, { method: "DELETE" });
+      const data = (await res.json().catch(() => ({}))) as { error?: string };
+      if (!res.ok) {
+        alert(data.error ?? "Could not delete item");
+        return;
+      }
+      setDeleteConfirmItem(null);
+      await load();
+      await loadClaims();
+      await loadSurplus();
+    } finally {
+      setBusyId(null);
+    }
   }
 
   async function saveActiveItem() {
@@ -421,13 +442,22 @@ export function StaffDashboard() {
                           <p className="truncate text-base font-semibold text-[#F5F5F0]">{item.name}</p>
                           <p className="truncate text-sm text-[#F5F5F0]/75">{item.location}</p>
                           <p className="text-xs text-[#F5F5F0]/45">Found {item.date_found}</p>
-                          <button
-                            type="button"
-                            onClick={() => openEditActiveItem(item)}
-                            className="mt-2 inline-flex min-h-9 items-center rounded-lg border border-white/15 bg-white/[0.04] px-3 py-1.5 text-xs font-medium text-[#F5F5F0]/90 hover:bg-white/[0.08]"
-                          >
-                            Edit details
-                          </button>
+                          <div className="mt-2 flex flex-wrap items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => openEditActiveItem(item)}
+                              className="inline-flex min-h-9 items-center rounded-lg border border-white/15 bg-white/[0.04] px-3 py-1.5 text-xs font-medium text-[#F5F5F0]/90 hover:bg-white/[0.08]"
+                            >
+                              Edit details
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setDeleteConfirmItem(item)}
+                              className="inline-flex min-h-8 items-center rounded-lg px-2 py-1 text-xs font-medium text-red-400/90 underline decoration-red-400/30 underline-offset-2 hover:text-red-300"
+                            >
+                              Delete
+                            </button>
+                          </div>
                         </div>
                       </div>
                     </li>
@@ -672,6 +702,36 @@ export function StaffDashboard() {
       </footer>
 
       {showForm ? <LogItemForm onClose={() => setShowForm(false)} onSaved={() => void load()} /> : null}
+
+      {deleteConfirmItem ? (
+        <div className="anim-fade-in fixed inset-0 z-[88] flex items-center justify-center bg-black/75 p-4">
+          <div className="anim-pop-in w-full max-w-sm rounded-2xl border border-white/10 bg-[#141414] p-5 shadow-2xl">
+            <h3 className="text-lg font-semibold text-[#F5F5F0]">Delete item?</h3>
+            <p className="mt-2 text-sm text-[#F5F5F0]/65">
+              Remove{" "}
+              <span className="font-medium text-[#F5F5F0]/90">{deleteConfirmItem.name}</span> from lost and found. This
+              cannot be undone.
+            </p>
+            <div className="mt-5 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setDeleteConfirmItem(null)}
+                className="inline-flex min-h-11 items-center rounded-xl border border-white/15 px-4 py-2 text-sm text-[#F5F5F0]/85 hover:bg-white/5"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => void confirmDeleteActiveItem()}
+                disabled={busyId === deleteConfirmItem.id}
+                className="inline-flex min-h-11 items-center rounded-xl bg-red-700 px-4 py-2 text-sm font-semibold text-white hover:bg-red-600 disabled:opacity-50"
+              >
+                {busyId === deleteConfirmItem.id ? "Deleting…" : "Delete"}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       {editActiveItem ? (
         <div className="anim-fade-in fixed inset-0 z-[85] flex items-end justify-center bg-black/75 p-0 sm:items-center sm:p-4">
