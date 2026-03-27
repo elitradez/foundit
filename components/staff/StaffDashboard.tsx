@@ -493,7 +493,7 @@ export function StaffDashboard() {
                             <button
                               type="button"
                               onClick={() => setDeleteConfirmItem(item)}
-                              className="ml-auto inline-flex min-h-8 items-center rounded-lg px-2 py-1 text-xs font-medium text-red-400/90 underline decoration-red-400/30 underline-offset-2 hover:text-red-300"
+                              className="inline-flex min-h-8 items-center rounded-lg px-2 py-1 text-xs font-medium text-red-400/90 underline decoration-red-400/30 underline-offset-2 hover:text-red-300"
                             >
                               Delete
                             </button>
