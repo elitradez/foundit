@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Spinner } from "@/components/ui/Spinner";
 import type { PublicItem } from "@/lib/types";
 
@@ -14,17 +14,53 @@ type Props = {
 export function HomeExplorer({ initialItems, loadError }: Props) {
   const [query, setQuery] = useState("");
   const [openItem, setOpenItem] = useState<PublicItem | null>(null);
+  const [searchBusy, setSearchBusy] = useState(false);
+  const [aiItemIds, setAiItemIds] = useState<string[] | null>(null);
+
+  useEffect(() => {
+    const q = query.trim();
+    if (!q) {
+      setAiItemIds(null);
+      setSearchBusy(false);
+      return;
+    }
+
+    const controller = new AbortController();
+    const timer = setTimeout(async () => {
+      setSearchBusy(true);
+      try {
+        const res = await fetch("/api/items/search", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ query: q }),
+          signal: controller.signal,
+        });
+        const data = (await res.json().catch(() => ({}))) as { itemIds?: string[] };
+        if (res.ok) {
+          setAiItemIds(Array.isArray(data.itemIds) ? data.itemIds : []);
+        } else {
+          setAiItemIds([]);
+        }
+      } catch {
+        if (!controller.signal.aborted) setAiItemIds([]);
+      } finally {
+        if (!controller.signal.aborted) setSearchBusy(false);
+      }
+    }, 250);
+
+    return () => {
+      controller.abort();
+      clearTimeout(timer);
+    };
+  }, [query]);
 
   const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
+    const q = query.trim();
     if (!q) return initialItems;
-    return initialItems.filter(
-      (i) =>
-        i.name.toLowerCase().includes(q) ||
-        i.location.toLowerCase().includes(q) ||
-        i.date_found.toLowerCase().includes(q),
-    );
-  }, [initialItems, query]);
+    if (aiItemIds === null) return initialItems;
+    const idSet = new Set(aiItemIds);
+    return initialItems.filter((i) => idSet.has(i.id));
+  }, [aiItemIds, initialItems, query]);
 
   return (
     <div className="min-h-screen bg-transparent text-[#F5F5F0]">
@@ -41,12 +77,18 @@ export function HomeExplorer({ initialItems, loadError }: Props) {
             <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[#F5F5F0]/40">
               Search
             </span>
+            {query.trim() && searchBusy ? (
+              <span className="pointer-events-none absolute right-4 top-1/2 inline-flex -translate-y-1/2 items-center gap-1.5 text-xs text-[#F5F5F0]/55">
+                <Spinner className="h-3.5 w-3.5 text-[#CC0000]" />
+                Searching...
+              </span>
+            ) : null}
             <input
               type="search"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Search by name, location, or date..."
-              className="w-full rounded-2xl border border-white/10 bg-black/35 py-3.5 pl-24 pr-4 text-[#F5F5F0] outline-none placeholder:text-[#F5F5F0]/35 focus:border-[#CC0000]/45 focus:ring-2 focus:ring-[#CC0000]/25"
+              className="w-full rounded-2xl border border-white/10 bg-black/35 py-3.5 pl-24 pr-28 text-[#F5F5F0] outline-none placeholder:text-[#F5F5F0]/35 focus:border-[#CC0000]/45 focus:ring-2 focus:ring-[#CC0000]/25"
               aria-label="Search items"
             />
           </div>
