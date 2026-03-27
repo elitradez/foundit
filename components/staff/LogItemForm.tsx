@@ -8,6 +8,43 @@ type Props = {
   onSaved: () => void;
 };
 
+async function compressImageForUpload(file: File): Promise<File> {
+  if (!file.type.startsWith("image/")) return file;
+
+  const dataUrl = await new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result ?? ""));
+    reader.onerror = () => reject(new Error("Could not read image"));
+    reader.readAsDataURL(file);
+  });
+
+  const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+    const el = new Image();
+    el.onload = () => resolve(el);
+    el.onerror = () => reject(new Error("Could not load image"));
+    el.src = dataUrl;
+  });
+
+  const maxSide = 800;
+  const scale = Math.min(1, maxSide / Math.max(img.width, img.height));
+  const width = Math.max(1, Math.round(img.width * scale));
+  const height = Math.max(1, Math.round(img.height * scale));
+
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return file;
+  ctx.drawImage(img, 0, 0, width, height);
+
+  const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.8));
+  if (!blob) return file;
+
+  const stem = file.name.replace(/\.[^.]+$/, "");
+  return new File([blob], `${stem || "photo"}.jpg`, { type: "image/jpeg" });
+}
+
 export function LogItemForm({ onClose, onSaved }: Props) {
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [name, setName] = useState("");
@@ -57,8 +94,9 @@ export function LogItemForm({ onClose, onSaved }: Props) {
     setError(null);
     setSaveBusy(true);
     try {
+      const optimizedPhoto = await compressImageForUpload(photoFile);
       const fd = new FormData();
-      fd.set("photo", photoFile);
+      fd.set("photo", optimizedPhoto);
       fd.set("name", name);
       fd.set("description", description);
       fd.set("location", location);

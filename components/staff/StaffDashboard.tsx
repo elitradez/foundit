@@ -43,6 +43,43 @@ function daysSince(dateString: string): number {
   return Math.floor((now - then) / (1000 * 60 * 60 * 24));
 }
 
+async function compressImageForUpload(file: File): Promise<File> {
+  if (!file.type.startsWith("image/")) return file;
+
+  const dataUrl = await new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result ?? ""));
+    reader.onerror = () => reject(new Error("Could not read image"));
+    reader.readAsDataURL(file);
+  });
+
+  const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+    const el = new window.Image();
+    el.onload = () => resolve(el);
+    el.onerror = () => reject(new Error("Could not load image"));
+    el.src = dataUrl;
+  });
+
+  const maxSide = 800;
+  const scale = Math.min(1, maxSide / Math.max(img.width, img.height));
+  const width = Math.max(1, Math.round(img.width * scale));
+  const height = Math.max(1, Math.round(img.height * scale));
+
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return file;
+  ctx.drawImage(img, 0, 0, width, height);
+
+  const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.8));
+  if (!blob) return file;
+
+  const stem = file.name.replace(/\.[^.]+$/, "");
+  return new File([blob], `${stem || "photo"}.jpg`, { type: "image/jpeg" });
+}
+
 export function StaffDashboard() {
   const [items, setItems] = useState<ItemRow[]>([]);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -223,12 +260,13 @@ export function StaffDashboard() {
     try {
       let res: Response;
       if (editActivePhotoFile) {
+        const optimizedPhoto = await compressImageForUpload(editActivePhotoFile);
         const fd = new FormData();
         fd.set("name", name);
         fd.set("description", description);
         fd.set("location", location);
         fd.set("date_found", date_found);
-        fd.set("photo", editActivePhotoFile);
+        fd.set("photo", optimizedPhoto);
         res = await fetch(`/api/staff/items/${id}`, { method: "PATCH", body: fd });
       } else {
         res = await fetch(`/api/staff/items/${id}`, {
@@ -530,7 +568,7 @@ export function StaffDashboard() {
                     <li key={item.id} className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
                       <div className="flex gap-4">
                         <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-lg border border-white/10">
-                          <Image src={`/api/staff/items/${item.id}/photo`} alt="" fill className="object-cover" sizes="80px" unoptimized />
+                          <Image src={`/api/staff/items/${item.id}/photo`} alt="" fill className="object-cover" sizes="80px" unoptimized loading="lazy" />
                         </div>
                         <div className="min-w-0 flex-1 space-y-1">
                           <p className="truncate text-base font-semibold text-[#F5F5F0]">{item.name}</p>
@@ -614,7 +652,7 @@ export function StaffDashboard() {
                       <tr key={c.id} className="bg-black/20">
                         <td className="px-4 py-3">
                           <div className="relative h-12 w-12 overflow-hidden rounded-lg border border-white/10">
-                            <Image src={`/api/staff/items/${c.item_id}/photo`} alt="" fill className="object-cover" sizes="48px" unoptimized />
+                            <Image src={`/api/staff/items/${c.item_id}/photo`} alt="" fill className="object-cover" sizes="48px" unoptimized loading="lazy" />
                           </div>
                         </td>
                         <td className="px-4 py-3 font-medium">{c.item_name}</td>
@@ -695,7 +733,7 @@ export function StaffDashboard() {
                         <tr key={s.id} className="bg-black/20">
                           <td className="px-4 py-3">
                             <div className="relative h-12 w-12 overflow-hidden rounded-lg border border-white/10">
-                              <Image src={`/api/staff/items/${s.id}/photo`} alt="" fill className="object-cover" sizes="48px" unoptimized />
+                              <Image src={`/api/staff/items/${s.id}/photo`} alt="" fill className="object-cover" sizes="48px" unoptimized loading="lazy" />
                             </div>
                           </td>
                           <td className="px-4 py-3 font-medium">{s.name}</td>
@@ -916,6 +954,7 @@ export function StaffDashboard() {
                     className="object-cover"
                     sizes="96px"
                     unoptimized
+                    loading="lazy"
                   />
                 </div>
                 <label className="min-w-0 flex-1 cursor-pointer space-y-1">
