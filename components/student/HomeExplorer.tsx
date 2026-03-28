@@ -214,6 +214,16 @@ function ClaimModal({ item, onClose }: { item: PublicItem; onClose: () => void }
     }
   }
 
+  function handleNotMineGoBack() {
+    setShowFoundPopup(false);
+    setRevealUrl(null);
+    setScore(null);
+    setStudentDescription("");
+    setPin("");
+    setError(null);
+    onClose();
+  }
+
   async function submitClaim() {
     setError(null);
     setSubmitBusy(true);
@@ -344,21 +354,31 @@ function ClaimModal({ item, onClose }: { item: PublicItem; onClose: () => void }
               <p className="mb-5 rounded-xl border border-white/10 bg-black/30 p-3 text-sm text-[#F5F5F0]/75">
                 Pick up location: Lassonde Studios front desk. Bring your student ID for verification.
               </p>
-              <button
-                type="button"
-                onClick={() => void submitClaim()}
-                disabled={submitBusy}
-                className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-[#CC0000] py-3 text-sm font-semibold text-white transition duration-200 hover:scale-[1.01] hover:bg-[#a80000] active:scale-[0.99] disabled:opacity-50"
-              >
-                {submitBusy ? (
-                  <>
-                    <Spinner className="h-4 w-4 text-white" />
-                    Submitting...
-                  </>
-                ) : (
-                  "Submit Claim"
-                )}
-              </button>
+              <div className="flex flex-col gap-2">
+                <button
+                  type="button"
+                  onClick={() => void submitClaim()}
+                  disabled={submitBusy}
+                  className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 py-3 text-sm font-semibold text-white transition duration-200 hover:bg-emerald-500 active:scale-[0.99] disabled:opacity-50"
+                >
+                  {submitBusy ? (
+                    <>
+                      <Spinner className="h-4 w-4 text-white" />
+                      Submitting...
+                    </>
+                  ) : (
+                    "This is mine — claim it"
+                  )}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleNotMineGoBack}
+                  disabled={submitBusy}
+                  className="inline-flex min-h-11 w-full items-center justify-center rounded-xl border border-white/15 bg-zinc-700 py-3 text-sm font-semibold text-[#F5F5F0] transition duration-200 hover:bg-zinc-600 active:scale-[0.99] disabled:opacity-50"
+                >
+                  Not mine — go back
+                </button>
+              </div>
             </div>
           </div>
         </div>

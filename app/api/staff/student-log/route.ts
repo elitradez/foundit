@@ -2,17 +2,15 @@ import { NextResponse } from "next/server";
 import { isStaffAuthenticated } from "@/lib/staff-api";
 import { createAdminSupabaseClient } from "@/lib/supabase-admin";
 
-type ClaimJoin = { name: string | null } | Array<{ name: string | null }> | null;
-
 type ClaimedRow = {
   id: string;
   item_id: string;
   student_name: string | null;
   student_id_number: string | null;
   phone_number?: string | null;
+  status?: "claimed" | "returned";
   created_at: string;
   updated_at: string | null;
-  items: ClaimJoin;
 };
 
 type ReturnedItemRow = {
@@ -24,10 +22,7 @@ type ReturnedItemRow = {
   returned_student_id_number: string | null;
 };
 
-function joinedItemName(items: ClaimJoin): string {
-  if (Array.isArray(items)) return items[0]?.name ?? "Unknown item";
-  return items?.name ?? "Unknown item";
-}
+type ItemRef = { id: string; name: string };
 
 export async function GET() {
   if (!(await isStaffAuthenticated())) {
@@ -36,53 +31,67 @@ export async function GET() {
 
   const supabase = createAdminSupabaseClient();
 
-  const { data: returnedData, error: returnedErr } = await supabase
-    .from("items")
-    .select("id, name, returned_at, sent_to_surplus_at, returned_student_name, returned_student_id_number")
-    .not("returned_at", "is", null)
-    .is("sent_to_surplus_at", null)
-    .order("returned_at", { ascending: false });
+  const [returnedRes, first] = await Promise.all([
+    supabase
+      .from("items")
+      .select("id, name, returned_at, sent_to_surplus_at, returned_student_name, returned_student_id_number")
+      .not("returned_at", "is", null)
+      .is("sent_to_surplus_at", null)
+      .order("returned_at", { ascending: false }),
+    supabase
+      .from("claims")
+      .select("id, item_id, student_name, student_id_number, phone_number, status, created_at, updated_at")
+      .in("status", ["claimed", "returned"])
+      .order("updated_at", { ascending: false }),
+  ]);
 
-  if (returnedErr) {
-    return NextResponse.json({ error: returnedErr.message }, { status: 500 });
+  if (returnedRes.error) {
+    return NextResponse.json({ error: returnedRes.error.message }, { status: 500 });
   }
 
   // Some deployments may not have claims.phone_number yet. Fall back gracefully.
-  let claimedData:
-    | Array<ClaimedRow & { status?: "claimed" | "returned" }>
-    | null
-    | undefined = null;
-
-  const first = await supabase
-    .from("claims")
-    .select("id, item_id, student_name, student_id_number, phone_number, status, created_at, updated_at, items(name)")
-    .in("status", ["claimed", "returned"])
-    .order("updated_at", { ascending: false });
+  let claimedData: ClaimedRow[] | null | undefined = null;
 
   if (!first.error) {
-    claimedData = first.data as Array<ClaimedRow & { status?: "claimed" | "returned" }>;
+    claimedData = first.data as ClaimedRow[];
   } else {
     const msg = first.error.message || "";
     if (msg.toLowerCase().includes("phone_number") && msg.toLowerCase().includes("does not exist")) {
       const fallback = await supabase
         .from("claims")
-        .select("id, item_id, student_name, student_id_number, status, created_at, updated_at, items(name)")
+        .select("id, item_id, student_name, student_id_number, status, created_at, updated_at")
         .in("status", ["claimed", "returned"])
         .order("updated_at", { ascending: false });
       if (fallback.error) return NextResponse.json({ error: fallback.error.message }, { status: 500 });
-      claimedData = (fallback.data ?? []).map((r) => ({ ...(r as any), phone_number: null })) as Array<
-        ClaimedRow & { status?: "claimed" | "returned" }
-      >;
+      claimedData = (fallback.data ?? []).map((r) => ({ ...(r as ClaimedRow), phone_number: null }));
     } else {
       return NextResponse.json({ error: first.error.message }, { status: 500 });
     }
   }
 
-  const returnedRows = (returnedData ?? []) as ReturnedItemRow[];
-  const claimedRows = (claimedData ?? []) as Array<ClaimedRow & { status?: "claimed" | "returned" }>;
+  const returnedRows = (returnedRes.data ?? []) as ReturnedItemRow[];
+  const claimedRows = (claimedData ?? []) as ClaimedRow[];
+
+  // Avoid duplicates: resolving a claim as "returned" sets both items.returned_at and claims.status='returned'.
+  // Prefer the claim row (phone, etc.); omit the bare item row for the same item.
+  const itemIdsFromReturnedClaims = new Set(
+    claimedRows.filter((c) => c.status === "returned").map((c) => c.item_id),
+  );
+  const returnedRowsDeduped = returnedRows.filter((r) => !itemIdsFromReturnedClaims.has(r.id));
+
+  const claimItemIds = Array.from(new Set(claimedRows.map((c) => c.item_id).filter(Boolean)));
+  let itemMap = new Map<string, ItemRef>();
+  if (claimItemIds.length > 0) {
+    const { data: itemData, error: itemErr } = await supabase
+      .from("items")
+      .select("id, name")
+      .in("id", claimItemIds);
+    if (itemErr) return NextResponse.json({ error: itemErr.message }, { status: 500 });
+    itemMap = new Map(((itemData ?? []) as ItemRef[]).map((i) => [i.id, i]));
+  }
 
   const rows = [
-    ...returnedRows.map((r) => ({
+    ...returnedRowsDeduped.map((r) => ({
       kind: "returned" as const,
       item_id: r.id,
       item_name: r.name,
@@ -95,7 +104,7 @@ export async function GET() {
       kind: c.status === "returned" ? ("returned" as "returned") : ("claimed" as "claimed"),
       claim_id: c.id,
       item_id: c.item_id,
-      item_name: joinedItemName(c.items),
+      item_name: itemMap.get(c.item_id)?.name ?? "Unknown item",
       student_name: c.student_name,
       student_id_number: c.student_id_number,
       phone_number: c.phone_number ?? null,

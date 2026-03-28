@@ -39,6 +39,10 @@ alter table public.claims add column if not exists phone_number text;
 
 create index if not exists items_returned_at_idx on public.items (returned_at);
 create index if not exists items_created_at_idx on public.items (created_at desc);
+create index if not exists items_returned_surplus_idx on public.items (returned_at, sent_to_surplus_at);
+create index if not exists claims_status_created_at_idx on public.claims (status, created_at desc);
+create index if not exists claims_status_updated_at_idx on public.claims (status, updated_at desc);
+create index if not exists claims_item_id_idx on public.claims (item_id);
 
 alter table public.items enable row level security;
 
