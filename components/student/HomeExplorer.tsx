@@ -4,7 +4,6 @@ import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Spinner } from "@/components/ui/Spinner";
-import { formatPhoneForDisplay } from "@/lib/phone-display";
 import type { PublicItem } from "@/lib/types";
 
 type Props = {
@@ -74,9 +73,6 @@ export function HomeExplorer({ initialItems, loadError }: Props) {
     return initialItems.filter((i) => idSet.has(i.id));
   }, [aiItemIds, initialItems, query]);
 
-  const rawTwilioPublic = process.env.NEXT_PUBLIC_TWILIO_PHONE_NUMBER?.trim();
-  const twilioDisplayPhone = rawTwilioPublic ? formatPhoneForDisplay(rawTwilioPublic) : null;
-
   return (
     <div className="min-h-screen bg-transparent text-[#F5F5F0]">
       <header className="border-b border-white/10 bg-black/35 backdrop-blur">
@@ -124,45 +120,37 @@ export function HomeExplorer({ initialItems, loadError }: Props) {
               : "No items found matching your search. Try different keywords or check back later."}
           </p>
         ) : (
-          <>
-            <ul className="grid grid-cols-1 gap-6 sm:grid-cols-2">
-              {filtered.map((item) => (
-                <li key={item.id}>
-                  <button
-                    type="button"
-                    onClick={() => setOpenItem(item)}
-                    className="group w-full overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04] text-left transition duration-200 hover:-translate-y-0.5 hover:border-[#CC0000]/35 hover:bg-white/[0.06]"
-                  >
-                    <div className="relative aspect-[4/3] w-full overflow-hidden bg-black/50">
-                      <Image
-                        src={`/api/items/${item.id}/blur`}
-                        alt=""
-                        fill
-                        className="object-cover blur-xl transition duration-300 group-hover:blur-lg"
-                        sizes="(max-width: 640px) 100vw, 50vw"
-                        unoptimized
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
-                    </div>
-                    <div className="space-y-2 px-4 py-4">
-                      <p className="font-medium text-[#F5F5F0]">{item.name}</p>
-                      <p className="flex items-center gap-2 text-sm text-[#F5F5F0]/85">
-                        <LocationPin className="h-4 w-4 text-[#CC0000]" />
-                        <span>{item.location}</span>
-                      </p>
-                      <p className="text-xs text-[#F5F5F0]/40">Found {item.date_found}</p>
-                    </div>
-                  </button>
-                </li>
-              ))}
-            </ul>
-            {twilioDisplayPhone && !loadError ? (
-              <p className="mt-10 max-w-2xl text-center text-sm text-[#F5F5F0]/50 sm:mx-auto">
-                Not finding it? Text your name and what you lost to {twilioDisplayPhone} and we will notify you when it
-                shows up.
-              </p>
-            ) : null}
-          </>
+          <ul className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+            {filtered.map((item) => (
+              <li key={item.id}>
+                <button
+                  type="button"
+                  onClick={() => setOpenItem(item)}
+                  className="group w-full overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04] text-left transition duration-200 hover:-translate-y-0.5 hover:border-[#CC0000]/35 hover:bg-white/[0.06]"
+                >
+                  <div className="relative aspect-[4/3] w-full overflow-hidden bg-black/50">
+                    <Image
+                      src={`/api/items/${item.id}/blur`}
+                      alt=""
+                      fill
+                      className="object-cover blur-xl transition duration-300 group-hover:blur-lg"
+                      sizes="(max-width: 640px) 100vw, 50vw"
+                      unoptimized
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
+                  </div>
+                  <div className="space-y-2 px-4 py-4">
+                    <p className="font-medium text-[#F5F5F0]">{item.name}</p>
+                    <p className="flex items-center gap-2 text-sm text-[#F5F5F0]/85">
+                      <LocationPin className="h-4 w-4 text-[#CC0000]" />
+                      <span>{item.location}</span>
+                    </p>
+                    <p className="text-xs text-[#F5F5F0]/40">Found {item.date_found}</p>
+                  </div>
+                </button>
+              </li>
+            ))}
+          </ul>
         )}
       </main>
 
