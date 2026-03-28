@@ -73,6 +73,29 @@ body {
   animation: pop-in 220ms ease-out;
 }
 
+@keyframes staff-dashboard-shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+/* Staff dashboard: loading skeleton behind item photos (white/5 ↔ white/10) */
+.staff-dashboard-photo-shimmer {
+  background: linear-gradient(
+    105deg,
+    rgba(255, 255, 255, 0.05) 0%,
+    rgba(255, 255, 255, 0.05) 38%,
+    rgba(255, 255, 255, 0.1) 50%,
+    rgba(255, 255, 255, 0.05) 62%,
+    rgba(255, 255, 255, 0.05) 100%
+  );
+  background-size: 200% 100%;
+  animation: staff-dashboard-shimmer 1.35s ease-in-out infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

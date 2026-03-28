@@ -4,16 +4,15 @@ import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Spinner } from "@/components/ui/Spinner";
+import { formatPhoneForDisplay } from "@/lib/phone-display";
 import type { PublicItem } from "@/lib/types";
 
 type Props = {
   initialItems: PublicItem[];
   loadError?: string | null;
-  /** Shown in the SMS signup hint when set (from TWILIO_PHONE_NUMBER on the server). */
-  twilioDisplayPhone?: string | null;
 };
 
-export function HomeExplorer({ initialItems, loadError, twilioDisplayPhone }: Props) {
+export function HomeExplorer({ initialItems, loadError }: Props) {
   const [query, setQuery] = useState("");
   const [openItem, setOpenItem] = useState<PublicItem | null>(null);
   const [searchBusy, setSearchBusy] = useState(false);
@@ -75,6 +74,9 @@ export function HomeExplorer({ initialItems, loadError, twilioDisplayPhone }: Pr
     return initialItems.filter((i) => idSet.has(i.id));
   }, [aiItemIds, initialItems, query]);
 
+  const rawTwilioPublic = process.env.NEXT_PUBLIC_TWILIO_PHONE_NUMBER?.trim();
+  const twilioDisplayPhone = rawTwilioPublic ? formatPhoneForDisplay(rawTwilioPublic) : null;
+
   return (
     <div className="min-h-screen bg-transparent text-[#F5F5F0]">
       <header className="border-b border-white/10 bg-black/35 backdrop-blur">
@@ -122,45 +124,46 @@ export function HomeExplorer({ initialItems, loadError, twilioDisplayPhone }: Pr
               : "No items found matching your search. Try different keywords or check back later."}
           </p>
         ) : (
-          <ul className="grid grid-cols-1 gap-6 sm:grid-cols-2">
-            {filtered.map((item) => (
-              <li key={item.id}>
-                <button
-                  type="button"
-                  onClick={() => setOpenItem(item)}
-                  className="group w-full overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04] text-left transition duration-200 hover:-translate-y-0.5 hover:border-[#CC0000]/35 hover:bg-white/[0.06]"
-                >
-                  <div className="relative aspect-[4/3] w-full overflow-hidden bg-black/50">
-                    <Image
-                      src={`/api/items/${item.id}/blur`}
-                      alt=""
-                      fill
-                      className="object-cover blur-xl transition duration-300 group-hover:blur-lg"
-                      sizes="(max-width: 640px) 100vw, 50vw"
-                      unoptimized
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
-                  </div>
-                  <div className="space-y-2 px-4 py-4">
-                    <p className="font-medium text-[#F5F5F0]">{item.name}</p>
-                    <p className="flex items-center gap-2 text-sm text-[#F5F5F0]/85">
-                      <LocationPin className="h-4 w-4 text-[#CC0000]" />
-                      <span>{item.location}</span>
-                    </p>
-                    <p className="text-xs text-[#F5F5F0]/40">Found {item.date_found}</p>
-                  </div>
-                </button>
-              </li>
-            ))}
-          </ul>
+          <>
+            <ul className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+              {filtered.map((item) => (
+                <li key={item.id}>
+                  <button
+                    type="button"
+                    onClick={() => setOpenItem(item)}
+                    className="group w-full overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04] text-left transition duration-200 hover:-translate-y-0.5 hover:border-[#CC0000]/35 hover:bg-white/[0.06]"
+                  >
+                    <div className="relative aspect-[4/3] w-full overflow-hidden bg-black/50">
+                      <Image
+                        src={`/api/items/${item.id}/blur`}
+                        alt=""
+                        fill
+                        className="object-cover blur-xl transition duration-300 group-hover:blur-lg"
+                        sizes="(max-width: 640px) 100vw, 50vw"
+                        unoptimized
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
+                    </div>
+                    <div className="space-y-2 px-4 py-4">
+                      <p className="font-medium text-[#F5F5F0]">{item.name}</p>
+                      <p className="flex items-center gap-2 text-sm text-[#F5F5F0]/85">
+                        <LocationPin className="h-4 w-4 text-[#CC0000]" />
+                        <span>{item.location}</span>
+                      </p>
+                      <p className="text-xs text-[#F5F5F0]/40">Found {item.date_found}</p>
+                    </div>
+                  </button>
+                </li>
+              ))}
+            </ul>
+            {twilioDisplayPhone && !loadError ? (
+              <p className="mt-10 max-w-2xl text-center text-sm text-[#F5F5F0]/50 sm:mx-auto">
+                Not finding it? Text your name and what you lost to {twilioDisplayPhone} and we will notify you when it
+                shows up.
+              </p>
+            ) : null}
+          </>
         )}
-
-        {query.trim() && twilioDisplayPhone && !loadError ? (
-          <p className="mt-10 max-w-2xl text-center text-sm text-[#F5F5F0]/50 sm:mx-auto">
-            Not finding it? Text your name and what you lost to {twilioDisplayPhone} and we will notify you when it
-            shows up.
-          </p>
-        ) : null}
       </main>
 
       {openItem ? <ClaimModal key={openItem.id} item={openItem} onClose={() => setOpenItem(null)} /> : null}
@@ -187,6 +190,7 @@ function ClaimModal({ item, onClose }: { item: PublicItem; onClose: () => void }
   const [matchBusy, setMatchBusy] = useState(false);
   const [submitBusy, setSubmitBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [claimSubmitted, setClaimSubmitted] = useState(false);
 
   async function checkMatch() {
     setError(null);
@@ -251,8 +255,8 @@ function ClaimModal({ item, onClose }: { item: PublicItem; onClose: () => void }
         setError(data.error ?? "Submit failed");
         return;
       }
-      onClose();
-      alert("Claim submitted. Please go to the Lassonde Studios front desk to pick up your item.");
+      setShowFoundPopup(false);
+      setClaimSubmitted(true);
     } finally {
       setSubmitBusy(false);
     }
@@ -263,82 +267,120 @@ function ClaimModal({ item, onClose }: { item: PublicItem; onClose: () => void }
       <div
         role="dialog"
         aria-modal="true"
-        aria-labelledby="claim-title"
+        aria-labelledby={claimSubmitted ? "claim-success-title" : "claim-title"}
         className="anim-pop-in max-h-[92vh] w-full max-w-lg overflow-y-auto rounded-2xl border border-white/10 bg-[#141414] shadow-2xl"
       >
-        <div className="flex items-start justify-between gap-3 border-b border-white/10 px-5 py-4">
-          <div>
-            <h2 id="claim-title" className="text-lg font-semibold">
-              Claim item
-            </h2>
-            <p className="mt-0.5 text-sm text-[#F5F5F0]/55">{item.name}</p>
+        {claimSubmitted ? (
+          <div className="px-6 py-12 sm:px-10">
+            <div className="flex flex-col items-center text-center">
+              <div
+                className="mb-8 flex h-24 w-24 items-center justify-center rounded-full bg-emerald-500/10 ring-2 ring-emerald-500/35"
+                aria-hidden="true"
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.25"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="h-14 w-14 text-emerald-400"
+                >
+                  <path d="M20 6 9 17l-5-5" />
+                </svg>
+              </div>
+              <h2 id="claim-success-title" className="text-2xl font-semibold tracking-tight text-[#F5F5F0] sm:text-3xl">
+                Claim submitted!
+              </h2>
+              <p className="mt-3 max-w-md text-sm leading-relaxed text-[#F5F5F0]/55">
+                Bring your student ID to Lassonde Studios front desk to pick up your item.
+              </p>
+              <button
+                type="button"
+                onClick={onClose}
+                className="mt-10 inline-flex min-h-11 min-w-[10rem] items-center justify-center rounded-xl border border-[#CC0000]/45 bg-[#CC0000]/12 px-8 py-3 text-sm font-medium text-[#F5F5F0] transition hover:bg-[#CC0000]/22 focus:outline-none focus:ring-2 focus:ring-[#CC0000]/35"
+              >
+                Close
+              </button>
+            </div>
           </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="min-h-11 rounded-lg border border-white/10 px-3 py-2 text-sm text-[#F5F5F0]/70 hover:bg-white/5"
-          >
-            Close
-          </button>
-        </div>
+        ) : (
+          <>
+            <div className="flex items-start justify-between gap-3 border-b border-white/10 px-5 py-4">
+              <div>
+                <h2 id="claim-title" className="text-lg font-semibold">
+                  Claim item
+                </h2>
+                <p className="mt-0.5 text-sm text-[#F5F5F0]/55">{item.name}</p>
+              </div>
+              <button
+                type="button"
+                onClick={onClose}
+                className="min-h-11 rounded-lg border border-white/10 px-3 py-2 text-sm text-[#F5F5F0]/70 hover:bg-white/5"
+              >
+                Close
+              </button>
+            </div>
 
-        <div className="space-y-5 px-5 py-5">
-          {score !== null ? (
-            <p className="text-sm text-[#F5F5F0]/70">
-              Match score: <span className="font-semibold text-[#F5F5F0]">{score}</span>
-              {score > 60 ? (
-                <span className="text-emerald-400"> — strong match</span>
-              ) : (
-                <span className="text-amber-300"> — need a stronger match to unlock (&gt; 60)</span>
-              )}
-            </p>
-          ) : null}
+            <div className="space-y-5 px-5 py-5">
+              {score !== null ? (
+                <p className="text-sm text-[#F5F5F0]/70">
+                  Match score: <span className="font-semibold text-[#F5F5F0]">{score}</span>
+                  {score > 60 ? (
+                    <span className="text-emerald-400"> — strong match</span>
+                  ) : (
+                    <span className="text-amber-300"> — need a stronger match to unlock (&gt; 60)</span>
+                  )}
+                </p>
+              ) : null}
 
-          <label className="block space-y-2">
-            <span className="text-sm text-[#F5F5F0]/80">Describe your item so we can verify it&apos;s yours</span>
-            <textarea
-              value={studentDescription}
-              onChange={(e) => setStudentDescription(e.target.value)}
-              rows={4}
-              placeholder="Describe your item so we can verify it&apos;s yours"
-              className="w-full rounded-xl border border-white/10 bg-black/40 px-4 py-3 text-[#F5F5F0] outline-none focus:border-[#CC0000]/45 focus:ring-2 focus:ring-[#CC0000]/25"
-            />
-          </label>
+              <label className="block space-y-2">
+                <span className="text-sm text-[#F5F5F0]/80">Describe your item so we can verify it&apos;s yours</span>
+                <textarea
+                  value={studentDescription}
+                  onChange={(e) => setStudentDescription(e.target.value)}
+                  rows={4}
+                  placeholder="Describe your item so we can verify it&apos;s yours"
+                  className="w-full rounded-xl border border-white/10 bg-black/40 px-4 py-3 text-[#F5F5F0] outline-none focus:border-[#CC0000]/45 focus:ring-2 focus:ring-[#CC0000]/25"
+                />
+              </label>
 
-          {item.requires_pin ? (
-            <label className="block space-y-2">
-              <span className="text-sm text-[#F5F5F0]/80">Item PIN</span>
-              <input
-                type="password"
-                value={pin}
-                onChange={(e) => setPin(e.target.value)}
-                placeholder="Provided when the item was logged"
-                className="w-full rounded-xl border border-white/10 bg-black/40 px-4 py-3 text-[#F5F5F0] outline-none focus:border-[#CC0000]/45 focus:ring-2 focus:ring-[#CC0000]/25"
-              />
-            </label>
-          ) : null}
+              {item.requires_pin ? (
+                <label className="block space-y-2">
+                  <span className="text-sm text-[#F5F5F0]/80">Item PIN</span>
+                  <input
+                    type="password"
+                    value={pin}
+                    onChange={(e) => setPin(e.target.value)}
+                    placeholder="Provided when the item was logged"
+                    className="w-full rounded-xl border border-white/10 bg-black/40 px-4 py-3 text-[#F5F5F0] outline-none focus:border-[#CC0000]/45 focus:ring-2 focus:ring-[#CC0000]/25"
+                  />
+                </label>
+              ) : null}
 
-          <button
-            type="button"
-            onClick={() => void checkMatch()}
-            disabled={matchBusy || !studentDescription.trim()}
-            className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-[#CC0000]/40 bg-[#CC0000]/15 py-3 text-sm font-medium text-[#F5F5F0] hover:bg-[#CC0000]/25 disabled:opacity-40"
-          >
-            {matchBusy ? (
-              <>
-                <Spinner className="h-4 w-4 text-[#CC0000]" />
-                Checking...
-              </>
-            ) : (
-              "Verify description"
-            )}
-          </button>
+              <button
+                type="button"
+                onClick={() => void checkMatch()}
+                disabled={matchBusy || !studentDescription.trim()}
+                className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-[#CC0000]/40 bg-[#CC0000]/15 py-3 text-sm font-medium text-[#F5F5F0] hover:bg-[#CC0000]/25 disabled:opacity-40"
+              >
+                {matchBusy ? (
+                  <>
+                    <Spinner className="h-4 w-4 text-[#CC0000]" />
+                    Checking...
+                  </>
+                ) : (
+                  "Verify description"
+                )}
+              </button>
 
-          {error ? <p className="text-sm text-red-400">{error}</p> : null}
-        </div>
+              {error ? <p className="text-sm text-red-400">{error}</p> : null}
+            </div>
+          </>
+        )}
       </div>
 
-      {showFoundPopup && revealUrl ? (
+      {showFoundPopup && revealUrl && !claimSubmitted ? (
         <div className="anim-fade-in fixed inset-0 z-[60] flex items-center justify-center bg-black/80 p-4">
           <div className="anim-pop-in w-full max-w-md overflow-hidden rounded-2xl border border-white/10 bg-[#141414] shadow-2xl">
             <div className="flex justify-end px-4 pt-4">

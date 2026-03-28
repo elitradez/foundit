@@ -43,6 +43,36 @@ function daysSince(dateString: string): number {
   return Math.floor((now - then) / (1000 * 60 * 60 * 24));
 }
 
+function StaffDashboardItemPhoto({
+  photoUrl,
+  sizes,
+  className,
+}: {
+  photoUrl: string;
+  sizes: string;
+  className: string;
+}) {
+  const [loaded, setLoaded] = useState(false);
+  return (
+    <div className={`relative shrink-0 overflow-hidden border border-white/10 ${className}`}>
+      {!loaded ? (
+        <div className="staff-dashboard-photo-shimmer pointer-events-none absolute inset-0 z-0" aria-hidden />
+      ) : null}
+      <Image
+        src={photoUrl}
+        alt=""
+        fill
+        className={`relative z-10 object-cover transition-opacity duration-200 ${loaded ? "opacity-100" : "opacity-0"}`}
+        sizes={sizes}
+        unoptimized
+        loading="lazy"
+        onLoad={() => setLoaded(true)}
+        onError={() => setLoaded(true)}
+      />
+    </div>
+  );
+}
+
 async function compressImageForUpload(file: File): Promise<File> {
   if (!file.type.startsWith("image/")) return file;
 
@@ -567,9 +597,11 @@ export function StaffDashboard() {
                   return (
                     <li key={item.id} className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
                       <div className="flex gap-4">
-                        <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-lg border border-white/10">
-                          <Image src={`/api/staff/items/${item.id}/photo`} alt="" fill className="object-cover" sizes="80px" unoptimized loading="lazy" />
-                        </div>
+                        <StaffDashboardItemPhoto
+                          photoUrl={`/api/staff/items/${item.id}/photo`}
+                          sizes="80px"
+                          className="h-20 w-20 rounded-lg"
+                        />
                         <div className="min-w-0 flex-1 space-y-1">
                           <p className="truncate text-base font-semibold text-[#F5F5F0]">{item.name}</p>
                           <p className="truncate text-sm text-[#F5F5F0]/75">{item.location}</p>
@@ -651,9 +683,11 @@ export function StaffDashboard() {
                         return (
                       <tr key={c.id} className="bg-black/20">
                         <td className="px-4 py-3">
-                          <div className="relative h-12 w-12 overflow-hidden rounded-lg border border-white/10">
-                            <Image src={`/api/staff/items/${c.item_id}/photo`} alt="" fill className="object-cover" sizes="48px" unoptimized loading="lazy" />
-                          </div>
+                          <StaffDashboardItemPhoto
+                            photoUrl={`/api/staff/items/${c.item_id}/photo`}
+                            sizes="48px"
+                            className="h-12 w-12 rounded-lg"
+                          />
                         </td>
                         <td className="px-4 py-3 font-medium">{c.item_name}</td>
                         <td className="px-4 py-3 text-[#F5F5F0]/85">
