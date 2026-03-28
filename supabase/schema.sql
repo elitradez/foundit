@@ -58,3 +58,16 @@ drop policy if exists "Public read item photos" on storage.objects;
 -- No public read policy for originals. Images are served via Next.js APIs:
 -- - public: blurred proxy
 -- - staff: authenticated proxy
+
+-- SMS alerts: students text the Twilio number; staff logging new items can trigger match notifications.
+create table if not exists public.alerts (
+  id uuid primary key default gen_random_uuid(),
+  phone text not null,
+  description text not null,
+  notified boolean not null default false,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists alerts_notified_created_idx on public.alerts (notified, created_at desc);
+
+alter table public.alerts enable row level security;

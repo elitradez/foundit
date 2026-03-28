@@ -1,5 +1,6 @@
 import { HomeExplorer } from "@/components/student/HomeExplorer";
 import { fetchActiveItemsForPublic } from "@/lib/public-items";
+import { formatPhoneForDisplay } from "@/lib/phone-display";
 import type { PublicItem } from "@/lib/types";
 import type { Metadata } from "next";
 
@@ -35,5 +36,9 @@ export default async function Home() {
     const msg = e instanceof Error ? e.message : "Unknown error";
     loadError = `Could not load items (${msg}). Set NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY, and apply supabase/schema.sql.`;
   }
-  return <HomeExplorer initialItems={items} loadError={loadError} />;
+  const rawTwilio = process.env.TWILIO_PHONE_NUMBER?.trim();
+  const twilioDisplayPhone = rawTwilio ? formatPhoneForDisplay(rawTwilio) : null;
+  return (
+    <HomeExplorer initialItems={items} loadError={loadError} twilioDisplayPhone={twilioDisplayPhone} />
+  );
 }

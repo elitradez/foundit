@@ -9,9 +9,11 @@ import type { PublicItem } from "@/lib/types";
 type Props = {
   initialItems: PublicItem[];
   loadError?: string | null;
+  /** Shown in the SMS signup hint when set (from TWILIO_PHONE_NUMBER on the server). */
+  twilioDisplayPhone?: string | null;
 };
 
-export function HomeExplorer({ initialItems, loadError }: Props) {
+export function HomeExplorer({ initialItems, loadError, twilioDisplayPhone }: Props) {
   const [query, setQuery] = useState("");
   const [openItem, setOpenItem] = useState<PublicItem | null>(null);
   const [searchBusy, setSearchBusy] = useState(false);
@@ -152,6 +154,13 @@ export function HomeExplorer({ initialItems, loadError }: Props) {
             ))}
           </ul>
         )}
+
+        {query.trim() && twilioDisplayPhone && !loadError ? (
+          <p className="mt-10 max-w-2xl text-center text-sm text-[#F5F5F0]/50 sm:mx-auto">
+            Not finding it? Text your name and what you lost to {twilioDisplayPhone} and we will notify you when it
+            shows up.
+          </p>
+        ) : null}
       </main>
 
       {openItem ? <ClaimModal key={openItem.id} item={openItem} onClose={() => setOpenItem(null)} /> : null}

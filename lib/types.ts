@@ -16,3 +16,11 @@ export type PublicItem = Pick<
   ItemRow,
   "id" | "name" | "location" | "date_found" | "photo_path"
 > & { requires_pin: boolean };
+
+export type AlertRow = {
+  id: string;
+  phone: string;
+  description: string;
+  notified: boolean;
+  created_at: string;
+};

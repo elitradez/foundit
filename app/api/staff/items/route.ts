@@ -1,5 +1,6 @@
 import { randomUUID } from "crypto";
 import { NextResponse } from "next/server";
+import { processNewItemAlerts } from "@/lib/alert-matching";
 import { isStaffAuthenticated } from "@/lib/staff-api";
 import { createAdminSupabaseClient } from "@/lib/supabase-admin";
 import { hashPin } from "@/lib/pin";
@@ -90,6 +91,11 @@ export async function POST(req: Request) {
     await supabase.storage.from("items").remove([photoPath]);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
+
+  void processNewItemAlerts(supabase, description, location).catch((e) => {
+    const msg = e instanceof Error ? e.message : String(e);
+    console.error("[processNewItemAlerts]", msg);
+  });
 
   return NextResponse.json({ id: data.id });
 }
