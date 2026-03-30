@@ -57,7 +57,7 @@ export async function POST(req: Request) {
     const supabase = createAdminSupabaseClient();
     const { data: item, error: fetchErr } = await supabase
       .from("items")
-      .select("id, name, description, returned_at, pin_hash, pin_salt")
+      .select("id, name, description, returned_at, pin_hash, pin_salt, value_tier")
       .eq("id", itemId)
       .maybeSingle();
 
@@ -74,7 +74,10 @@ export async function POST(req: Request) {
       }
     }
 
-    const score = await computeMatchScore(item.description, studentDescription);
+    const score =
+      item.value_tier === "low_value"
+        ? 100
+        : await computeMatchScore(item.description, studentDescription);
     if (score <= 60) {
       return NextResponse.json(
         { error: "Match score too low to submit a claim. Refine your description.", score },

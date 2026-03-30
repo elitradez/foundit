@@ -22,7 +22,7 @@ export async function POST(req: Request) {
     const supabase = createAdminSupabaseClient();
     const { data: item, error } = await supabase
       .from("items")
-      .select("id, description, returned_at, photo_path")
+      .select("id, description, returned_at, photo_path, value_tier")
       .eq("id", itemId)
       .maybeSingle();
 
@@ -31,6 +31,13 @@ export async function POST(req: Request) {
     }
     if (item.returned_at) {
       return NextResponse.json({ error: "Item no longer available" }, { status: 410 });
+    }
+
+    if (item.value_tier === "low_value") {
+      return NextResponse.json({
+        score: 100,
+        revealUrl: `/api/items/${item.id}/blur`,
+      });
     }
 
     const client = getAnthropicClient();

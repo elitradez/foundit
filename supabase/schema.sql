@@ -25,6 +25,7 @@ alter table public.items add column if not exists returned_student_id_number tex
 alter table public.items add column if not exists status text not null default 'active';
 alter table public.items add column if not exists sent_to_surplus_at timestamptz;
 alter table public.items add column if not exists created_at timestamptz not null default now();
+alter table public.items add column if not exists value_tier text not null default 'low_value';
 
 -- Keep status values constrained and safe for existing rows.
 alter table public.items drop constraint if exists items_status_check;

@@ -11,7 +11,7 @@ export async function GET(_req: Request, ctx: Ctx) {
   const supabase = createAdminSupabaseClient();
   const { data: item, error } = await supabase
     .from("items")
-    .select("photo_path, returned_at")
+    .select("photo_path, returned_at, value_tier")
     .eq("id", id)
     .maybeSingle();
 
@@ -28,14 +28,22 @@ export async function GET(_req: Request, ctx: Ctx) {
   }
 
   const buf = Buffer.from(await file.arrayBuffer());
-  const blurred = await sharp(buf)
-    .rotate()
-    .resize({ width: 640, withoutEnlargement: true })
-    .blur(24)
-    .jpeg({ quality: 70 })
-    .toBuffer();
+  const lowValue = item.value_tier === "low_value";
 
-  return new Response(new Uint8Array(blurred), {
+  const out = lowValue
+    ? await sharp(buf)
+        .rotate()
+        .resize({ width: 640, withoutEnlargement: true })
+        .jpeg({ quality: 82 })
+        .toBuffer()
+    : await sharp(buf)
+        .rotate()
+        .resize({ width: 640, withoutEnlargement: true })
+        .blur(24)
+        .jpeg({ quality: 70 })
+        .toBuffer();
+
+  return new Response(new Uint8Array(out), {
     headers: {
       "content-type": "image/jpeg",
       "cache-control": "public, max-age=3600",

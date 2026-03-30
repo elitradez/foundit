@@ -4,6 +4,7 @@ import { processNewItemAlerts } from "@/lib/alert-matching";
 import { isStaffAuthenticated } from "@/lib/staff-api";
 import { createAdminSupabaseClient } from "@/lib/supabase-admin";
 import { hashPin } from "@/lib/pin";
+import { parseValueTier } from "@/lib/value-tier";
 
 function safeFilename(name: string): string {
   return name.replace(/[^a-zA-Z0-9._-]/g, "_").slice(0, 120) || "photo";
@@ -17,7 +18,7 @@ export async function GET() {
   const { data, error } = await supabase
     .from("items")
     .select(
-      "id, name, description, location, date_found, photo_path, returned_at, claim_description, pin_hash, pin_salt, created_at",
+      "id, name, description, location, date_found, photo_path, returned_at, claim_description, pin_hash, pin_salt, created_at, value_tier",
     )
     .order("created_at", { ascending: false });
   if (error) {
@@ -37,6 +38,8 @@ export async function POST(req: Request) {
   const location = String(form.get("location") ?? "").trim();
   const dateFound = String(form.get("date_found") ?? "").trim();
   const optionalPin = String(form.get("optional_pin") ?? "").trim();
+  const valueTierRaw = String(form.get("value_tier") ?? "").trim();
+  const value_tier = parseValueTier(valueTierRaw) ?? "low_value";
 
   if (!(file instanceof File) || file.size === 0) {
     return NextResponse.json({ error: "Missing photo" }, { status: 400 });
@@ -83,6 +86,7 @@ export async function POST(req: Request) {
       photo_path: photoPath,
       pin_hash,
       pin_salt,
+      value_tier,
     })
     .select("id")
     .single();
