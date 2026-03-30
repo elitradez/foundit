@@ -42,13 +42,20 @@ export async function POST(req: Request) {
       itemId?: string;
       studentDescription?: string;
       pin?: string;
+      studentName?: string;
+      studentIdNumber?: string;
     };
     const itemId = body.itemId?.trim();
     const studentDescription = body.studentDescription?.trim();
     const pin = body.pin?.trim() ?? "";
+    const studentName = body.studentName?.trim();
+    const studentIdNumber = body.studentIdNumber?.trim();
 
     if (!itemId || !studentDescription) {
       return NextResponse.json({ error: "Missing fields" }, { status: 400 });
+    }
+    if (!studentName || !studentIdNumber) {
+      return NextResponse.json({ error: "Student name and Student ID are required" }, { status: 400 });
     }
     if (studentDescription.length > 4000) {
       return NextResponse.json({ error: "Description too long" }, { status: 400 });
@@ -89,9 +96,9 @@ export async function POST(req: Request) {
     // a new claim row each time (instead of writing to items.claim_description).
     const { error: claimErr } = await supabase.from("claims").insert({
       item_id: itemId,
-      student_name: "Pending staff entry",
+      student_name: studentName,
       student_email: "pending@staff-entry.edu",
-      student_id_number: "pending",
+      student_id_number: studentIdNumber,
       claim_description: studentDescription,
       status: "pending",
     });

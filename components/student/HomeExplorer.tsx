@@ -146,10 +146,11 @@ export function HomeExplorer({ initialItems, loadError }: Props) {
                   </div>
                   <div className="space-y-2 px-4 py-4">
                     <p className="font-medium text-[#F5F5F0]">{item.name}</p>
-                    <p className="flex items-center gap-2 text-sm text-[#F5F5F0]/85">
-                      <LocationPin className="h-4 w-4 text-[#CC0000]" />
-                      <span>{item.location}</span>
-                    </p>
+                    {item.value_tier === "low_value" ? (
+                      <p className="text-sm text-[#F5F5F0]/75">📍 {item.location}</p>
+                    ) : (
+                      <p className="text-sm text-[#F5F5F0]/65">🔒 Describe to unlock</p>
+                    )}
                     <p className="text-xs text-[#F5F5F0]/40">Found {item.date_found}</p>
                   </div>
                 </button>
@@ -183,6 +184,9 @@ function ClaimModal({ item, onClose }: { item: PublicItem; onClose: () => void }
   const [matchBusy, setMatchBusy] = useState(false);
   const [submitBusy, setSubmitBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showClaimForm, setShowClaimForm] = useState(false);
+  const [studentName, setStudentName] = useState("");
+  const [studentIdNumber, setStudentIdNumber] = useState("");
 
   async function checkMatch() {
     setError(null);
@@ -233,12 +237,21 @@ function ClaimModal({ item, onClose }: { item: PublicItem; onClose: () => void }
     setError(null);
     setSubmitBusy(true);
     try {
+      const name = studentName.trim();
+      const studentId = studentIdNumber.trim();
+      if (!name || !studentId) {
+        setError("Please enter your name and student ID.");
+        return;
+      }
+
       const res = await fetch("/api/claims/submit", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           itemId: item.id,
-          studentDescription,
+          studentDescription: item.value_tier === "low_value" ? item.name : studentDescription,
+          studentName: name,
+          studentIdNumber: studentId,
           pin: item.requires_pin ? pin : undefined,
         }),
       });
@@ -278,60 +291,141 @@ function ClaimModal({ item, onClose }: { item: PublicItem; onClose: () => void }
           </button>
         </div>
 
-        <div className="space-y-5 px-5 py-5">
-          {score !== null ? (
-            <p className="text-sm text-[#F5F5F0]/70">
-              Match score: <span className="font-semibold text-[#F5F5F0]">{score}</span>
-              {score > 60 ? (
-                <span className="text-emerald-400"> — strong match</span>
-              ) : (
-                <span className="text-amber-300"> — need a stronger match to unlock (&gt; 60)</span>
-              )}
+        {item.value_tier === "low_value" ? (
+          <div className="space-y-4 px-5 py-5">
+            <div className="relative aspect-[4/3] w-full overflow-hidden rounded-xl border border-white/10 bg-black/50">
+              <Image
+                src={`/api/items/${item.id}/blur`}
+                alt={item.name}
+                fill
+                className="object-cover"
+                sizes="(max-width: 640px) 100vw, 640px"
+                unoptimized
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/35 via-transparent to-transparent" />
+            </div>
+
+            <p className="rounded-xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-[#F5F5F0]/75">
+              📍 Found at {item.location} — Submit a claim to pick it up
             </p>
-          ) : null}
 
-          <label className="block space-y-2">
-            <span className="text-sm text-[#F5F5F0]/80">Describe your item so we can verify it&apos;s yours</span>
-            <textarea
-              value={studentDescription}
-              onChange={(e) => setStudentDescription(e.target.value)}
-              rows={4}
-              placeholder="Describe your item so we can verify it&apos;s yours"
-              className="w-full rounded-xl border border-white/10 bg-black/40 px-4 py-3 text-[#F5F5F0] outline-none focus:border-[#CC0000]/45 focus:ring-2 focus:ring-[#CC0000]/25"
-            />
-          </label>
+            {showClaimForm ? (
+              <div className="space-y-3">
+                <label className="block space-y-1.5">
+                  <span className="text-sm text-[#F5F5F0]/80">Your name</span>
+                  <input
+                    value={studentName}
+                    onChange={(e) => setStudentName(e.target.value)}
+                    className="w-full rounded-xl border border-white/10 bg-black/40 px-4 py-3 text-[#F5F5F0] outline-none focus:border-[#CC0000]/45 focus:ring-2 focus:ring-[#CC0000]/25"
+                    autoComplete="name"
+                  />
+                </label>
+                <label className="block space-y-1.5">
+                  <span className="text-sm text-[#F5F5F0]/80">Student ID</span>
+                  <input
+                    value={studentIdNumber}
+                    onChange={(e) => setStudentIdNumber(e.target.value)}
+                    className="w-full rounded-xl border border-white/10 bg-black/40 px-4 py-3 text-[#F5F5F0] outline-none focus:border-[#CC0000]/45 focus:ring-2 focus:ring-[#CC0000]/25"
+                  />
+                </label>
 
-          {item.requires_pin ? (
+                {item.requires_pin ? (
+                  <label className="block space-y-1.5">
+                    <span className="text-sm text-[#F5F5F0]/80">Item PIN</span>
+                    <input
+                      type="password"
+                      value={pin}
+                      onChange={(e) => setPin(e.target.value)}
+                      placeholder="Provided when the item was logged"
+                      className="w-full rounded-xl border border-white/10 bg-black/40 px-4 py-3 text-[#F5F5F0] outline-none focus:border-[#CC0000]/45 focus:ring-2 focus:ring-[#CC0000]/25"
+                    />
+                  </label>
+                ) : null}
+
+                <button
+                  type="button"
+                  onClick={() => void submitClaim()}
+                  disabled={submitBusy}
+                  className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-[#CC0000]/40 bg-[#CC0000]/15 py-3 text-sm font-medium text-[#F5F5F0] hover:bg-[#CC0000]/25 disabled:opacity-40"
+                >
+                  {submitBusy ? (
+                    <>
+                      <Spinner className="h-4 w-4 text-[#CC0000]" />
+                      Submitting...
+                    </>
+                  ) : (
+                    "Submit claim"
+                  )}
+                </button>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setShowClaimForm(true)}
+                className="inline-flex min-h-11 w-full items-center justify-center rounded-xl border border-[#CC0000]/40 bg-[#CC0000]/15 py-3 text-sm font-medium text-[#F5F5F0] hover:bg-[#CC0000]/25"
+              >
+                This is mine →
+              </button>
+            )}
+
+            {error ? <p className="text-sm text-red-400">{error}</p> : null}
+          </div>
+        ) : (
+          <div className="space-y-5 px-5 py-5">
+            {score !== null ? (
+              <p className="text-sm text-[#F5F5F0]/70">
+                Match score: <span className="font-semibold text-[#F5F5F0]">{score}</span>
+                {score > 60 ? (
+                  <span className="text-emerald-400"> — strong match</span>
+                ) : (
+                  <span className="text-amber-300"> — need a stronger match to unlock (&gt; 60)</span>
+                )}
+              </p>
+            ) : null}
+
             <label className="block space-y-2">
-              <span className="text-sm text-[#F5F5F0]/80">Item PIN</span>
-              <input
-                type="password"
-                value={pin}
-                onChange={(e) => setPin(e.target.value)}
-                placeholder="Provided when the item was logged"
+              <span className="text-sm text-[#F5F5F0]/80">Describe your item so we can verify it&apos;s yours</span>
+              <textarea
+                value={studentDescription}
+                onChange={(e) => setStudentDescription(e.target.value)}
+                rows={4}
+                placeholder="Describe your item so we can verify it&apos;s yours"
                 className="w-full rounded-xl border border-white/10 bg-black/40 px-4 py-3 text-[#F5F5F0] outline-none focus:border-[#CC0000]/45 focus:ring-2 focus:ring-[#CC0000]/25"
               />
             </label>
-          ) : null}
 
-          <button
-            type="button"
-            onClick={() => void checkMatch()}
-            disabled={matchBusy || !studentDescription.trim()}
-            className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-[#CC0000]/40 bg-[#CC0000]/15 py-3 text-sm font-medium text-[#F5F5F0] hover:bg-[#CC0000]/25 disabled:opacity-40"
-          >
-            {matchBusy ? (
-              <>
-                <Spinner className="h-4 w-4 text-[#CC0000]" />
-                Checking...
-              </>
-            ) : (
-              "Verify description"
-            )}
-          </button>
+            {item.requires_pin ? (
+              <label className="block space-y-2">
+                <span className="text-sm text-[#F5F5F0]/80">Item PIN</span>
+                <input
+                  type="password"
+                  value={pin}
+                  onChange={(e) => setPin(e.target.value)}
+                  placeholder="Provided when the item was logged"
+                  className="w-full rounded-xl border border-white/10 bg-black/40 px-4 py-3 text-[#F5F5F0] outline-none focus:border-[#CC0000]/45 focus:ring-2 focus:ring-[#CC0000]/25"
+                />
+              </label>
+            ) : null}
 
-          {error ? <p className="text-sm text-red-400">{error}</p> : null}
-        </div>
+            <button
+              type="button"
+              onClick={() => void checkMatch()}
+              disabled={matchBusy || !studentDescription.trim()}
+              className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-[#CC0000]/40 bg-[#CC0000]/15 py-3 text-sm font-medium text-[#F5F5F0] hover:bg-[#CC0000]/25 disabled:opacity-40"
+            >
+              {matchBusy ? (
+                <>
+                  <Spinner className="h-4 w-4 text-[#CC0000]" />
+                  Checking...
+                </>
+              ) : (
+                "Verify description"
+              )}
+            </button>
+
+            {error ? <p className="text-sm text-red-400">{error}</p> : null}
+          </div>
+        )}
       </div>
 
       {showFoundPopup && revealUrl ? (
@@ -352,28 +446,20 @@ function ClaimModal({ item, onClose }: { item: PublicItem; onClose: () => void }
               </div>
               <p className="mb-1 text-center text-2xl font-bold text-emerald-400">✓ Item Found!</p>
               <p className="text-center text-lg font-semibold text-[#F5F5F0]">{item.name}</p>
-              <p className="mb-4 flex items-center justify-center gap-2 text-sm text-[#F5F5F0]/75">
-                <LocationPin className="h-4 w-4 text-[#CC0000]" />
-                {item.location}
-              </p>
-              <p className="mb-5 rounded-xl border border-white/10 bg-black/30 p-3 text-sm text-[#F5F5F0]/75">
-                Pick up location: Lassonde Studios front desk. Bring your student ID for verification.
+              <p className="mb-5 mt-4 rounded-xl border border-white/10 bg-black/30 p-3 text-sm text-[#F5F5F0]/75">
+                📍 Found at {item.location}
               </p>
               <div className="flex flex-col gap-2">
                 <button
                   type="button"
-                  onClick={() => void submitClaim()}
+                  onClick={() => {
+                    setShowFoundPopup(false);
+                    setShowClaimForm(true);
+                  }}
                   disabled={submitBusy}
                   className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 py-3 text-sm font-semibold text-white transition duration-200 hover:bg-emerald-500 active:scale-[0.99] disabled:opacity-50"
                 >
-                  {submitBusy ? (
-                    <>
-                      <Spinner className="h-4 w-4 text-white" />
-                      Submitting...
-                    </>
-                  ) : (
-                    "This is mine — claim it"
-                  )}
+                  This is mine →
                 </button>
                 <button
                   type="button"
