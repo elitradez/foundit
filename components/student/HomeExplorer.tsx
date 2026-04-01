@@ -144,12 +144,14 @@ export function HomeExplorer({ initialItems, loadError }: Props) {
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
                   </div>
-                  <div className="space-y-2 px-4 py-4">
+                  <div className="space-y-3 px-4 py-4">
                     <p className="font-medium text-[#F5F5F0]">{item.name}</p>
                     {item.value_tier === "low_value" ? (
-                      <p className="text-sm text-[#F5F5F0]/75">📍 {item.location}</p>
+                      <p className="rounded-xl border border-[#CC0000]/25 bg-[#CC0000]/10 px-3 py-2.5 text-sm font-medium leading-snug text-[#F5F5F0]">
+                        📍 Pick up at: {item.location}
+                      </p>
                     ) : (
-                      <p className="text-sm text-[#F5F5F0]/65">🔒 Describe to unlock</p>
+                      <p className="text-sm text-[#F5F5F0]/65">🔒 Describe to unlock — pickup location shown after you verify</p>
                     )}
                     <p className="text-xs text-[#F5F5F0]/40">Found {item.date_found}</p>
                   </div>
@@ -187,6 +189,7 @@ function ClaimModal({ item, onClose }: { item: PublicItem; onClose: () => void }
   const [showClaimForm, setShowClaimForm] = useState(false);
   const [studentName, setStudentName] = useState("");
   const [studentIdNumber, setStudentIdNumber] = useState("");
+  const [claimSubmitted, setClaimSubmitted] = useState(false);
 
   async function checkMatch() {
     setError(null);
@@ -261,7 +264,8 @@ function ClaimModal({ item, onClose }: { item: PublicItem; onClose: () => void }
         return;
       }
       setShowFoundPopup(false);
-      onClose();
+      setShowClaimForm(false);
+      setClaimSubmitted(true);
     } finally {
       setSubmitBusy(false);
     }
@@ -278,9 +282,9 @@ function ClaimModal({ item, onClose }: { item: PublicItem; onClose: () => void }
         <div className="flex items-start justify-between gap-3 border-b border-white/10 px-5 py-4">
           <div>
             <h2 id="claim-title" className="text-lg font-semibold">
-              Claim item
+              {claimSubmitted ? "Claim submitted" : "Claim item"}
             </h2>
-            <p className="mt-0.5 text-sm text-[#F5F5F0]/55">{item.name}</p>
+            {!claimSubmitted ? <p className="mt-0.5 text-sm text-[#F5F5F0]/55">{item.name}</p> : null}
           </div>
           <button
             type="button"
@@ -291,7 +295,20 @@ function ClaimModal({ item, onClose }: { item: PublicItem; onClose: () => void }
           </button>
         </div>
 
-        {item.value_tier === "low_value" ? (
+        {claimSubmitted ? (
+          <div className="space-y-6 px-5 py-8 text-center">
+            <p className="text-base leading-relaxed text-[#F5F5F0]/85">
+              Your claim has been submitted. Head to {item.location} with your student ID to pick up your item.
+            </p>
+            <button
+              type="button"
+              onClick={onClose}
+              className="inline-flex min-h-11 min-w-[10rem] items-center justify-center rounded-xl border border-[#CC0000]/45 bg-[#CC0000]/12 px-6 py-3 text-sm font-medium text-[#F5F5F0] transition hover:bg-[#CC0000]/22 focus:outline-none focus:ring-2 focus:ring-[#CC0000]/35"
+            >
+              Done
+            </button>
+          </div>
+        ) : item.value_tier === "low_value" ? (
           <div className="space-y-4 px-5 py-5">
             <div className="relative aspect-[4/3] w-full overflow-hidden rounded-xl border border-white/10 bg-black/50">
               <Image
@@ -305,8 +322,8 @@ function ClaimModal({ item, onClose }: { item: PublicItem; onClose: () => void }
               <div className="absolute inset-0 bg-gradient-to-t from-black/35 via-transparent to-transparent" />
             </div>
 
-            <p className="rounded-xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-[#F5F5F0]/75">
-              📍 Found at {item.location} — Submit a claim to pick it up
+            <p className="rounded-xl border border-white/10 bg-black/30 px-4 py-3 text-sm font-medium text-[#F5F5F0]/90">
+              📍 Pick up at: {item.location}
             </p>
 
             {showClaimForm ? (
@@ -446,8 +463,8 @@ function ClaimModal({ item, onClose }: { item: PublicItem; onClose: () => void }
               </div>
               <p className="mb-1 text-center text-2xl font-bold text-emerald-400">✓ Item Found!</p>
               <p className="text-center text-lg font-semibold text-[#F5F5F0]">{item.name}</p>
-              <p className="mb-5 mt-4 rounded-xl border border-white/10 bg-black/30 p-3 text-sm text-[#F5F5F0]/75">
-                📍 Found at {item.location}
+              <p className="mb-5 mt-4 rounded-xl border border-white/10 bg-black/30 p-3 text-sm font-medium text-[#F5F5F0]/90">
+                📍 Pick up at: {item.location}
               </p>
               <div className="flex flex-col gap-2">
                 <button
@@ -475,13 +492,5 @@ function ClaimModal({ item, onClose }: { item: PublicItem; onClose: () => void }
         </div>
       ) : null}
     </div>
-  );
-}
-
-function LocationPin({ className = "" }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 24 24" fill="currentColor" className={className} aria-hidden="true">
-      <path d="M12 2a7 7 0 0 0-7 7c0 5.2 5.9 11.3 6.2 11.6a1.2 1.2 0 0 0 1.6 0C13.1 20.3 19 14.2 19 9a7 7 0 0 0-7-7Zm0 9.5A2.5 2.5 0 1 1 12 6a2.5 2.5 0 0 1 0 5.5Z" />
-    </svg>
   );
 }
