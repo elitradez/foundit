@@ -6,6 +6,9 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Spinner } from "@/components/ui/Spinner";
 import type { PublicItem } from "@/lib/types";
 
+/** Student-facing pickup — always the building, not the logged sub-location. */
+const STUDENT_PICKUP_AT = "Lassonde Studios";
+
 type Props = {
   initialItems: PublicItem[];
   loadError?: string | null;
@@ -148,7 +151,7 @@ export function HomeExplorer({ initialItems, loadError }: Props) {
                     <p className="font-medium text-[#F5F5F0]">{item.name}</p>
                     {item.value_tier === "low_value" ? (
                       <p className="rounded-xl border border-[#CC0000]/25 bg-[#CC0000]/10 px-3 py-2.5 text-sm font-medium leading-snug text-[#F5F5F0]">
-                        📍 Pick up at: {item.location}
+                        📍 Pick up at: {STUDENT_PICKUP_AT}
                       </p>
                     ) : (
                       <p className="text-sm text-[#F5F5F0]/65">🔒 Describe to unlock — pickup location shown after you verify</p>
@@ -298,7 +301,7 @@ function ClaimModal({ item, onClose }: { item: PublicItem; onClose: () => void }
         {claimSubmitted ? (
           <div className="space-y-6 px-5 py-8 text-center">
             <p className="text-base leading-relaxed text-[#F5F5F0]/85">
-              Your claim has been submitted. Head to {item.location} with your student ID to pick up your item.
+              Your claim has been submitted. Head to {STUDENT_PICKUP_AT} with your student ID to pick up your item.
             </p>
             <button
               type="button"
@@ -323,7 +326,7 @@ function ClaimModal({ item, onClose }: { item: PublicItem; onClose: () => void }
             </div>
 
             <p className="rounded-xl border border-white/10 bg-black/30 px-4 py-3 text-sm font-medium text-[#F5F5F0]/90">
-              📍 Pick up at: {item.location}
+              📍 Pick up at: {STUDENT_PICKUP_AT}
             </p>
 
             {showClaimForm ? (
@@ -464,7 +467,7 @@ function ClaimModal({ item, onClose }: { item: PublicItem; onClose: () => void }
               <p className="mb-1 text-center text-2xl font-bold text-emerald-400">✓ Item Found!</p>
               <p className="text-center text-lg font-semibold text-[#F5F5F0]">{item.name}</p>
               <p className="mb-5 mt-4 rounded-xl border border-white/10 bg-black/30 p-3 text-sm font-medium text-[#F5F5F0]/90">
-                📍 Pick up at: {item.location}
+                📍 Pick up at: {STUDENT_PICKUP_AT}
               </p>
               <div className="flex flex-col gap-2">
                 <button
