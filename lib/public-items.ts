@@ -6,7 +6,7 @@ export async function fetchActiveItemsForPublic(): Promise<PublicItem[]> {
   const supabase = createAdminSupabaseClient();
   const { data, error } = await supabase
     .from("items")
-    .select("id, name, location, date_found, photo_path, pin_hash, value_tier")
+    .select("id, name, location, date_found, photo_path, pin_hash, value_tier, departments(location)")
     .is("returned_at", null)
     .order("created_at", { ascending: false });
 
@@ -21,12 +21,14 @@ export async function fetchActiveItemsForPublic(): Promise<PublicItem[]> {
       photo_path: string;
       pin_hash: string | null;
       value_tier: string | null;
+      departments: { location: string | null } | null;
     };
-    const { pin_hash: _p, value_tier: vt, ...rest } = r;
+    const { pin_hash: _p, value_tier: vt, departments: dept, ...rest } = r;
     return {
       ...rest,
       value_tier: normalizeValueTier(vt),
       requires_pin: _p != null,
+      pickup_location: dept?.location ?? null,
     };
   });
 }

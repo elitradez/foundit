@@ -150,7 +150,7 @@ export function HomeExplorer({ initialItems, loadError, universityName = "Univer
                     <p className="font-medium text-[#F5F5F0]">{item.name}</p>
                     {item.value_tier === "low_value" ? (
                       <p className="rounded-xl border border-brand/25 bg-brand/10 px-3 py-2.5 text-sm font-medium leading-snug text-[#F5F5F0]">
-                        📍 Pick up at: {pickupLocation}
+                        📍 Pick up at: {item.pickup_location ?? pickupLocation}
                       </p>
                     ) : (
                       <p className="text-sm text-[#F5F5F0]/65">🔒 Describe to unlock — pickup location shown after you verify</p>
@@ -164,7 +164,7 @@ export function HomeExplorer({ initialItems, loadError, universityName = "Univer
         )}
       </main>
 
-      {openItem ? <ClaimModal key={openItem.id} item={openItem} onClose={() => setOpenItem(null)} pickupLocation={pickupLocation} /> : null}
+      {openItem ? <ClaimModal key={openItem.id} item={openItem} onClose={() => setOpenItem(null)} pickupLocation={openItem.pickup_location ?? pickupLocation} /> : null}
 
       <footer className="border-t border-white/10 py-10 text-center text-base text-[#F5F5F0]/45">
         Staff?{" "}
