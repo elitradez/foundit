@@ -13,7 +13,7 @@ export async function fetchActiveItemsForPublic(): Promise<PublicItem[]> {
   if (error) throw new Error(error.message);
 
   return (data ?? []).map((row) => {
-    const r = row as {
+    const r = row as unknown as {
       id: string;
       name: string;
       location: string;
