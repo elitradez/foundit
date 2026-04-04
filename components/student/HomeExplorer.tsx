@@ -88,7 +88,7 @@ export function HomeExplorer({ initialItems, loadError, universityName = "Univer
             </p>
           </div>
           <div className="relative w-full">
-            <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[#F5F5F0]/40">
+            <span aria-hidden="true" className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[#F5F5F0]/60">
               Search
             </span>
             {query.trim() && searchBusy ? (
@@ -109,7 +109,7 @@ export function HomeExplorer({ initialItems, loadError, universityName = "Univer
         </div>
       </header>
 
-      <main className="mx-auto max-w-6xl px-4 py-10">
+      <main id="main-content" className="mx-auto max-w-6xl px-4 py-10">
         {loadError ? (
           <p className="mb-8 rounded-2xl border border-amber-500/25 bg-amber-500/10 px-4 py-3 text-sm text-amber-100">
             {loadError}
@@ -129,6 +129,7 @@ export function HomeExplorer({ initialItems, loadError, universityName = "Univer
                 <button
                   type="button"
                   onClick={() => setOpenItem(item)}
+                  aria-label={`Claim ${item.name}`}
                   className="group w-full overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04] text-left transition duration-200 hover:-translate-y-0.5 hover:border-brand/35 hover:bg-white/[0.06]"
                 >
                   <div className="relative aspect-[4/3] w-full overflow-hidden bg-black/50">
@@ -150,12 +151,12 @@ export function HomeExplorer({ initialItems, loadError, universityName = "Univer
                     <p className="font-medium text-[#F5F5F0]">{item.name}</p>
                     {item.value_tier === "low_value" ? (
                       <p className="rounded-xl border border-brand/25 bg-brand/10 px-3 py-2.5 text-sm font-medium leading-snug text-[#F5F5F0]">
-                        📍 Pick up at: {item.pickup_location ?? pickupLocation}
+                        <span aria-hidden="true">📍 </span>Pick up at: {item.pickup_location ?? pickupLocation}
                       </p>
                     ) : (
-                      <p className="text-sm text-[#F5F5F0]/65">🔒 Describe to unlock — pickup location shown after you verify</p>
+                      <p className="text-sm text-[#F5F5F0]/65"><span aria-hidden="true">🔒 </span>Describe to unlock — pickup location shown after you verify</p>
                     )}
-                    <p className="text-xs text-[#F5F5F0]/40">Found {item.date_found}</p>
+                    <p className="text-xs text-[#F5F5F0]/60">Found {item.date_found}</p>
                   </div>
                 </button>
               </li>
@@ -166,11 +167,11 @@ export function HomeExplorer({ initialItems, loadError, universityName = "Univer
 
       {openItem ? <ClaimModal key={openItem.id} item={openItem} onClose={() => setOpenItem(null)} pickupLocation={openItem.pickup_location ?? pickupLocation} /> : null}
 
-      <footer className="border-t border-white/10 py-10 text-center text-base text-[#F5F5F0]/45">
+      <footer className="border-t border-white/10 py-10 text-center text-base text-[#F5F5F0]/60">
         Staff?{" "}
         <Link
           href="/staff/login"
-          className="text-base font-medium text-brand underline decoration-brand/40 underline-offset-4 hover:text-brand-hover hover:decoration-brand/70"
+          className="text-base font-medium text-[#FF3333] underline decoration-[#FF3333]/40 underline-offset-4 hover:text-[#FF6666] hover:decoration-[#FF6666]/70"
         >
           Sign in
         </Link>
@@ -325,7 +326,7 @@ function ClaimModal({ item, onClose, pickupLocation }: { item: PublicItem; onClo
             </div>
 
             <p className="rounded-xl border border-white/10 bg-black/30 px-4 py-3 text-sm font-medium text-[#F5F5F0]/90">
-              📍 Pick up at: {pickupLocation}
+              <span aria-hidden="true">📍 </span>Pick up at: {pickupLocation}
             </p>
 
             {showClaimForm ? (
@@ -449,24 +450,30 @@ function ClaimModal({ item, onClose, pickupLocation }: { item: PublicItem; onClo
 
       {showFoundPopup && revealUrl ? (
         <div className="anim-fade-in fixed inset-0 z-[60] flex items-center justify-center bg-black/80 p-4">
-          <div className="anim-pop-in w-full max-w-md overflow-hidden rounded-2xl border border-white/10 bg-[#141414] shadow-2xl">
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="found-popup-title"
+            className="anim-pop-in w-full max-w-md overflow-hidden rounded-2xl border border-white/10 bg-[#141414] shadow-2xl"
+          >
             <div className="flex justify-end px-4 pt-4">
               <button
                 type="button"
                 onClick={() => setShowFoundPopup(false)}
+                aria-label="Close"
                 className="min-h-11 rounded-lg border border-white/10 px-3 py-2 text-sm text-[#F5F5F0]/70 hover:bg-white/5"
               >
-                X
+                <span aria-hidden="true">✕</span>
               </button>
             </div>
             <div className="px-5 pb-5">
               <div className="relative mb-4 aspect-[4/3] w-full overflow-hidden rounded-xl border border-white/10">
                 <Image src={revealUrl} alt={item.name} fill className="object-cover" sizes="(max-width: 512px) 100vw, 512px" unoptimized />
               </div>
-              <p className="mb-1 text-center text-2xl font-bold text-emerald-400">✓ Item Found!</p>
+              <p id="found-popup-title" className="mb-1 text-center text-2xl font-bold text-emerald-400"><span aria-hidden="true">✓ </span>Item Found!</p>
               <p className="text-center text-lg font-semibold text-[#F5F5F0]">{item.name}</p>
               <p className="mb-5 mt-4 rounded-xl border border-white/10 bg-black/30 p-3 text-sm font-medium text-[#F5F5F0]/90">
-                📍 Pick up at: {pickupLocation}
+                <span aria-hidden="true">📍 </span>Pick up at: {pickupLocation}
               </p>
               <div className="flex flex-col gap-2">
                 <button

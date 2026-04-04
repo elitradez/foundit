@@ -502,6 +502,7 @@ export function StaffDashboard({
       <button
         type="button"
         onClick={() => setTab(id)}
+        aria-current={active ? "true" : undefined}
         className={`inline-flex min-h-11 items-center rounded-xl border px-4 py-2 text-sm font-semibold transition ${
           active
             ? "border-brand/60 bg-brand/25 text-[#F5F5F0]"
@@ -558,7 +559,7 @@ export function StaffDashboard({
       <header className="sticky top-0 z-20 border-b border-white/10 bg-[#0c0c0c]/90 backdrop-blur">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-4">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-wider text-brand">Staff</p>
+            <p className="text-xs font-semibold uppercase tracking-wider text-[#FF3333]">Staff</p>
             <h1 className="text-xl font-semibold">{departmentName}</h1>
             {universityName ? (
               <p className="text-xs text-[#F5F5F0]/50 mt-0.5">{universityName}</p>
@@ -590,7 +591,7 @@ export function StaffDashboard({
         </div>
       </header>
 
-      <main className="mx-auto max-w-6xl px-4 py-8">
+      <main id="main-content" className="mx-auto max-w-6xl px-4 py-8">
         {loadError ? (
           <p className="mb-6 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-200">{loadError}</p>
         ) : null}
@@ -624,7 +625,7 @@ export function StaffDashboard({
                         <div className="min-w-0 flex-1 space-y-1">
                           <p className="truncate text-base font-semibold text-[#F5F5F0]">{item.name}</p>
                           <p className="truncate text-sm text-[#F5F5F0]/75">{item.location}</p>
-                          <p className="text-xs text-[#F5F5F0]/45">Found {item.date_found}</p>
+                          <p className="text-xs text-[#F5F5F0]/60">Found {item.date_found}</p>
                           <p className={`text-xs ${isEligible ? "text-red-300" : "text-[#F5F5F0]/55"}`}>
                             {isEligible ? "Eligible for surplus" : `${daysUntilEligible} days until surplus eligible`}
                           </p>
@@ -632,6 +633,7 @@ export function StaffDashboard({
                             <button
                               type="button"
                               onClick={() => openEditActiveItem(item)}
+                              aria-label={`Edit details for ${item.name}`}
                               className="inline-flex min-h-9 items-center rounded-lg border border-white/15 bg-white/[0.04] px-3 py-1.5 text-xs font-medium text-[#F5F5F0]/90 hover:bg-white/[0.08]"
                             >
                               Edit details
@@ -640,6 +642,7 @@ export function StaffDashboard({
                               type="button"
                               disabled={!isEligible || busyId === item.id}
                               onClick={() => setActiveSurplusConfirmItem(item)}
+                              aria-label={isEligible ? `Send ${item.name} to surplus` : `${item.name} surplus eligible in ${daysUntilEligible} days`}
                               className="inline-flex min-h-8 items-center rounded-lg bg-zinc-700 px-2.5 py-1 text-xs font-medium text-white hover:bg-zinc-600 disabled:cursor-not-allowed disabled:opacity-40"
                             >
                               {isEligible ? "Send to Surplus" : `Surplus in ${daysUntilEligible} days`}
@@ -647,6 +650,7 @@ export function StaffDashboard({
                             <button
                               type="button"
                               onClick={() => setDeleteConfirmItem(item)}
+                              aria-label={`Delete ${item.name}`}
                               className="inline-flex min-h-8 items-center rounded-lg px-2 py-1 text-xs font-medium text-red-400/90 underline decoration-red-400/30 underline-offset-2 hover:text-red-300"
                             >
                               Delete
@@ -678,12 +682,12 @@ export function StaffDashboard({
                 <table className="w-full min-w-[980px] text-left text-sm">
                   <thead className="border-b border-white/10 bg-white/[0.04] text-[#F5F5F0]/70">
                     <tr>
-                      <th className="px-4 py-3 font-medium">Photo</th>
-                      <th className="px-4 py-3 font-medium">Item</th>
-                      <th className="px-4 py-3 font-medium">Student name</th>
-                      <th className="px-4 py-3 font-medium">Student ID</th>
-                      <th className="px-4 py-3 font-medium">Date submitted</th>
-                      <th className="px-4 py-3 font-medium" />
+                      <th scope="col" className="px-4 py-3 font-medium">Photo</th>
+                      <th scope="col" className="px-4 py-3 font-medium">Item</th>
+                      <th scope="col" className="px-4 py-3 font-medium">Student name</th>
+                      <th scope="col" className="px-4 py-3 font-medium">Student ID</th>
+                      <th scope="col" className="px-4 py-3 font-medium">Date submitted</th>
+                      <th scope="col" className="px-4 py-3 font-medium"><span className="sr-only">Actions</span></th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-white/10">
@@ -722,6 +726,7 @@ export function StaffDashboard({
                               type="button"
                               disabled={busyId === c.id}
                               onClick={() => openReturnClaimModal(c)}
+                              aria-label={`Mark ${c.item_name} as returned`}
                               className="inline-flex min-h-10 items-center rounded-xl bg-emerald-600 px-3 py-2 text-xs font-semibold text-white hover:bg-emerald-500 disabled:opacity-50"
                             >
                               Mark as Returned
@@ -730,6 +735,7 @@ export function StaffDashboard({
                               type="button"
                               disabled={!canSendToSurplus || busyId === c.id}
                               onClick={() => void resolveClaim(c.id, "surplus")}
+                              aria-label={canSendToSurplus ? `Send ${c.item_name} to surplus` : `${c.item_name} surplus eligible in ${daysUntilEligible} days`}
                               className="inline-flex min-h-10 items-center rounded-xl bg-zinc-700 px-3 py-2 text-xs font-semibold text-white hover:bg-zinc-600 disabled:cursor-not-allowed disabled:opacity-40"
                             >
                               {canSendToSurplus ? "Send to Surplus" : `Surplus in ${daysUntilEligible} days`}
@@ -762,11 +768,11 @@ export function StaffDashboard({
                 <table className="w-full min-w-[860px] text-left text-sm">
                   <thead className="border-b border-white/10 bg-white/[0.04] text-[#F5F5F0]/70">
                     <tr>
-                      <th className="px-4 py-3 font-medium">Photo</th>
-                      <th className="px-4 py-3 font-medium">Item</th>
-                      <th className="px-4 py-3 font-medium">Location</th>
-                      <th className="px-4 py-3 font-medium">Date found</th>
-                      <th className="px-4 py-3 font-medium">Sent to surplus</th>
+                      <th scope="col" className="px-4 py-3 font-medium">Photo</th>
+                      <th scope="col" className="px-4 py-3 font-medium">Item</th>
+                      <th scope="col" className="px-4 py-3 font-medium">Location</th>
+                      <th scope="col" className="px-4 py-3 font-medium">Date found</th>
+                      <th scope="col" className="px-4 py-3 font-medium">Sent to surplus</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-white/10">
@@ -795,7 +801,7 @@ export function StaffDashboard({
                           <td className="px-4 py-3 text-[#F5F5F0]/70">
                             <span>{s.sent_to_surplus_at.slice(0, 10)}</span>
                             {daysInSurplus !== null ? (
-                              <span className="ml-2 text-xs text-[#F5F5F0]/45">({daysInSurplus}d in surplus)</span>
+                              <span className="ml-2 text-xs text-[#F5F5F0]/60">({daysInSurplus}d in surplus)</span>
                             ) : null}
                           </td>
                         </tr>
@@ -823,13 +829,13 @@ export function StaffDashboard({
                 <table className="w-full min-w-[900px] text-left text-sm">
                   <thead className="border-b border-white/10 bg-white/[0.04] text-[#F5F5F0]/70">
                     <tr>
-                      <th className="px-4 py-3 font-medium">Item name</th>
-                      <th className="px-4 py-3 font-medium">Name</th>
-                      <th className="px-4 py-3 font-medium">Student ID</th>
-                      <th className="px-4 py-3 font-medium">Phone number</th>
-                      <th className="px-4 py-3 font-medium">Date</th>
-                      <th className="px-4 py-3 font-medium">Status</th>
-                      <th className="px-4 py-3 font-medium" />
+                      <th scope="col" className="px-4 py-3 font-medium">Item name</th>
+                      <th scope="col" className="px-4 py-3 font-medium">Name</th>
+                      <th scope="col" className="px-4 py-3 font-medium">Student ID</th>
+                      <th scope="col" className="px-4 py-3 font-medium">Phone number</th>
+                      <th scope="col" className="px-4 py-3 font-medium">Date</th>
+                      <th scope="col" className="px-4 py-3 font-medium">Status</th>
+                      <th scope="col" className="px-4 py-3 font-medium"><span className="sr-only">Actions</span></th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-white/10">
@@ -861,6 +867,7 @@ export function StaffDashboard({
                                 type="button"
                                 disabled={busyId === r.item_id}
                                 onClick={() => openEditStudentInfo(r)}
+                                aria-label={`Add or edit student info for ${r.item_name}`}
                                 className="inline-flex min-h-10 items-center rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2 text-xs font-semibold text-white hover:bg-white/[0.06] disabled:opacity-50"
                               >
                                 Add/Edit student info
@@ -870,6 +877,7 @@ export function StaffDashboard({
                               type="button"
                               disabled={busyId === (r.kind === "claimed" ? r.claim_id ?? r.item_id : r.item_id)}
                               onClick={() => void relist(r)}
+                              aria-label={`Relist ${r.item_name}`}
                               className="inline-flex min-h-10 items-center rounded-xl bg-zinc-700 px-3 py-2 text-xs font-semibold text-white hover:bg-zinc-600 disabled:opacity-50"
                             >
                               Relist
@@ -878,6 +886,7 @@ export function StaffDashboard({
                               type="button"
                               disabled={busyId === r.item_id}
                               onClick={() => setDeleteLogRow(r)}
+                              aria-label={`Delete log entry for ${r.item_name}`}
                               className="inline-flex min-h-10 items-center rounded-xl border border-red-500/35 px-3 py-2 text-xs font-semibold text-red-300 hover:bg-red-500/10 disabled:opacity-50"
                             >
                               Delete
@@ -897,7 +906,7 @@ export function StaffDashboard({
       <footer className="mx-auto max-w-6xl px-4 pb-10 pt-2 text-center">
         <a
           href="/"
-          className="text-sm font-medium text-brand underline decoration-brand/40 underline-offset-4 hover:text-brand-hover hover:decoration-brand/70"
+          className="text-sm font-medium text-[#FF3333] underline decoration-[#FF3333]/40 underline-offset-4 hover:text-[#FF6666] hover:decoration-[#FF6666]/70"
         >
           Return to student view
         </a>
@@ -907,8 +916,8 @@ export function StaffDashboard({
 
       {deleteConfirmItem ? (
         <div className="anim-fade-in fixed inset-0 z-[88] flex items-center justify-center bg-black/75 p-4">
-          <div className="anim-pop-in w-full max-w-sm rounded-2xl border border-white/10 bg-[#141414] p-5 shadow-2xl">
-            <h3 className="text-lg font-semibold text-[#F5F5F0]">Delete item?</h3>
+          <div role="dialog" aria-modal="true" aria-labelledby="delete-item-title" className="anim-pop-in w-full max-w-sm rounded-2xl border border-white/10 bg-[#141414] p-5 shadow-2xl">
+            <h3 id="delete-item-title" className="text-lg font-semibold text-[#F5F5F0]">Delete item?</h3>
             <p className="mt-2 text-sm text-[#F5F5F0]/65">
               Remove{" "}
               <span className="font-medium text-[#F5F5F0]/90">{deleteConfirmItem.name}</span> from lost and found. This
@@ -937,8 +946,8 @@ export function StaffDashboard({
 
       {activeSurplusConfirmItem ? (
         <div className="anim-fade-in fixed inset-0 z-[89] flex items-center justify-center bg-black/75 p-4">
-          <div className="anim-pop-in w-full max-w-sm rounded-2xl border border-white/10 bg-[#141414] p-5 shadow-2xl">
-            <h3 className="text-lg font-semibold text-[#F5F5F0]">Send this item to surplus?</h3>
+          <div role="dialog" aria-modal="true" aria-labelledby="surplus-confirm-title" className="anim-pop-in w-full max-w-sm rounded-2xl border border-white/10 bg-[#141414] p-5 shadow-2xl">
+            <h3 id="surplus-confirm-title" className="text-lg font-semibold text-[#F5F5F0]">Send this item to surplus?</h3>
             <p className="mt-2 text-sm text-[#F5F5F0]/65">
               Send this item to surplus? It will be removed from the active list.
             </p>
@@ -965,8 +974,8 @@ export function StaffDashboard({
 
       {deleteLogRow ? (
         <div className="anim-fade-in fixed inset-0 z-[89] flex items-center justify-center bg-black/75 p-4">
-          <div className="anim-pop-in w-full max-w-sm rounded-2xl border border-white/10 bg-[#141414] p-5 shadow-2xl">
-            <h3 className="text-lg font-semibold text-[#F5F5F0]">Delete this log entry?</h3>
+          <div role="dialog" aria-modal="true" aria-labelledby="delete-log-title" className="anim-pop-in w-full max-w-sm rounded-2xl border border-white/10 bg-[#141414] p-5 shadow-2xl">
+            <h3 id="delete-log-title" className="text-lg font-semibold text-[#F5F5F0]">Delete this log entry?</h3>
             <p className="mt-2 text-sm text-[#F5F5F0]/65">
               This will permanently delete <span className="font-medium text-[#F5F5F0]/90">{deleteLogRow.item_name}</span>.
             </p>
@@ -993,8 +1002,8 @@ export function StaffDashboard({
 
       {editActiveItem ? (
         <div className="anim-fade-in fixed inset-0 z-[85] flex items-end justify-center bg-black/75 p-0 sm:items-center sm:p-4">
-          <div className="anim-pop-in max-h-[95vh] w-full overflow-y-auto rounded-none border border-white/10 bg-[#141414] p-5 shadow-2xl sm:max-h-[90vh] sm:max-w-lg sm:rounded-2xl">
-            <h3 className="text-lg font-semibold text-[#F5F5F0]">Edit item</h3>
+          <div role="dialog" aria-modal="true" aria-labelledby="edit-item-title" className="anim-pop-in max-h-[95vh] w-full overflow-y-auto rounded-none border border-white/10 bg-[#141414] p-5 shadow-2xl sm:max-h-[90vh] sm:max-w-lg sm:rounded-2xl">
+            <h3 id="edit-item-title" className="text-lg font-semibold text-[#F5F5F0]">Edit item</h3>
             <p className="mt-1 text-sm text-[#F5F5F0]/55">Update how this listing appears for staff and on the student site.</p>
 
             <div className="mt-4 space-y-3">
@@ -1083,8 +1092,8 @@ export function StaffDashboard({
 
       {editReturnedItemId ? (
         <div className="anim-fade-in fixed inset-0 z-[90] flex items-center justify-center bg-black/75 p-4">
-          <div className="anim-pop-in w-full max-w-md rounded-2xl border border-white/10 bg-[#141414] p-5 shadow-2xl">
-            <h3 className="text-lg font-semibold text-[#F5F5F0]">Returned item student info</h3>
+          <div role="dialog" aria-modal="true" aria-labelledby="edit-student-title" className="anim-pop-in w-full max-w-md rounded-2xl border border-white/10 bg-[#141414] p-5 shadow-2xl">
+            <h3 id="edit-student-title" className="text-lg font-semibold text-[#F5F5F0]">Returned item student info</h3>
             <p className="mt-2 text-sm text-[#F5F5F0]/70">This will appear in the Student Log.</p>
 
             <div className="mt-4 space-y-3">
@@ -1129,8 +1138,8 @@ export function StaffDashboard({
 
       {returnClaimId && returnClaimItemId ? (
         <div className="anim-fade-in fixed inset-0 z-[90] flex items-center justify-center bg-black/75 p-4">
-          <div className="anim-pop-in w-full max-w-md rounded-2xl border border-white/10 bg-[#141414] p-5 shadow-2xl">
-            <h3 className="text-lg font-semibold text-[#F5F5F0]">Confirm return</h3>
+          <div role="dialog" aria-modal="true" aria-labelledby="confirm-return-title" className="anim-pop-in w-full max-w-md rounded-2xl border border-white/10 bg-[#141414] p-5 shadow-2xl">
+            <h3 id="confirm-return-title" className="text-lg font-semibold text-[#F5F5F0]">Confirm return</h3>
             <p className="mt-2 text-sm text-[#F5F5F0]/70">This will move the item into the Student Log.</p>
 
             <div className="mt-4 space-y-3">

@@ -131,26 +131,24 @@ export default async function StaffClaimsInboxPage() {
             <p className="text-xs font-semibold uppercase tracking-wider text-brand">Staff</p>
             <h1 className="text-xl font-semibold">Claims inbox</h1>
           </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <Link
-                href="/"
-                className="inline-flex min-h-11 items-center rounded-xl border border-white/15 px-4 py-2 text-sm text-[#F5F5F0]/85 hover:bg-white/5"
-              >
-                Return to student view
-              </Link>
-              <Link
-                href="/staff"
-                className="inline-flex min-h-11 items-center rounded-xl border border-white/15 px-4 py-2 text-sm text-[#F5F5F0]/85 hover:bg-white/5"
-              >
-                Back
-              </Link>
-            </div>
-          </div>
+          <nav aria-label="Site navigation" className="flex items-center gap-2">
+            <Link
+              href="/"
+              className="inline-flex min-h-11 items-center rounded-xl border border-white/15 px-4 py-2 text-sm text-[#F5F5F0]/85 hover:bg-white/5"
+            >
+              Return to student view
+            </Link>
+            <Link
+              href="/staff"
+              className="inline-flex min-h-11 items-center rounded-xl border border-white/15 px-4 py-2 text-sm text-[#F5F5F0]/85 hover:bg-white/5"
+            >
+              Back
+            </Link>
+          </nav>
         </div>
       </header>
 
-      <main className="mx-auto max-w-6xl px-4 py-8">
+      <main id="main-content" className="mx-auto max-w-6xl px-4 py-8">
         {loadError ? (
           <p className="mb-6 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-200">
             {loadError}
@@ -168,11 +166,11 @@ export default async function StaffClaimsInboxPage() {
             <table className="w-full min-w-[900px] text-left text-sm">
               <thead className="border-b border-white/10 bg-white/[0.04] text-[#F5F5F0]/70">
                 <tr>
-                  <th className="px-4 py-3 font-medium">Student name</th>
-                  <th className="px-4 py-3 font-medium">Student ID</th>
-                  <th className="px-4 py-3 font-medium">Item</th>
-                  <th className="px-4 py-3 font-medium">Date</th>
-                  <th className="px-4 py-3 font-medium" />
+                  <th scope="col" className="px-4 py-3 font-medium">Student name</th>
+                  <th scope="col" className="px-4 py-3 font-medium">Student ID</th>
+                  <th scope="col" className="px-4 py-3 font-medium">Item</th>
+                  <th scope="col" className="px-4 py-3 font-medium">Date</th>
+                  <th scope="col" className="px-4 py-3 font-medium"><span className="sr-only">Actions</span></th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/10">
@@ -206,10 +204,11 @@ export default async function StaffClaimsInboxPage() {
                           </summary>
 
                           <div className="claim-modal__overlay fixed inset-0 z-[80] flex items-center justify-center bg-black/75 p-4">
-                            <form action={markAsClaimedAction} className="anim-pop-in w-full max-w-md rounded-2xl border border-white/10 bg-[#141414] p-5 shadow-2xl">
+                            <div role="dialog" aria-modal="true" aria-labelledby={`claim-modal-title-${claim.id}`} className="anim-pop-in w-full max-w-md rounded-2xl border border-white/10 bg-[#141414] p-5 shadow-2xl">
+                            <form action={markAsClaimedAction}>
                               <input type="hidden" name="claimId" value={claim.id} />
 
-                              <h2 className="text-lg font-semibold">Mark as Claimed</h2>
+                              <h2 id={`claim-modal-title-${claim.id}`} className="text-lg font-semibold">Mark as Claimed</h2>
                               <p className="mt-2 text-sm text-[#F5F5F0]/75">
                                 Update student info and confirm.
                               </p>
@@ -237,7 +236,7 @@ export default async function StaffClaimsInboxPage() {
 
                                 <label className="block space-y-1">
                                   <span className="text-sm text-[#F5F5F0]/70">
-                                    Student email <span className="text-[#F5F5F0]/45">(optional)</span>
+                                    Student email <span className="text-[#F5F5F0]/60">(optional)</span>
                                   </span>
                                   <input
                                     type="email"
@@ -249,7 +248,7 @@ export default async function StaffClaimsInboxPage() {
 
                                 <label className="block space-y-1">
                                   <span className="text-sm text-[#F5F5F0]/70">
-                                    Notes <span className="text-[#F5F5F0]/45">(optional)</span>
+                                    Notes <span className="text-[#F5F5F0]/60">(optional)</span>
                                   </span>
                                   <textarea
                                     name="notes"
@@ -262,6 +261,14 @@ export default async function StaffClaimsInboxPage() {
 
                               <div className="mt-5 flex justify-end gap-2">
                                 <button
+                                  type="button"
+                                  // eslint-disable-next-line react/no-unknown-property
+                                  onClick={(e) => (e.currentTarget.closest("details") as HTMLDetailsElement | null)?.removeAttribute("open")}
+                                  className="inline-flex min-h-11 items-center rounded-xl border border-white/15 px-4 py-2 text-sm text-[#F5F5F0]/85 hover:bg-white/5"
+                                >
+                                  Cancel
+                                </button>
+                                <button
                                   type="submit"
                                   className="inline-flex min-h-11 items-center rounded-xl bg-brand px-5 py-2 text-sm font-semibold text-white hover:bg-brand-hover"
                                 >
@@ -269,6 +276,7 @@ export default async function StaffClaimsInboxPage() {
                                 </button>
                               </div>
                             </form>
+                            </div>
                           </div>
                         </details>
                       </td>

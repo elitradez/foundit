@@ -33,13 +33,13 @@ export default function StaffLoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center px-4 bg-[#0c0c0c]">
+    <main id="main-content" className="min-h-screen flex flex-col items-center justify-center px-4 bg-[#0c0c0c]">
       <div className="w-full max-w-sm space-y-8">
         <div className="text-center space-y-2">
           <p className="text-brand text-sm font-semibold tracking-wide uppercase">Staff</p>
           <h1 className="text-2xl font-semibold text-[#F5F5F0]">Foundit</h1>
           <p className="text-sm text-[#F5F5F0]/60">Sign in to log and manage items</p>
-          <p className="text-xs text-[#F5F5F0]/40">
+          <p className="text-xs text-[#F5F5F0]/60">
             <Link href="/" className="text-brand/90 hover:text-brand">
               Back to student view
             </Link>
@@ -67,6 +67,6 @@ export default function StaffLoginPage() {
           </button>
         </form>
       </div>
-    </div>
+    </main>
   );
 }

@@ -142,7 +142,7 @@ export function LogItemForm({ onClose, onSaved }: Props) {
         </div>
 
         <form onSubmit={onSubmit} className="space-y-4">
-          <label className="block space-y-2">
+          <div className="block space-y-2">
             <span className="text-sm text-[#F5F5F0]/80">Photo</span>
             <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
               <label className="cursor-pointer rounded-xl border border-white/10 bg-black/30 px-4 py-3 text-center text-sm text-[#F5F5F0]/80 transition duration-200 hover:bg-white/5">
@@ -172,7 +172,7 @@ export function LogItemForm({ onClose, onSaved }: Props) {
                 AI is analyzing the photo...
               </p>
             ) : null}
-          </label>
+          </div>
 
           <label className="block space-y-2">
             <span className="text-sm text-[#F5F5F0]/80">Name</span>
@@ -182,7 +182,7 @@ export function LogItemForm({ onClose, onSaved }: Props) {
               className="w-full rounded-xl border border-white/10 bg-black/40 px-4 py-2.5 text-[#F5F5F0] outline-none focus:border-brand/50 focus:ring-2 focus:ring-brand/30"
               required
             />
-            <p className="text-xs text-[#F5F5F0]/45">
+            <p className="text-xs text-[#F5F5F0]/60">
               Use simple terms students would search — &quot;laptop&quot; not &quot;MacBook Pro&quot;
             </p>
           </label>
@@ -208,7 +208,7 @@ export function LogItemForm({ onClose, onSaved }: Props) {
               <option value="low_value">Low value — students see an unblurred photo</option>
               <option value="high_value">High value — photo blurred until description matches</option>
             </select>
-            <p className="text-xs text-[#F5F5F0]/45">Set by AI; change here if the classification looks wrong.</p>
+            <p className="text-xs text-[#F5F5F0]/60">Set by AI; change here if the classification looks wrong.</p>
           </label>
 
           <label className="block space-y-2">
@@ -243,7 +243,7 @@ export function LogItemForm({ onClose, onSaved }: Props) {
               autoComplete="new-password"
               className="w-full rounded-xl border border-white/10 bg-black/40 px-4 py-2.5 text-[#F5F5F0] outline-none focus:border-brand/50 focus:ring-2 focus:ring-brand/30"
             />
-            <p className="text-xs text-[#F5F5F0]/45">Students must enter this PIN to submit a claim.</p>
+            <p className="text-xs text-[#F5F5F0]/60">Students must enter this PIN to submit a claim.</p>
           </label>
 
           {error ? <p className="text-sm text-red-400">{error}</p> : null}

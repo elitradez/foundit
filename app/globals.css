@@ -119,3 +119,36 @@ body {
     animation: none !important;
   }
 }
+
+/* ── Skip navigation link ─────────────────────────────────────────── */
+.skip-nav {
+  position: absolute;
+  top: -100%;
+  left: 0;
+  padding: 0.75rem 1.5rem;
+  background-color: var(--color-brand);
+  color: #fff;
+  font-weight: 600;
+  font-size: 0.875rem;
+  z-index: 9999;
+  text-decoration: none;
+  border-radius: 0 0 8px 0;
+}
+.skip-nav:focus {
+  top: 0;
+}
+
+/* ── Visible focus indicators for keyboard navigation ─────────────── */
+/* All interactive elements get a visible focus ring when navigating by keyboard */
+:focus-visible {
+  outline: 2px solid var(--color-brand);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Form controls provide custom focus styles via Tailwind ring utilities */
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline: none;
+}

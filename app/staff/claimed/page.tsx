@@ -256,7 +256,7 @@ export default async function StaffClaimedPage() {
     <div className="min-h-screen bg-[#0c0c0c] text-[#F5F5F0]">
       <header className="border-b border-white/10 bg-[#0c0c0c]/90 backdrop-blur">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4">
-          <div className="flex items-center gap-2">
+          <nav aria-label="Site navigation" className="flex items-center gap-2">
             <Link
               href="/"
               className="inline-flex min-h-11 items-center rounded-xl border border-white/15 px-4 py-2 text-sm text-[#F5F5F0]/85 hover:bg-white/5"
@@ -269,23 +269,23 @@ export default async function StaffClaimedPage() {
             >
               Back
             </Link>
-          </div>
+          </nav>
         </div>
       </header>
 
-      <main className="mx-auto max-w-6xl px-4 py-8">
+      <main id="main-content" className="mx-auto max-w-6xl px-4 py-8">
         <div className="overflow-x-auto rounded-2xl border border-white/10">
           <table className="w-full min-w-[1000px] text-left text-sm">
             <thead className="border-b border-white/10 bg-white/[0.04] text-[#F5F5F0]/70">
               <tr>
-                <th className="px-4 py-3 font-medium">Photo</th>
-                <th className="px-4 py-3 font-medium">Item name</th>
-                <th className="px-4 py-3 font-medium">Student name</th>
-                <th className="px-4 py-3 font-medium">Student ID</th>
-                <th className="px-4 py-3 font-medium">Date claimed</th>
-                <th className="px-4 py-3 font-medium">Status</th>
-                <th className="px-4 py-3 font-medium" />
-                <th className="px-4 py-3 font-medium" />
+                <th scope="col" className="px-4 py-3 font-medium">Photo</th>
+                <th scope="col" className="px-4 py-3 font-medium">Item name</th>
+                <th scope="col" className="px-4 py-3 font-medium">Student name</th>
+                <th scope="col" className="px-4 py-3 font-medium">Student ID</th>
+                <th scope="col" className="px-4 py-3 font-medium">Date claimed</th>
+                <th scope="col" className="px-4 py-3 font-medium">Status</th>
+                <th scope="col" className="px-4 py-3 font-medium"><span className="sr-only">Relist</span></th>
+                <th scope="col" className="px-4 py-3 font-medium"><span className="sr-only">Delete</span></th>
               </tr>
             </thead>
             <tbody className="divide-y divide-white/10">
@@ -322,8 +322,8 @@ export default async function StaffClaimedPage() {
                         Relist
                       </summary>
                       <div className="fixed inset-0 z-[85] flex items-center justify-center bg-black/75 p-4">
-                        <div className="anim-pop-in w-full max-w-md rounded-2xl border border-white/10 bg-[#141414] p-5 shadow-2xl">
-                          <h3 className="text-lg font-semibold text-[#F5F5F0]">
+                        <div role="dialog" aria-modal="true" aria-labelledby={`relist-title-${row.itemId}`} className="anim-pop-in w-full max-w-md rounded-2xl border border-white/10 bg-[#141414] p-5 shadow-2xl">
+                          <h3 id={`relist-title-${row.itemId}`} className="text-lg font-semibold text-[#F5F5F0]">
                             Are you sure? This will put the item back in the active list.
                           </h3>
                           <form
@@ -334,6 +334,13 @@ export default async function StaffClaimedPage() {
                             <input type="hidden" name="itemId" value={row.itemId} />
                             {row.kind === "claimed" ? <input type="hidden" name="claimId" value={row.claimId} /> : null}
                             <div className="mt-5 flex justify-end gap-2">
+                              <button
+                                type="button"
+                                onClick={(e) => (e.currentTarget.closest("details") as HTMLDetailsElement | null)?.removeAttribute("open")}
+                                className="inline-flex min-h-11 items-center rounded-xl border border-white/15 px-4 py-2 text-sm text-[#F5F5F0]/85 hover:bg-white/5"
+                              >
+                                Cancel
+                              </button>
                               <button
                                 type="submit"
                                 className="inline-flex min-h-11 items-center rounded-xl bg-brand px-5 py-2 text-sm font-semibold text-white hover:bg-brand-hover"
@@ -352,8 +359,8 @@ export default async function StaffClaimedPage() {
                         Delete
                       </summary>
                       <div className="fixed inset-0 z-[90] flex items-center justify-center bg-black/75 p-4">
-                        <div className="anim-pop-in w-full max-w-md rounded-2xl border border-white/10 bg-[#141414] p-5 shadow-2xl">
-                          <h3 className="text-lg font-semibold text-[#F5F5F0]">Delete this log entry?</h3>
+                        <div role="dialog" aria-modal="true" aria-labelledby={`delete-title-${row.itemId}`} className="anim-pop-in w-full max-w-md rounded-2xl border border-white/10 bg-[#141414] p-5 shadow-2xl">
+                          <h3 id={`delete-title-${row.itemId}`} className="text-lg font-semibold text-[#F5F5F0]">Delete this log entry?</h3>
                           <p className="mt-2 text-sm text-[#F5F5F0]/75">
                             {row.kind === "returned"
                               ? "This permanently deletes the returned item and its photo."
