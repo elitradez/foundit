@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { isStaffAuthenticated } from "@/lib/staff-api";
+import { getStaffSession } from "@/lib/staff-api";
 import { createAdminSupabaseClient } from "@/lib/supabase-admin";
 
 type PendingClaimRow = {
@@ -17,15 +17,35 @@ type ItemRef = {
 };
 
 export async function GET() {
-  if (!(await isStaffAuthenticated())) {
+  const session = await getStaffSession();
+  if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const supabase = createAdminSupabaseClient();
+
+  // Fetch department's active item IDs first so claims are scoped to this department.
+  const { data: itemData, error: itemErr } = await supabase
+    .from("items")
+    .select("id, name, date_found")
+    .eq("department_id", session.department_id);
+
+  if (itemErr) {
+    return NextResponse.json({ error: itemErr.message }, { status: 500 });
+  }
+
+  const deptItems = (itemData ?? []) as ItemRef[];
+  const deptItemIds = deptItems.map((i) => i.id);
+
+  if (deptItemIds.length === 0) {
+    return NextResponse.json({ claims: [] });
+  }
+
   const { data, error } = await supabase
     .from("claims")
     .select("id, item_id, student_name, student_id_number, created_at")
     .eq("status", "pending")
+    .in("item_id", deptItemIds)
     .order("created_at", { ascending: false });
 
   if (error) {
@@ -33,19 +53,7 @@ export async function GET() {
   }
 
   const rows = (data ?? []) as PendingClaimRow[];
-  const itemIds = Array.from(new Set(rows.map((r) => r.item_id).filter(Boolean)));
-  let itemMap = new Map<string, ItemRef>();
-
-  if (itemIds.length > 0) {
-    const { data: itemData, error: itemErr } = await supabase
-      .from("items")
-      .select("id, name, date_found")
-      .in("id", itemIds);
-    if (itemErr) {
-      return NextResponse.json({ error: itemErr.message }, { status: 500 });
-    }
-    itemMap = new Map(((itemData ?? []) as ItemRef[]).map((i) => [i.id, i]));
-  }
+  const itemMap = new Map(deptItems.map((i) => [i.id, i]));
 
   const claims = rows.map((r) => ({
     id: r.id,
@@ -59,4 +67,3 @@ export async function GET() {
 
   return NextResponse.json({ claims });
 }
-

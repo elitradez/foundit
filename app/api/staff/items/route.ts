@@ -1,7 +1,7 @@
 import { randomUUID } from "crypto";
 import { NextResponse } from "next/server";
 import { processNewItemAlerts } from "@/lib/alert-matching";
-import { isStaffAuthenticated } from "@/lib/staff-api";
+import { getStaffSession } from "@/lib/staff-api";
 import { createAdminSupabaseClient } from "@/lib/supabase-admin";
 import { hashPin } from "@/lib/pin";
 import { parseValueTier } from "@/lib/value-tier";
@@ -11,7 +11,8 @@ function safeFilename(name: string): string {
 }
 
 export async function GET() {
-  if (!(await isStaffAuthenticated())) {
+  const session = await getStaffSession();
+  if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   const supabase = createAdminSupabaseClient();
@@ -20,6 +21,7 @@ export async function GET() {
     .select(
       "id, name, description, location, date_found, photo_path, returned_at, claim_description, pin_hash, pin_salt, created_at, value_tier",
     )
+    .eq("department_id", session.department_id)
     .order("created_at", { ascending: false });
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
@@ -28,7 +30,8 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
-  if (!(await isStaffAuthenticated())) {
+  const session = await getStaffSession();
+  if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   const form = await req.formData();
@@ -87,6 +90,8 @@ export async function POST(req: Request) {
       pin_hash,
       pin_salt,
       value_tier,
+      department_id: session.department_id,
+      university_id: session.university_id,
     })
     .select("id")
     .single();
@@ -96,7 +101,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  void processNewItemAlerts(supabase, description, location).catch((e) => {
+  void processNewItemAlerts(supabase, description, location, session.university_id).catch((e) => {
     const msg = e instanceof Error ? e.message : String(e);
     console.error("[processNewItemAlerts]", msg);
   });

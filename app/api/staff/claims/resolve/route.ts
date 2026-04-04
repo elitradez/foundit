@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server";
-import { isStaffAuthenticated } from "@/lib/staff-api";
+import { getStaffSession } from "@/lib/staff-api";
 import { createAdminSupabaseClient } from "@/lib/supabase-admin";
 
 export async function POST(req: Request) {
-  if (!(await isStaffAuthenticated())) {
+  const session = await getStaffSession();
+  if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -31,6 +32,18 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Claim not found" }, { status: 404 });
   }
 
+  // Verify the claim's item belongs to this department.
+  const { data: itemRow, error: itemErr } = await supabase
+    .from("items")
+    .select("id")
+    .eq("id", claim.item_id)
+    .eq("department_id", session.department_id)
+    .maybeSingle();
+
+  if (itemErr || !itemRow) {
+    return NextResponse.json({ error: "Item not found" }, { status: 404 });
+  }
+
   if (action === "returned") {
     const studentName = body.studentName?.trim() || "";
     const studentIdNumber = body.studentIdNumber?.trim() || null;
@@ -56,15 +69,20 @@ export async function POST(req: Request) {
 
     if (updateWithPhone.error) {
       const msg = updateWithPhone.error.message || "";
-      const phoneMissing = msg.toLowerCase().includes("phone_number") && msg.toLowerCase().includes("does not exist");
+      const phoneMissing =
+        msg.toLowerCase().includes("phone_number") && msg.toLowerCase().includes("does not exist");
 
-      // Best-effort if updated_at doesn't exist OR phone_number doesn't exist.
       const updateWithoutUpdatedAt = await supabase
         .from("claims")
         .update(
           phoneMissing
             ? { student_name: studentName, student_id_number: studentIdNumber, status: "returned" }
-            : { student_name: studentName, student_id_number: studentIdNumber, phone_number: phoneNumber, status: "returned" },
+            : {
+                student_name: studentName,
+                student_id_number: studentIdNumber,
+                phone_number: phoneNumber,
+                status: "returned",
+              },
         )
         .eq("id", claimId);
 
@@ -73,7 +91,7 @@ export async function POST(req: Request) {
       }
     }
 
-    const { error: itemErr } = await supabase
+    const { error: itemUpdateErr } = await supabase
       .from("items")
       .update({
         returned_at: new Date().toISOString(),
@@ -81,31 +99,30 @@ export async function POST(req: Request) {
         returned_student_name: studentName,
         returned_student_id_number: studentIdNumber,
       })
-      .eq("id", claim.item_id);
-    if (itemErr) return NextResponse.json({ error: itemErr.message }, { status: 500 });
+      .eq("id", claim.item_id)
+      .eq("department_id", session.department_id);
+    if (itemUpdateErr) return NextResponse.json({ error: itemUpdateErr.message }, { status: 500 });
   } else {
-    const { error: itemErr } = await supabase
+    const { error: surplusErr } = await supabase
       .from("items")
       .update({
         sent_to_surplus_at: new Date().toISOString(),
         returned_at: new Date().toISOString(),
       })
-      .eq("id", claim.item_id);
-    if (itemErr) return NextResponse.json({ error: itemErr.message }, { status: 500 });
+      .eq("id", claim.item_id)
+      .eq("department_id", session.department_id);
+    if (surplusErr) return NextResponse.json({ error: surplusErr.message }, { status: 500 });
   }
 
   if (action === "surplus") {
-    // Remove from pending list
     const { error: claimErr } = await supabase
       .from("claims")
       .update({ status: "claimed", updated_at: new Date().toISOString() })
       .eq("id", claimId);
     if (claimErr) {
-      // Best-effort: some schemas may not have updated_at
       await supabase.from("claims").update({ status: "claimed" }).eq("id", claimId);
     }
   }
 
   return NextResponse.json({ ok: true });
 }
-

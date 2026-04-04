@@ -1,5 +1,5 @@
 import { createAdminSupabaseClient } from "@/lib/supabase-admin";
-import { isStaffAuthenticated } from "@/lib/staff-api";
+import { getStaffSession } from "@/lib/staff-api";
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
@@ -21,12 +21,24 @@ function isPendingStaffEntry(value: string | null): boolean {
   return v === "pending" || v === "pending staff entry" || v === "pending@staff-entry.edu";
 }
 
-async function getPendingClaims(): Promise<PendingClaimRow[]> {
+async function getPendingClaims(departmentId: string): Promise<PendingClaimRow[]> {
   const supabase = createAdminSupabaseClient();
+
+  // Get item IDs for this department first.
+  const { data: itemData, error: itemErr } = await supabase
+    .from("items")
+    .select("id")
+    .eq("department_id", departmentId);
+  if (itemErr) throw new Error(itemErr.message);
+
+  const itemIds = (itemData ?? []).map((r: { id: string }) => r.id);
+  if (itemIds.length === 0) return [];
+
   const { data, error } = await supabase
     .from("claims")
     .select("id, student_name, student_id_number, student_email, created_at, items(name)")
     .eq("status", "pending")
+    .in("item_id", itemIds)
     .order("created_at", { ascending: false });
 
   if (error) throw new Error(error.message);
@@ -46,9 +58,8 @@ async function markAsClaimedAction(formData: FormData) {
 
   if (!claimId) return;
 
-  if (!(await isStaffAuthenticated())) {
-    redirect("/staff/login");
-  }
+  const session = await getStaffSession();
+  if (!session) redirect("/staff/login");
 
   if (!studentName || !studentIdNumber) {
     throw new Error("Student name and Student ID are required.");
@@ -56,7 +67,23 @@ async function markAsClaimedAction(formData: FormData) {
 
   const supabase = createAdminSupabaseClient();
 
-  // Update the claim to claimed + capture student info the staff confirmed.
+  // Verify this claim's item belongs to the department before updating.
+  const { data: claimRow } = await supabase
+    .from("claims")
+    .select("item_id")
+    .eq("id", claimId)
+    .maybeSingle();
+
+  if (claimRow) {
+    const { data: itemRow } = await supabase
+      .from("items")
+      .select("id")
+      .eq("id", claimRow.item_id)
+      .eq("department_id", session.department_id)
+      .maybeSingle();
+    if (!itemRow) throw new Error("Item not found");
+  }
+
   const { error: statusErr } = await supabase
     .from("claims")
     .update({
@@ -72,9 +99,6 @@ async function markAsClaimedAction(formData: FormData) {
     throw statusErr;
   }
 
-  // Notes are optional UI input. Persisting is intentionally omitted here to avoid
-  // hard-coding a column name that may not exist in your current Supabase schema.
-  // Best-effort only: ignore if the column is missing.
   if (notes) {
     const { error: notesErr } = await supabase.from("claims").update({ staff_notes: notes }).eq("id", claimId);
     void notesErr;
@@ -84,12 +108,13 @@ async function markAsClaimedAction(formData: FormData) {
 }
 
 export default async function StaffClaimsInboxPage() {
-  if (!(await isStaffAuthenticated())) redirect("/staff/login");
+  const session = await getStaffSession();
+  if (!session) redirect("/staff/login");
 
   let claims: PendingClaimRow[] = [];
   let loadError: string | null = null;
   try {
-    claims = await getPendingClaims();
+    claims = await getPendingClaims(session.department_id);
   } catch (e) {
     loadError = e instanceof Error ? e.message : "Could not load claims";
   }
@@ -103,7 +128,7 @@ export default async function StaffClaimsInboxPage() {
       <header className="border-b border-white/10 bg-[#0c0c0c]/90 backdrop-blur">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-4">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-wider text-[#CC0000]">Staff</p>
+            <p className="text-xs font-semibold uppercase tracking-wider text-brand">Staff</p>
             <h1 className="text-xl font-semibold">Claims inbox</h1>
           </div>
           <div>
@@ -176,7 +201,7 @@ export default async function StaffClaimsInboxPage() {
                       <td className="px-4 py-4 text-[#F5F5F0]/80">{claim.created_at.slice(0, 10)}</td>
                       <td className="px-4 py-4">
                         <details className="claim-modal">
-                          <summary className="cursor-pointer list-none inline-flex min-h-11 items-center rounded-xl bg-[#CC0000] px-4 py-2 text-sm font-semibold text-white hover:bg-[#a80000]">
+                          <summary className="cursor-pointer list-none inline-flex min-h-11 items-center rounded-xl bg-brand px-4 py-2 text-sm font-semibold text-white hover:bg-brand-hover">
                             Mark as Claimed
                           </summary>
 
@@ -196,7 +221,7 @@ export default async function StaffClaimsInboxPage() {
                                     name="studentName"
                                     defaultValue={isPendingStaffEntry(claim.student_name) ? "" : claim.student_name ?? ""}
                                     required
-                                    className="w-full rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-base outline-none focus:border-[#CC0000]/45 focus:ring-2 focus:ring-[#CC0000]/25"
+                                    className="w-full rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-base outline-none focus:border-brand/45 focus:ring-2 focus:ring-brand/25"
                                   />
                                 </label>
 
@@ -206,7 +231,7 @@ export default async function StaffClaimsInboxPage() {
                                     name="studentIdNumber"
                                     defaultValue={isPendingStaffEntry(claim.student_id_number) ? "" : claim.student_id_number ?? ""}
                                     required
-                                    className="w-full rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-base outline-none focus:border-[#CC0000]/45 focus:ring-2 focus:ring-[#CC0000]/25"
+                                    className="w-full rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-base outline-none focus:border-brand/45 focus:ring-2 focus:ring-brand/25"
                                   />
                                 </label>
 
@@ -218,7 +243,7 @@ export default async function StaffClaimsInboxPage() {
                                     type="email"
                                     name="studentEmail"
                                     defaultValue={claim.student_email ?? ""}
-                                    className="w-full rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-base outline-none focus:border-[#CC0000]/45 focus:ring-2 focus:ring-[#CC0000]/25"
+                                    className="w-full rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-base outline-none focus:border-brand/45 focus:ring-2 focus:ring-brand/25"
                                   />
                                 </label>
 
@@ -230,7 +255,7 @@ export default async function StaffClaimsInboxPage() {
                                     name="notes"
                                     defaultValue=""
                                     rows={3}
-                                    className="w-full rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-base outline-none focus:border-[#CC0000]/45 focus:ring-2 focus:ring-[#CC0000]/25"
+                                    className="w-full rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-base outline-none focus:border-brand/45 focus:ring-2 focus:ring-brand/25"
                                   />
                                 </label>
                               </div>
@@ -238,7 +263,7 @@ export default async function StaffClaimsInboxPage() {
                               <div className="mt-5 flex justify-end gap-2">
                                 <button
                                   type="submit"
-                                  className="inline-flex min-h-11 items-center rounded-xl bg-[#CC0000] px-5 py-2 text-sm font-semibold text-white hover:bg-[#a80000]"
+                                  className="inline-flex min-h-11 items-center rounded-xl bg-brand px-5 py-2 text-sm font-semibold text-white hover:bg-brand-hover"
                                 >
                                   Confirm
                                 </button>
@@ -258,4 +283,3 @@ export default async function StaffClaimsInboxPage() {
     </div>
   );
 }
-

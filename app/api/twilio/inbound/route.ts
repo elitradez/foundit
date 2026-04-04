@@ -1,9 +1,12 @@
 import { NextResponse } from "next/server";
 import twilio from "twilio";
 import { createAdminSupabaseClient } from "@/lib/supabase-admin";
+import { getUniversityConfig } from "@/lib/university-config";
 
-const AUTO_REPLY =
-  "Got it! We will text you if your item shows up at Lassonde Studios lost and found. Visit founditcampus.com to search anytime.";
+function getAutoReply(): string {
+  const { pickupLocation, siteUrl } = getUniversityConfig();
+  return `Got it! We will text you if your item shows up at ${pickupLocation} lost and found. Visit ${siteUrl} to search anytime.`;
+}
 
 export const runtime = "nodejs";
 
@@ -43,7 +46,7 @@ export async function POST(req: Request) {
     console.error("[twilio/inbound] insert alert:", insErr.message);
     twiml.message("Sorry, we could not save your alert. Please try again later.");
   } else {
-    twiml.message(AUTO_REPLY);
+    twiml.message(getAutoReply());
   }
 
   return new NextResponse(twiml.toString(), {

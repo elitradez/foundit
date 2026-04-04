@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { isStaffAuthenticated } from "@/lib/staff-api";
+import { getStaffSession } from "@/lib/staff-api";
 import { createAdminSupabaseClient } from "@/lib/supabase-admin";
 
 type Ctx = { params: Promise<{ id: string }> };
@@ -9,7 +9,8 @@ function safeFilename(name: string): string {
 }
 
 export async function PATCH(req: Request, ctx: Ctx) {
-  if (!(await isStaffAuthenticated())) {
+  const session = await getStaffSession();
+  if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -21,8 +22,9 @@ export async function PATCH(req: Request, ctx: Ctx) {
   const supabase = createAdminSupabaseClient();
   const { data: row, error: fetchErr } = await supabase
     .from("items")
-    .select("id, photo_path, returned_at")
+    .select("id, photo_path, returned_at, department_id")
     .eq("id", id)
+    .eq("department_id", session.department_id)
     .maybeSingle();
 
   if (fetchErr || !row) {
@@ -86,14 +88,9 @@ export async function PATCH(req: Request, ctx: Ctx) {
 
   const { error: updErr } = await supabase
     .from("items")
-    .update({
-      name,
-      description,
-      location,
-      date_found,
-      photo_path,
-    })
-    .eq("id", id);
+    .update({ name, description, location, date_found, photo_path })
+    .eq("id", id)
+    .eq("department_id", session.department_id);
 
   if (updErr) {
     return NextResponse.json({ error: updErr.message }, { status: 500 });
@@ -103,7 +100,8 @@ export async function PATCH(req: Request, ctx: Ctx) {
 }
 
 export async function DELETE(_req: Request, ctx: Ctx) {
-  if (!(await isStaffAuthenticated())) {
+  const session = await getStaffSession();
+  if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   const { id } = await ctx.params;
@@ -116,6 +114,7 @@ export async function DELETE(_req: Request, ctx: Ctx) {
     .from("items")
     .select("id, photo_path, returned_at")
     .eq("id", id)
+    .eq("department_id", session.department_id)
     .maybeSingle();
 
   if (fetchErr || !item) {

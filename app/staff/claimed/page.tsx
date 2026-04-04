@@ -1,5 +1,5 @@
 import { createAdminSupabaseClient } from "@/lib/supabase-admin";
-import { isStaffAuthenticated } from "@/lib/staff-api";
+import { getStaffSession } from "@/lib/staff-api";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { revalidatePath } from "next/cache";
@@ -51,7 +51,8 @@ async function relistAction(formData: FormData) {
   const claimId = String(formData.get("claimId") ?? "").trim();
 
   if (!itemId) return;
-  if (!(await isStaffAuthenticated())) redirect("/staff/login");
+  const session = await getStaffSession();
+  if (!session) redirect("/staff/login");
 
   const supabase = createAdminSupabaseClient();
 
@@ -63,14 +64,11 @@ async function relistAction(formData: FormData) {
         sent_to_surplus_at: null,
         claim_description: null,
       })
-      .eq("id", itemId);
+      .eq("id", itemId)
+      .eq("department_id", session.department_id);
 
-    if (error) {
-      // Best-effort only; surface via server response is fine.
-      throw error;
-    }
+    if (error) throw error;
 
-    // Best-effort: if the item also had a claimed record, clear it too.
     const { error: claimErr } = await supabase
       .from("claims")
       .update({
@@ -86,24 +84,28 @@ async function relistAction(formData: FormData) {
   } else if (kind === "claimed") {
     if (!claimId) return;
 
-    const placeholderName = "Pending staff entry";
-    const placeholderId = "pending";
-    const placeholderEmail = "pending@staff-entry.edu";
+    // Verify item belongs to department before relisting.
+    const { data: itemRow } = await supabase
+      .from("items")
+      .select("id")
+      .eq("id", itemId)
+      .eq("department_id", session.department_id)
+      .maybeSingle();
+    if (!itemRow) throw new Error("Item not found");
 
     const { error: claimErr } = await supabase
       .from("claims")
       .update({
         status: "pending",
-        student_name: placeholderName,
-        student_id_number: placeholderId,
-        student_email: placeholderEmail,
+        student_name: "Pending staff entry",
+        student_id_number: "pending",
+        student_email: "pending@staff-entry.edu",
         updated_at: new Date().toISOString(),
       })
       .eq("id", claimId);
 
     if (claimErr) throw claimErr;
 
-    // Ensure the item shows as active again.
     const { error: itemErr } = await supabase
       .from("items")
       .update({
@@ -111,9 +113,9 @@ async function relistAction(formData: FormData) {
         sent_to_surplus_at: null,
         claim_description: null,
       })
-      .eq("id", itemId);
+      .eq("id", itemId)
+      .eq("department_id", session.department_id);
 
-    // Best-effort: if claim_description doesn't exist in your DB, ignore.
     void itemErr;
   }
 
@@ -129,7 +131,8 @@ async function deleteLogRowAction(formData: FormData) {
   const itemId = String(formData.get("itemId") ?? "").trim();
   const claimId = String(formData.get("claimId") ?? "").trim();
 
-  if (!(await isStaffAuthenticated())) redirect("/staff/login");
+  const session = await getStaffSession();
+  if (!session) redirect("/staff/login");
 
   const supabase = createAdminSupabaseClient();
 
@@ -140,6 +143,7 @@ async function deleteLogRowAction(formData: FormData) {
       .from("items")
       .select("id, photo_path, returned_at")
       .eq("id", itemId)
+      .eq("department_id", session.department_id)
       .maybeSingle();
 
     if (fetchErr || !item) {
@@ -150,7 +154,6 @@ async function deleteLogRowAction(formData: FormData) {
     }
 
     const { error: rmErr } = await supabase.storage.from("items").remove([item.photo_path]);
-    // Best-effort: even if storage remove fails, still delete row.
     void rmErr;
 
     const { error: delErr } = await supabase.from("items").delete().eq("id", itemId);
@@ -167,7 +170,8 @@ async function deleteLogRowAction(formData: FormData) {
 }
 
 export default async function StaffClaimedPage() {
-  if (!(await isStaffAuthenticated())) redirect("/staff/login");
+  const session = await getStaffSession();
+  if (!session) redirect("/staff/login");
 
   const supabase = createAdminSupabaseClient();
 
@@ -176,20 +180,57 @@ export default async function StaffClaimedPage() {
     .select("id, name, returned_at, sent_to_surplus_at")
     .not("returned_at", "is", null)
     .is("sent_to_surplus_at", null)
+    .eq("department_id", session.department_id)
     .order("returned_at", { ascending: false });
 
   if (returnedErr) throw returnedErr;
 
-  const { data: claimedData, error: claimedErr } = await supabase
-    .from("claims")
-    .select("id, item_id, student_name, student_id_number, student_email, created_at, updated_at, items(name, photo_path)")
-    .eq("status", "claimed")
-    .order("updated_at", { ascending: false });
+  // Get department item IDs to scope the claims query.
+  const deptItemIds = (returnedData ?? []).map((r: { id: string }) => r.id);
 
-  if (claimedErr) throw claimedErr;
+  let claimedData: ClaimedItemRow[] = [];
+  if (deptItemIds.length > 0) {
+    // Also fetch all department item IDs (not just returned ones) for claimed claims.
+    const { data: allItemData } = await supabase
+      .from("items")
+      .select("id")
+      .eq("department_id", session.department_id);
+    const allDeptItemIds = (allItemData ?? []).map((r: { id: string }) => r.id);
+
+    if (allDeptItemIds.length > 0) {
+      const { data, error: claimedErr } = await supabase
+        .from("claims")
+        .select("id, item_id, student_name, student_id_number, student_email, created_at, updated_at, items(name, photo_path)")
+        .eq("status", "claimed")
+        .in("item_id", allDeptItemIds)
+        .order("updated_at", { ascending: false });
+
+      if (claimedErr) throw claimedErr;
+      claimedData = (data ?? []) as ClaimedItemRow[];
+    }
+  } else {
+    // No returned items, but still check for claimed ones.
+    const { data: allItemData } = await supabase
+      .from("items")
+      .select("id")
+      .eq("department_id", session.department_id);
+    const allDeptItemIds = (allItemData ?? []).map((r: { id: string }) => r.id);
+
+    if (allDeptItemIds.length > 0) {
+      const { data, error: claimedErr } = await supabase
+        .from("claims")
+        .select("id, item_id, student_name, student_id_number, student_email, created_at, updated_at, items(name, photo_path)")
+        .eq("status", "claimed")
+        .in("item_id", allDeptItemIds)
+        .order("updated_at", { ascending: false });
+
+      if (claimedErr) throw claimedErr;
+      claimedData = (data ?? []) as ClaimedItemRow[];
+    }
+  }
 
   const returnedRows = (returnedData ?? []) as ReturnedItemRow[];
-  const claimedRows = (claimedData ?? []) as ClaimedItemRow[];
+  const claimedRows = claimedData;
 
   const rows: StudentLogRow[] = [
     ...returnedRows.map((r) => ({
@@ -295,7 +336,7 @@ export default async function StaffClaimedPage() {
                             <div className="mt-5 flex justify-end gap-2">
                               <button
                                 type="submit"
-                                className="inline-flex min-h-11 items-center rounded-xl bg-[#CC0000] px-5 py-2 text-sm font-semibold text-white hover:bg-[#a80000]"
+                                className="inline-flex min-h-11 items-center rounded-xl bg-brand px-5 py-2 text-sm font-semibold text-white hover:bg-brand-hover"
                               >
                                 Confirm
                               </button>
@@ -350,4 +391,3 @@ export default async function StaffClaimedPage() {
     </div>
   );
 }
-

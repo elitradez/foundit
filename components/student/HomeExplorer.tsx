@@ -6,15 +6,14 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Spinner } from "@/components/ui/Spinner";
 import type { PublicItem } from "@/lib/types";
 
-/** Student-facing pickup — always the building, not the logged sub-location. */
-const STUDENT_PICKUP_AT = "Lassonde Studios";
-
 type Props = {
   initialItems: PublicItem[];
   loadError?: string | null;
+  universityName?: string;
+  pickupLocation?: string;
 };
 
-export function HomeExplorer({ initialItems, loadError }: Props) {
+export function HomeExplorer({ initialItems, loadError, universityName = "University of Utah", pickupLocation = "Lassonde Studios" }: Props) {
   const [query, setQuery] = useState("");
   const [openItem, setOpenItem] = useState<PublicItem | null>(null);
   const [searchBusy, setSearchBusy] = useState(false);
@@ -82,7 +81,7 @@ export function HomeExplorer({ initialItems, loadError }: Props) {
         <div className="mx-auto flex max-w-6xl flex-col gap-6 px-4 py-10">
           <div className="space-y-2">
             <p className="text-sm font-semibold uppercase tracking-[0.15em] text-[#F5F5F0]/70">Foundit</p>
-            <h1 className="text-3xl font-semibold tracking-tight text-[#CC0000] sm:text-4xl">University of Utah</h1>
+            <h1 className="text-3xl font-semibold tracking-tight text-brand sm:text-4xl">{universityName}</h1>
             <p className="max-w-xl text-[#F5F5F0]/65">
               Browse items turned in on campus. Higher-value items stay blurred until your description matches what we
               logged; everyday items show a clear photo.
@@ -94,7 +93,7 @@ export function HomeExplorer({ initialItems, loadError }: Props) {
             </span>
             {query.trim() && searchBusy ? (
               <span className="pointer-events-none absolute right-4 top-1/2 inline-flex -translate-y-1/2 items-center gap-1.5 text-xs text-[#F5F5F0]/55">
-                <Spinner className="h-3.5 w-3.5 text-[#CC0000]" />
+                <Spinner className="h-3.5 w-3.5 text-brand" />
                 Searching...
               </span>
             ) : null}
@@ -103,7 +102,7 @@ export function HomeExplorer({ initialItems, loadError }: Props) {
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Search by name, location, or date..."
-              className="w-full rounded-2xl border border-white/10 bg-black/35 py-3.5 pl-24 pr-28 text-[#F5F5F0] outline-none placeholder:text-[#F5F5F0]/35 focus:border-[#CC0000]/45 focus:ring-2 focus:ring-[#CC0000]/25"
+              className="w-full rounded-2xl border border-white/10 bg-black/35 py-3.5 pl-24 pr-28 text-[#F5F5F0] outline-none placeholder:text-[#F5F5F0]/35 focus:border-brand/45 focus:ring-2 focus:ring-brand/25"
               aria-label="Search items"
             />
           </div>
@@ -130,7 +129,7 @@ export function HomeExplorer({ initialItems, loadError }: Props) {
                 <button
                   type="button"
                   onClick={() => setOpenItem(item)}
-                  className="group w-full overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04] text-left transition duration-200 hover:-translate-y-0.5 hover:border-[#CC0000]/35 hover:bg-white/[0.06]"
+                  className="group w-full overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04] text-left transition duration-200 hover:-translate-y-0.5 hover:border-brand/35 hover:bg-white/[0.06]"
                 >
                   <div className="relative aspect-[4/3] w-full overflow-hidden bg-black/50">
                     <Image
@@ -150,8 +149,8 @@ export function HomeExplorer({ initialItems, loadError }: Props) {
                   <div className="space-y-3 px-4 py-4">
                     <p className="font-medium text-[#F5F5F0]">{item.name}</p>
                     {item.value_tier === "low_value" ? (
-                      <p className="rounded-xl border border-[#CC0000]/25 bg-[#CC0000]/10 px-3 py-2.5 text-sm font-medium leading-snug text-[#F5F5F0]">
-                        📍 Pick up at: {STUDENT_PICKUP_AT}
+                      <p className="rounded-xl border border-brand/25 bg-brand/10 px-3 py-2.5 text-sm font-medium leading-snug text-[#F5F5F0]">
+                        📍 Pick up at: {pickupLocation}
                       </p>
                     ) : (
                       <p className="text-sm text-[#F5F5F0]/65">🔒 Describe to unlock — pickup location shown after you verify</p>
@@ -171,7 +170,7 @@ export function HomeExplorer({ initialItems, loadError }: Props) {
         Staff?{" "}
         <Link
           href="/staff/login"
-          className="text-base font-medium text-[#CC0000] underline decoration-[#CC0000]/40 underline-offset-4 hover:text-[#e02020] hover:decoration-[#CC0000]/70"
+          className="text-base font-medium text-brand underline decoration-brand/40 underline-offset-4 hover:text-brand-hover hover:decoration-brand/70"
         >
           Sign in
         </Link>
@@ -301,12 +300,12 @@ function ClaimModal({ item, onClose }: { item: PublicItem; onClose: () => void }
         {claimSubmitted ? (
           <div className="space-y-6 px-5 py-8 text-center">
             <p className="text-base leading-relaxed text-[#F5F5F0]/85">
-              Your claim has been submitted. Head to {STUDENT_PICKUP_AT} with your student ID to pick up your item.
+              Your claim has been submitted. Head to {pickupLocation} with your student ID to pick up your item.
             </p>
             <button
               type="button"
               onClick={onClose}
-              className="inline-flex min-h-11 min-w-[10rem] items-center justify-center rounded-xl border border-[#CC0000]/45 bg-[#CC0000]/12 px-6 py-3 text-sm font-medium text-[#F5F5F0] transition hover:bg-[#CC0000]/22 focus:outline-none focus:ring-2 focus:ring-[#CC0000]/35"
+              className="inline-flex min-h-11 min-w-[10rem] items-center justify-center rounded-xl border border-brand/45 bg-brand/12 px-6 py-3 text-sm font-medium text-[#F5F5F0] transition hover:bg-brand/22 focus:outline-none focus:ring-2 focus:ring-brand/35"
             >
               Done
             </button>
@@ -326,7 +325,7 @@ function ClaimModal({ item, onClose }: { item: PublicItem; onClose: () => void }
             </div>
 
             <p className="rounded-xl border border-white/10 bg-black/30 px-4 py-3 text-sm font-medium text-[#F5F5F0]/90">
-              📍 Pick up at: {STUDENT_PICKUP_AT}
+              📍 Pick up at: {pickupLocation}
             </p>
 
             {showClaimForm ? (
@@ -336,7 +335,7 @@ function ClaimModal({ item, onClose }: { item: PublicItem; onClose: () => void }
                   <input
                     value={studentName}
                     onChange={(e) => setStudentName(e.target.value)}
-                    className="w-full rounded-xl border border-white/10 bg-black/40 px-4 py-3 text-[#F5F5F0] outline-none focus:border-[#CC0000]/45 focus:ring-2 focus:ring-[#CC0000]/25"
+                    className="w-full rounded-xl border border-white/10 bg-black/40 px-4 py-3 text-[#F5F5F0] outline-none focus:border-brand/45 focus:ring-2 focus:ring-brand/25"
                     autoComplete="name"
                   />
                 </label>
@@ -345,7 +344,7 @@ function ClaimModal({ item, onClose }: { item: PublicItem; onClose: () => void }
                   <input
                     value={studentIdNumber}
                     onChange={(e) => setStudentIdNumber(e.target.value)}
-                    className="w-full rounded-xl border border-white/10 bg-black/40 px-4 py-3 text-[#F5F5F0] outline-none focus:border-[#CC0000]/45 focus:ring-2 focus:ring-[#CC0000]/25"
+                    className="w-full rounded-xl border border-white/10 bg-black/40 px-4 py-3 text-[#F5F5F0] outline-none focus:border-brand/45 focus:ring-2 focus:ring-brand/25"
                   />
                 </label>
 
@@ -357,7 +356,7 @@ function ClaimModal({ item, onClose }: { item: PublicItem; onClose: () => void }
                       value={pin}
                       onChange={(e) => setPin(e.target.value)}
                       placeholder="Provided when the item was logged"
-                      className="w-full rounded-xl border border-white/10 bg-black/40 px-4 py-3 text-[#F5F5F0] outline-none focus:border-[#CC0000]/45 focus:ring-2 focus:ring-[#CC0000]/25"
+                      className="w-full rounded-xl border border-white/10 bg-black/40 px-4 py-3 text-[#F5F5F0] outline-none focus:border-brand/45 focus:ring-2 focus:ring-brand/25"
                     />
                   </label>
                 ) : null}
@@ -366,11 +365,11 @@ function ClaimModal({ item, onClose }: { item: PublicItem; onClose: () => void }
                   type="button"
                   onClick={() => void submitClaim()}
                   disabled={submitBusy}
-                  className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-[#CC0000]/40 bg-[#CC0000]/15 py-3 text-sm font-medium text-[#F5F5F0] hover:bg-[#CC0000]/25 disabled:opacity-40"
+                  className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-brand/40 bg-brand/15 py-3 text-sm font-medium text-[#F5F5F0] hover:bg-brand/25 disabled:opacity-40"
                 >
                   {submitBusy ? (
                     <>
-                      <Spinner className="h-4 w-4 text-[#CC0000]" />
+                      <Spinner className="h-4 w-4 text-brand" />
                       Submitting...
                     </>
                   ) : (
@@ -382,7 +381,7 @@ function ClaimModal({ item, onClose }: { item: PublicItem; onClose: () => void }
               <button
                 type="button"
                 onClick={() => setShowClaimForm(true)}
-                className="inline-flex min-h-11 w-full items-center justify-center rounded-xl border border-[#CC0000]/40 bg-[#CC0000]/15 py-3 text-sm font-medium text-[#F5F5F0] hover:bg-[#CC0000]/25"
+                className="inline-flex min-h-11 w-full items-center justify-center rounded-xl border border-brand/40 bg-brand/15 py-3 text-sm font-medium text-[#F5F5F0] hover:bg-brand/25"
               >
                 This is mine →
               </button>
@@ -410,7 +409,7 @@ function ClaimModal({ item, onClose }: { item: PublicItem; onClose: () => void }
                 onChange={(e) => setStudentDescription(e.target.value)}
                 rows={4}
                 placeholder="Describe your item so we can verify it&apos;s yours"
-                className="w-full rounded-xl border border-white/10 bg-black/40 px-4 py-3 text-[#F5F5F0] outline-none focus:border-[#CC0000]/45 focus:ring-2 focus:ring-[#CC0000]/25"
+                className="w-full rounded-xl border border-white/10 bg-black/40 px-4 py-3 text-[#F5F5F0] outline-none focus:border-brand/45 focus:ring-2 focus:ring-brand/25"
               />
             </label>
 
@@ -422,7 +421,7 @@ function ClaimModal({ item, onClose }: { item: PublicItem; onClose: () => void }
                   value={pin}
                   onChange={(e) => setPin(e.target.value)}
                   placeholder="Provided when the item was logged"
-                  className="w-full rounded-xl border border-white/10 bg-black/40 px-4 py-3 text-[#F5F5F0] outline-none focus:border-[#CC0000]/45 focus:ring-2 focus:ring-[#CC0000]/25"
+                  className="w-full rounded-xl border border-white/10 bg-black/40 px-4 py-3 text-[#F5F5F0] outline-none focus:border-brand/45 focus:ring-2 focus:ring-brand/25"
                 />
               </label>
             ) : null}
@@ -431,11 +430,11 @@ function ClaimModal({ item, onClose }: { item: PublicItem; onClose: () => void }
               type="button"
               onClick={() => void checkMatch()}
               disabled={matchBusy || !studentDescription.trim()}
-              className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-[#CC0000]/40 bg-[#CC0000]/15 py-3 text-sm font-medium text-[#F5F5F0] hover:bg-[#CC0000]/25 disabled:opacity-40"
+              className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-brand/40 bg-brand/15 py-3 text-sm font-medium text-[#F5F5F0] hover:bg-brand/25 disabled:opacity-40"
             >
               {matchBusy ? (
                 <>
-                  <Spinner className="h-4 w-4 text-[#CC0000]" />
+                  <Spinner className="h-4 w-4 text-brand" />
                   Checking...
                 </>
               ) : (
@@ -467,7 +466,7 @@ function ClaimModal({ item, onClose }: { item: PublicItem; onClose: () => void }
               <p className="mb-1 text-center text-2xl font-bold text-emerald-400">✓ Item Found!</p>
               <p className="text-center text-lg font-semibold text-[#F5F5F0]">{item.name}</p>
               <p className="mb-5 mt-4 rounded-xl border border-white/10 bg-black/30 p-3 text-sm font-medium text-[#F5F5F0]/90">
-                📍 Pick up at: {STUDENT_PICKUP_AT}
+                📍 Pick up at: {pickupLocation}
               </p>
               <div className="flex flex-col gap-2">
                 <button

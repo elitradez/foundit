@@ -1,11 +1,12 @@
 import { NextResponse } from "next/server";
-import { isStaffAuthenticated } from "@/lib/staff-api";
+import { getStaffSession } from "@/lib/staff-api";
 import { createAdminSupabaseClient } from "@/lib/supabase-admin";
 
 type Ctx = { params: Promise<{ id: string }> };
 
 export async function GET(_req: Request, ctx: Ctx) {
-  if (!(await isStaffAuthenticated())) {
+  const session = await getStaffSession();
+  if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -17,6 +18,7 @@ export async function GET(_req: Request, ctx: Ctx) {
     .from("items")
     .select("photo_path")
     .eq("id", id)
+    .eq("department_id", session.department_id)
     .maybeSingle();
 
   if (error || !item) {
@@ -37,4 +39,3 @@ export async function GET(_req: Request, ctx: Ctx) {
     },
   });
 }
-

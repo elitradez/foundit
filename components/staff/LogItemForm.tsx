@@ -155,7 +155,7 @@ export function LogItemForm({ onClose, onSaved }: Props) {
                 />
               </label>
 
-              <label className="cursor-pointer rounded-xl bg-[#CC0000]/15 px-4 py-3 text-center text-sm font-medium text-[#F5F5F0] transition duration-200 hover:bg-[#CC0000]/25">
+              <label className="cursor-pointer rounded-xl bg-brand/15 px-4 py-3 text-center text-sm font-medium text-[#F5F5F0] transition duration-200 hover:bg-brand/25">
                 <span>Take photo</span>
                 <input
                   type="file"
@@ -168,7 +168,7 @@ export function LogItemForm({ onClose, onSaved }: Props) {
             </div>
             {identifyBusy ? (
               <p className="inline-flex items-center gap-2 text-xs text-[#F5F5F0]/60">
-                <Spinner className="h-3.5 w-3.5 text-[#CC0000]" />
+                <Spinner className="h-3.5 w-3.5 text-brand" />
                 AI is analyzing the photo...
               </p>
             ) : null}
@@ -179,7 +179,7 @@ export function LogItemForm({ onClose, onSaved }: Props) {
             <input
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="w-full rounded-xl border border-white/10 bg-black/40 px-4 py-2.5 text-[#F5F5F0] outline-none focus:border-[#CC0000]/50 focus:ring-2 focus:ring-[#CC0000]/30"
+              className="w-full rounded-xl border border-white/10 bg-black/40 px-4 py-2.5 text-[#F5F5F0] outline-none focus:border-brand/50 focus:ring-2 focus:ring-brand/30"
               required
             />
             <p className="text-xs text-[#F5F5F0]/45">
@@ -193,7 +193,7 @@ export function LogItemForm({ onClose, onSaved }: Props) {
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               rows={4}
-              className="w-full rounded-xl border border-white/10 bg-black/40 px-4 py-2.5 text-[#F5F5F0] outline-none focus:border-[#CC0000]/50 focus:ring-2 focus:ring-[#CC0000]/30"
+              className="w-full rounded-xl border border-white/10 bg-black/40 px-4 py-2.5 text-[#F5F5F0] outline-none focus:border-brand/50 focus:ring-2 focus:ring-brand/30"
               required
             />
           </label>
@@ -203,7 +203,7 @@ export function LogItemForm({ onClose, onSaved }: Props) {
             <select
               value={valueTier}
               onChange={(e) => setValueTier(e.target.value as ValueTier)}
-              className="w-full rounded-xl border border-white/10 bg-black/40 px-4 py-2.5 text-[#F5F5F0] outline-none focus:border-[#CC0000]/50 focus:ring-2 focus:ring-[#CC0000]/30"
+              className="w-full rounded-xl border border-white/10 bg-black/40 px-4 py-2.5 text-[#F5F5F0] outline-none focus:border-brand/50 focus:ring-2 focus:ring-brand/30"
             >
               <option value="low_value">Low value — students see an unblurred photo</option>
               <option value="high_value">High value — photo blurred until description matches</option>
@@ -217,7 +217,7 @@ export function LogItemForm({ onClose, onSaved }: Props) {
               value={location}
               onChange={(e) => setLocation(e.target.value)}
               placeholder="e.g. Union — 2nd floor lounge"
-              className="w-full rounded-xl border border-white/10 bg-black/40 px-4 py-2.5 text-[#F5F5F0] outline-none focus:border-[#CC0000]/50 focus:ring-2 focus:ring-[#CC0000]/30"
+              className="w-full rounded-xl border border-white/10 bg-black/40 px-4 py-2.5 text-[#F5F5F0] outline-none focus:border-brand/50 focus:ring-2 focus:ring-brand/30"
               required
             />
           </label>
@@ -228,7 +228,7 @@ export function LogItemForm({ onClose, onSaved }: Props) {
               type="date"
               value={dateFound}
               onChange={(e) => setDateFound(e.target.value)}
-              className="w-full rounded-xl border border-white/10 bg-black/40 px-4 py-2.5 text-[#F5F5F0] outline-none focus:border-[#CC0000]/50 focus:ring-2 focus:ring-[#CC0000]/30"
+              className="w-full rounded-xl border border-white/10 bg-black/40 px-4 py-2.5 text-[#F5F5F0] outline-none focus:border-brand/50 focus:ring-2 focus:ring-brand/30"
               required
             />
           </label>
@@ -241,7 +241,7 @@ export function LogItemForm({ onClose, onSaved }: Props) {
               onChange={(e) => setOptionalPin(e.target.value)}
               placeholder="Leave blank if not needed"
               autoComplete="new-password"
-              className="w-full rounded-xl border border-white/10 bg-black/40 px-4 py-2.5 text-[#F5F5F0] outline-none focus:border-[#CC0000]/50 focus:ring-2 focus:ring-[#CC0000]/30"
+              className="w-full rounded-xl border border-white/10 bg-black/40 px-4 py-2.5 text-[#F5F5F0] outline-none focus:border-brand/50 focus:ring-2 focus:ring-brand/30"
             />
             <p className="text-xs text-[#F5F5F0]/45">Students must enter this PIN to submit a claim.</p>
           </label>
@@ -259,7 +259,7 @@ export function LogItemForm({ onClose, onSaved }: Props) {
             <button
               type="submit"
               disabled={saveBusy}
-              className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-[#CC0000] px-4 py-2.5 text-sm font-medium text-white transition duration-200 hover:bg-[#a80000] active:scale-[0.99] disabled:opacity-50"
+              className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-brand px-4 py-2.5 text-sm font-medium text-white transition duration-200 hover:bg-brand-hover active:scale-[0.99] disabled:opacity-50"
             >
               {saveBusy ? (
                 <>

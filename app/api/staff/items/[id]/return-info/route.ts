@@ -1,11 +1,12 @@
 import { NextResponse } from "next/server";
-import { isStaffAuthenticated } from "@/lib/staff-api";
+import { getStaffSession } from "@/lib/staff-api";
 import { createAdminSupabaseClient } from "@/lib/supabase-admin";
 
 type Ctx = { params: Promise<{ id: string }> };
 
 export async function POST(req: Request, ctx: Ctx) {
-  if (!(await isStaffAuthenticated())) {
+  const session = await getStaffSession();
+  if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -24,11 +25,11 @@ export async function POST(req: Request, ctx: Ctx) {
 
   const supabase = createAdminSupabaseClient();
 
-  // Only allow editing student info for items that are already marked returned.
   const { data: item, error: fetchErr } = await supabase
     .from("items")
     .select("id, returned_at")
     .eq("id", id)
+    .eq("department_id", session.department_id)
     .maybeSingle();
 
   if (fetchErr || !item) {
@@ -44,7 +45,8 @@ export async function POST(req: Request, ctx: Ctx) {
       returned_student_name: studentName,
       returned_student_id_number: studentIdNumber,
     })
-    .eq("id", id);
+    .eq("id", id)
+    .eq("department_id", session.department_id);
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
@@ -52,4 +54,3 @@ export async function POST(req: Request, ctx: Ctx) {
 
   return NextResponse.json({ ok: true });
 }
-

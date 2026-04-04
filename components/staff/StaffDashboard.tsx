@@ -110,7 +110,13 @@ async function compressImageForUpload(file: File): Promise<File> {
   return new File([blob], `${stem || "photo"}.jpg`, { type: "image/jpeg" });
 }
 
-export function StaffDashboard() {
+export function StaffDashboard({
+  departmentName = "Lost & Found",
+  universityName,
+}: {
+  departmentName?: string;
+  universityName?: string;
+}) {
   const [items, setItems] = useState<ItemRow[]>([]);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -498,7 +504,7 @@ export function StaffDashboard() {
         onClick={() => setTab(id)}
         className={`inline-flex min-h-11 items-center rounded-xl border px-4 py-2 text-sm font-semibold transition ${
           active
-            ? "border-[#CC0000]/60 bg-[#CC0000]/25 text-[#F5F5F0]"
+            ? "border-brand/60 bg-brand/25 text-[#F5F5F0]"
             : "border-white/10 bg-white/[0.03] text-[#F5F5F0]/75 hover:bg-white/[0.06]"
         }`}
       >
@@ -552,14 +558,17 @@ export function StaffDashboard() {
       <header className="sticky top-0 z-20 border-b border-white/10 bg-[#0c0c0c]/90 backdrop-blur">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-4">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-wider text-[#CC0000]">Staff</p>
-            <h1 className="text-xl font-semibold">Foundit dashboard</h1>
+            <p className="text-xs font-semibold uppercase tracking-wider text-brand">Staff</p>
+            <h1 className="text-xl font-semibold">{departmentName}</h1>
+            {universityName ? (
+              <p className="text-xs text-[#F5F5F0]/50 mt-0.5">{universityName}</p>
+            ) : null}
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <button
               type="button"
               onClick={() => setShowForm(true)}
-              className="inline-flex min-h-11 items-center rounded-xl bg-[#CC0000] px-4 py-2 text-sm font-medium text-white hover:bg-[#a80000]"
+              className="inline-flex min-h-11 items-center rounded-xl bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-hover"
             >
               Log new item
             </button>
@@ -878,7 +887,7 @@ export function StaffDashboard() {
       <footer className="mx-auto max-w-6xl px-4 pb-10 pt-2 text-center">
         <a
           href="/"
-          className="text-sm font-medium text-[#CC0000] underline decoration-[#CC0000]/40 underline-offset-4 hover:text-[#e02020] hover:decoration-[#CC0000]/70"
+          className="text-sm font-medium text-brand underline decoration-brand/40 underline-offset-4 hover:text-brand-hover hover:decoration-brand/70"
         >
           Return to student view
         </a>
@@ -1007,7 +1016,7 @@ export function StaffDashboard() {
                 <input
                   value={editActiveName}
                   onChange={(e) => setEditActiveName(e.target.value)}
-                  className="w-full rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-base outline-none focus:border-[#CC0000]/45 focus:ring-2 focus:ring-[#CC0000]/25"
+                  className="w-full rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-base outline-none focus:border-brand/45 focus:ring-2 focus:ring-brand/25"
                 />
               </label>
 
@@ -1017,7 +1026,7 @@ export function StaffDashboard() {
                   value={editActiveDescription}
                   onChange={(e) => setEditActiveDescription(e.target.value)}
                   rows={4}
-                  className="w-full resize-y rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-base outline-none focus:border-[#CC0000]/45 focus:ring-2 focus:ring-[#CC0000]/25"
+                  className="w-full resize-y rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-base outline-none focus:border-brand/45 focus:ring-2 focus:ring-brand/25"
                 />
               </label>
 
@@ -1026,7 +1035,7 @@ export function StaffDashboard() {
                 <input
                   value={editActiveLocation}
                   onChange={(e) => setEditActiveLocation(e.target.value)}
-                  className="w-full rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-base outline-none focus:border-[#CC0000]/45 focus:ring-2 focus:ring-[#CC0000]/25"
+                  className="w-full rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-base outline-none focus:border-brand/45 focus:ring-2 focus:ring-brand/25"
                 />
               </label>
 
@@ -1036,7 +1045,7 @@ export function StaffDashboard() {
                   type="date"
                   value={editActiveDateFound}
                   onChange={(e) => setEditActiveDateFound(e.target.value)}
-                  className="w-full rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-base outline-none focus:border-[#CC0000]/45 focus:ring-2 focus:ring-[#CC0000]/25"
+                  className="w-full rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-base outline-none focus:border-brand/45 focus:ring-2 focus:ring-brand/25"
                 />
               </label>
             </div>
@@ -1053,7 +1062,7 @@ export function StaffDashboard() {
                 type="button"
                 onClick={() => void saveActiveItem()}
                 disabled={busyId === editActiveItem.id}
-                className="inline-flex min-h-11 items-center rounded-xl bg-[#CC0000] px-5 py-2 text-sm font-semibold text-white hover:bg-[#a80000] disabled:opacity-50"
+                className="inline-flex min-h-11 items-center rounded-xl bg-brand px-5 py-2 text-sm font-semibold text-white hover:bg-brand-hover disabled:opacity-50"
               >
                 {busyId === editActiveItem.id ? "Saving…" : "Save changes"}
               </button>
@@ -1074,7 +1083,7 @@ export function StaffDashboard() {
                 <input
                   value={editStudentName}
                   onChange={(e) => setEditStudentName(e.target.value)}
-                  className="w-full rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-base outline-none focus:border-[#CC0000]/45 focus:ring-2 focus:ring-[#CC0000]/25"
+                  className="w-full rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-base outline-none focus:border-brand/45 focus:ring-2 focus:ring-brand/25"
                 />
               </label>
               <label className="block space-y-1">
@@ -1082,7 +1091,7 @@ export function StaffDashboard() {
                 <input
                   value={editStudentIdNumber}
                   onChange={(e) => setEditStudentIdNumber(e.target.value)}
-                  className="w-full rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-base outline-none focus:border-[#CC0000]/45 focus:ring-2 focus:ring-[#CC0000]/25"
+                  className="w-full rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-base outline-none focus:border-brand/45 focus:ring-2 focus:ring-brand/25"
                 />
               </label>
             </div>
@@ -1099,7 +1108,7 @@ export function StaffDashboard() {
                 type="button"
                 onClick={() => void saveStudentInfo()}
                 disabled={busyId === editReturnedItemId}
-                className="inline-flex min-h-11 items-center rounded-xl bg-[#CC0000] px-5 py-2 text-sm font-semibold text-white hover:bg-[#a80000] disabled:opacity-50"
+                className="inline-flex min-h-11 items-center rounded-xl bg-brand px-5 py-2 text-sm font-semibold text-white hover:bg-brand-hover disabled:opacity-50"
               >
                 {busyId === editReturnedItemId ? "..." : "Save"}
               </button>
@@ -1124,7 +1133,7 @@ export function StaffDashboard() {
                 <input
                   value={returnStudentName}
                   onChange={(e) => setReturnStudentName(e.target.value)}
-                  className="w-full rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-base outline-none focus:border-[#CC0000]/45 focus:ring-2 focus:ring-[#CC0000]/25"
+                  className="w-full rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-base outline-none focus:border-brand/45 focus:ring-2 focus:ring-brand/25"
                 />
               </label>
 
@@ -1133,7 +1142,7 @@ export function StaffDashboard() {
                 <input
                   value={returnStudentIdNumber}
                   onChange={(e) => setReturnStudentIdNumber(e.target.value)}
-                  className="w-full rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-base outline-none focus:border-[#CC0000]/45 focus:ring-2 focus:ring-[#CC0000]/25"
+                  className="w-full rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-base outline-none focus:border-brand/45 focus:ring-2 focus:ring-brand/25"
                 />
               </label>
 
@@ -1142,7 +1151,7 @@ export function StaffDashboard() {
                 <input
                   value={returnPhoneNumber}
                   onChange={(e) => setReturnPhoneNumber(e.target.value)}
-                  className="w-full rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-base outline-none focus:border-[#CC0000]/45 focus:ring-2 focus:ring-[#CC0000]/25"
+                  className="w-full rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-base outline-none focus:border-brand/45 focus:ring-2 focus:ring-brand/25"
                 />
               </label>
             </div>

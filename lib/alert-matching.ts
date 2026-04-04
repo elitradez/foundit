@@ -6,6 +6,7 @@ import {
   parseJsonFromModel,
 } from "@/lib/anthropic";
 import { hasTwilioConfig, sendSms } from "@/lib/twilio";
+import { getUniversityConfig } from "@/lib/university-config";
 
 type UnnotifiedAlert = {
   id: string;
@@ -51,16 +52,17 @@ ${alertDescription}`;
 }
 
 const SMS_BODY = (location: string) =>
-  `Foundit: An item matching your description was just logged at ${location}. Visit founditcampus.com to search and claim it.`;
+  `Foundit: An item matching your description was just logged at ${location}. Visit ${getUniversityConfig().siteUrl} to search and claim it.`;
 
 /**
- * After a new item is saved, notify matching unnotified SMS alerts.
+ * After a new item is saved, notify matching unnotified SMS alerts within the same university.
  * Errors are logged; does not throw (safe to fire-and-forget).
  */
 export async function processNewItemAlerts(
   supabase: SupabaseClient,
   itemDescription: string,
   location: string,
+  universityId: string,
 ): Promise<void> {
   if (!process.env.ANTHROPIC_API_KEY?.trim()) {
     return;
@@ -72,7 +74,8 @@ export async function processNewItemAlerts(
   const { data: rows, error } = await supabase
     .from("alerts")
     .select("id, phone, description")
-    .eq("notified", false);
+    .eq("notified", false)
+    .eq("university_id", universityId);
 
   if (error) {
     console.error("[alerts] fetch unnotified:", error.message);

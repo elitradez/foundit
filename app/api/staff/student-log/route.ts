@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { isStaffAuthenticated } from "@/lib/staff-api";
+import { getStaffSession } from "@/lib/staff-api";
 import { createAdminSupabaseClient } from "@/lib/supabase-admin";
 
 type ClaimedRow = {
@@ -25,7 +25,8 @@ type ReturnedItemRow = {
 type ItemRef = { id: string; name: string };
 
 export async function GET() {
-  if (!(await isStaffAuthenticated())) {
+  const session = await getStaffSession();
+  if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -37,6 +38,7 @@ export async function GET() {
       .select("id, name, returned_at, sent_to_surplus_at, returned_student_name, returned_student_id_number")
       .not("returned_at", "is", null)
       .is("sent_to_surplus_at", null)
+      .eq("department_id", session.department_id)
       .order("returned_at", { ascending: false }),
     supabase
       .from("claims")
@@ -49,7 +51,6 @@ export async function GET() {
     return NextResponse.json({ error: returnedRes.error.message }, { status: 500 });
   }
 
-  // Some deployments may not have claims.phone_number yet. Fall back gracefully.
   let claimedData: ClaimedRow[] | null | undefined = null;
 
   if (!first.error) {
@@ -72,22 +73,32 @@ export async function GET() {
   const returnedRows = (returnedRes.data ?? []) as ReturnedItemRow[];
   const claimedRows = (claimedData ?? []) as ClaimedRow[];
 
-  // Avoid duplicates: resolving a claim as "returned" sets both items.returned_at and claims.status='returned'.
-  // Prefer the claim row (phone, etc.); omit the bare item row for the same item.
-  const itemIdsFromReturnedClaims = new Set(
-    claimedRows.filter((c) => c.status === "returned").map((c) => c.item_id),
-  );
-  const returnedRowsDeduped = returnedRows.filter((r) => !itemIdsFromReturnedClaims.has(r.id));
-
+  // Filter claims to only those whose items belong to this department.
+  const deptItemIds = new Set(returnedRows.map((r) => r.id));
   const claimItemIds = Array.from(new Set(claimedRows.map((c) => c.item_id).filter(Boolean)));
   let itemMap = new Map<string, ItemRef>();
+
   if (claimItemIds.length > 0) {
     const { data: itemData, error: itemErr } = await supabase
       .from("items")
       .select("id, name")
-      .in("id", claimItemIds);
+      .in("id", claimItemIds)
+      .eq("department_id", session.department_id);
     if (itemErr) return NextResponse.json({ error: itemErr.message }, { status: 500 });
     itemMap = new Map(((itemData ?? []) as ItemRef[]).map((i) => [i.id, i]));
+  }
+
+  // Only include claimed rows whose items are in this department.
+  const deptClaimedRows = claimedRows.filter((c) => itemMap.has(c.item_id));
+
+  const itemIdsFromReturnedClaims = new Set(
+    deptClaimedRows.filter((c) => c.status === "returned").map((c) => c.item_id),
+  );
+  const returnedRowsDeduped = returnedRows.filter((r) => !itemIdsFromReturnedClaims.has(r.id));
+
+  // Also add returned items to itemMap for completeness.
+  for (const r of returnedRows) {
+    if (!itemMap.has(r.id)) deptItemIds.add(r.id);
   }
 
   const rows = [
@@ -100,7 +111,7 @@ export async function GET() {
       date: r.returned_at.slice(0, 10),
       status: "Returned" as const,
     })),
-    ...claimedRows.map((c) => ({
+    ...deptClaimedRows.map((c) => ({
       kind: c.status === "returned" ? ("returned" as "returned") : ("claimed" as "claimed"),
       claim_id: c.id,
       item_id: c.item_id,
@@ -115,4 +126,3 @@ export async function GET() {
 
   return NextResponse.json({ rows });
 }
-

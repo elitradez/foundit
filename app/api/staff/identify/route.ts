@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { isStaffAuthenticated } from "@/lib/staff-api";
+import { getStaffSession } from "@/lib/staff-api";
 import {
   extractTextContent,
   getAnthropicClient,
@@ -57,7 +57,8 @@ function toMediaType(mime: string): "image/jpeg" | "image/png" | "image/gif" | "
 }
 
 export async function POST(req: Request) {
-  if (!(await isStaffAuthenticated())) {
+  const session = await getStaffSession();
+  if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   const form = await req.formData();

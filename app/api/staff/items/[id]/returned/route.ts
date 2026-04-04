@@ -1,11 +1,12 @@
 import { NextResponse } from "next/server";
-import { isStaffAuthenticated } from "@/lib/staff-api";
+import { getStaffSession } from "@/lib/staff-api";
 import { createAdminSupabaseClient } from "@/lib/supabase-admin";
 
 type Ctx = { params: Promise<{ id: string }> };
 
 export async function POST(req: Request, ctx: Ctx) {
-  if (!(await isStaffAuthenticated())) {
+  const session = await getStaffSession();
+  if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   const { id } = await ctx.params;
@@ -17,8 +18,6 @@ export async function POST(req: Request, ctx: Ctx) {
     studentName?: string;
     studentIdNumber?: string;
   };
-  // Student fields are optional. If your DB schema doesn't include returned-student columns,
-  // we just don't persist them (the item will still be marked returned).
   void body;
 
   const supabase = createAdminSupabaseClient();
@@ -28,7 +27,8 @@ export async function POST(req: Request, ctx: Ctx) {
       returned_at: new Date().toISOString(),
       sent_to_surplus_at: null,
     })
-    .eq("id", id);
+    .eq("id", id)
+    .eq("department_id", session.department_id);
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }

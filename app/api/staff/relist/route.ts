@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server";
-import { isStaffAuthenticated } from "@/lib/staff-api";
+import { getStaffSession } from "@/lib/staff-api";
 import { createAdminSupabaseClient } from "@/lib/supabase-admin";
 
 export async function POST(req: Request) {
-  if (!(await isStaffAuthenticated())) {
+  const session = await getStaffSession();
+  if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -21,7 +22,18 @@ export async function POST(req: Request) {
 
   const supabase = createAdminSupabaseClient();
 
-  // Put the item back into the active list.
+  // Verify this item belongs to the department before relisting.
+  const { data: itemRow, error: itemCheckErr } = await supabase
+    .from("items")
+    .select("id")
+    .eq("id", itemId)
+    .eq("department_id", session.department_id)
+    .maybeSingle();
+
+  if (itemCheckErr || !itemRow) {
+    return NextResponse.json({ error: "Item not found" }, { status: 404 });
+  }
+
   const { error: itemErr } = await supabase
     .from("items")
     .update({
@@ -31,17 +43,17 @@ export async function POST(req: Request) {
       returned_student_name: null,
       returned_student_id_number: null,
     })
-    .eq("id", itemId);
+    .eq("id", itemId)
+    .eq("department_id", session.department_id);
   if (itemErr) {
-    // Best-effort: schema may not have all columns.
     await supabase
       .from("items")
       .update({ returned_at: null, sent_to_surplus_at: null })
-      .eq("id", itemId);
+      .eq("id", itemId)
+      .eq("department_id", session.department_id);
   }
 
   if (kind === "claimed" && claimId) {
-    // Remove from claimed log by moving back to pending.
     const { error: claimErr } = await supabase
       .from("claims")
       .update({
@@ -59,4 +71,3 @@ export async function POST(req: Request) {
 
   return NextResponse.json({ ok: true });
 }
-
