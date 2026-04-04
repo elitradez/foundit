@@ -576,6 +576,16 @@ export function StaffDashboard({
             <TabButton id="claims" label="Claims" />
             <TabButton id="log" label="Student Log" />
             <TabButton id="surplus" label="Surplus" />
+            <button
+              type="button"
+              onClick={async () => {
+                await fetch("/api/staff/logout", { method: "POST" });
+                window.location.href = "/staff/login";
+              }}
+              className="inline-flex min-h-11 items-center rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-[#F5F5F0]/70 hover:bg-white/10 hover:text-[#F5F5F0]"
+            >
+              Switch Department
+            </button>
           </div>
         </div>
       </header>
