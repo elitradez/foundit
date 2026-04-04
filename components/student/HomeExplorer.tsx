@@ -164,7 +164,7 @@ export function HomeExplorer({ initialItems, loadError, universityName = "Univer
         )}
       </main>
 
-      {openItem ? <ClaimModal key={openItem.id} item={openItem} onClose={() => setOpenItem(null)} /> : null}
+      {openItem ? <ClaimModal key={openItem.id} item={openItem} onClose={() => setOpenItem(null)} pickupLocation={pickupLocation} /> : null}
 
       <footer className="border-t border-white/10 py-10 text-center text-base text-[#F5F5F0]/45">
         Staff?{" "}
@@ -179,7 +179,7 @@ export function HomeExplorer({ initialItems, loadError, universityName = "Univer
   );
 }
 
-function ClaimModal({ item, onClose }: { item: PublicItem; onClose: () => void }) {
+function ClaimModal({ item, onClose, pickupLocation }: { item: PublicItem; onClose: () => void; pickupLocation: string }) {
   const [studentDescription, setStudentDescription] = useState("");
   const [pin, setPin] = useState("");
   const [score, setScore] = useState<number | null>(null);
