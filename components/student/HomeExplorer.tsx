@@ -71,15 +71,6 @@ export function HomeExplorer({ initialItems, loadError, universityName = "Univer
     };
   }, [query]);
 
-  // Departments that actually have active items (avoids empty tabs)
-  const activeDeptIds = useMemo(
-    () => new Set(initialItems.map((i) => i.department_id).filter(Boolean)),
-    [initialItems],
-  );
-  const visibleDepts = useMemo(
-    () => departments.filter((d) => activeDeptIds.has(d.id)),
-    [departments, activeDeptIds],
-  );
 
   const filtered = useMemo(() => {
     let base = selectedDept
@@ -135,7 +126,7 @@ export function HomeExplorer({ initialItems, loadError, universityName = "Univer
       </header>
 
       <main id="main-content" className="mx-auto max-w-6xl px-4 py-10">
-        {visibleDepts.length > 0 ? (
+        {departments.length > 0 ? (
           <div className="mb-6 flex flex-wrap gap-1 border-b border-white/10 pb-1">
             <button
               type="button"
@@ -148,7 +139,7 @@ export function HomeExplorer({ initialItems, loadError, universityName = "Univer
             >
               All
             </button>
-            {visibleDepts.map((d) => (
+            {departments.map((d) => (
               <button
                 key={d.id}
                 type="button"
@@ -173,7 +164,9 @@ export function HomeExplorer({ initialItems, loadError, universityName = "Univer
 
         {filtered.length === 0 && !loadError ? (
           <p className="rounded-2xl border border-white/10 bg-white/[0.03] px-6 py-16 text-center text-[#F5F5F0]/55">
-            {initialItems.length === 0
+            {selectedDept && !query.trim()
+              ? "No items logged yet at this location."
+              : initialItems.length === 0
               ? "No active items right now. Check back soon."
               : "No items found matching your search. Try different keywords or check back later."}
           </p>
