@@ -6,18 +6,22 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Spinner } from "@/components/ui/Spinner";
 import type { PublicItem } from "@/lib/types";
 
+type Department = { id: string; name: string };
+
 type Props = {
   initialItems: PublicItem[];
   loadError?: string | null;
   universityName?: string;
   pickupLocation?: string;
+  departments?: Department[];
 };
 
-export function HomeExplorer({ initialItems, loadError, universityName = "University of Utah", pickupLocation = "Lassonde Studios" }: Props) {
+export function HomeExplorer({ initialItems, loadError, universityName = "University of Utah", pickupLocation = "Lassonde Studios", departments = [] }: Props) {
   const [query, setQuery] = useState("");
   const [openItem, setOpenItem] = useState<PublicItem | null>(null);
   const [searchBusy, setSearchBusy] = useState(false);
   const [aiItemIds, setAiItemIds] = useState<string[] | null>(null);
+  const [selectedDept, setSelectedDept] = useState<string | null>(null);
   const searchCacheRef = useRef<Map<string, string[]>>(new Map());
 
   useEffect(() => {
@@ -67,13 +71,26 @@ export function HomeExplorer({ initialItems, loadError, universityName = "Univer
     };
   }, [query]);
 
+  // Departments that actually have active items (avoids empty tabs)
+  const activeDeptIds = useMemo(
+    () => new Set(initialItems.map((i) => i.department_id).filter(Boolean)),
+    [initialItems],
+  );
+  const visibleDepts = useMemo(
+    () => departments.filter((d) => activeDeptIds.has(d.id)),
+    [departments, activeDeptIds],
+  );
+
   const filtered = useMemo(() => {
+    let base = selectedDept
+      ? initialItems.filter((i) => i.department_id === selectedDept)
+      : initialItems;
     const q = query.trim();
-    if (!q) return initialItems;
-    if (aiItemIds === null) return initialItems;
+    if (!q) return base;
+    if (aiItemIds === null) return base;
     const idSet = new Set(aiItemIds);
-    return initialItems.filter((i) => idSet.has(i.id));
-  }, [aiItemIds, initialItems, query]);
+    return base.filter((i) => idSet.has(i.id));
+  }, [aiItemIds, initialItems, query, selectedDept]);
 
   return (
     <div className="min-h-screen bg-transparent text-[#F5F5F0]">
@@ -118,6 +135,36 @@ export function HomeExplorer({ initialItems, loadError, universityName = "Univer
       </header>
 
       <main id="main-content" className="mx-auto max-w-6xl px-4 py-10">
+        {visibleDepts.length > 0 ? (
+          <div className="mb-6 flex flex-wrap gap-1 border-b border-white/10 pb-1">
+            <button
+              type="button"
+              onClick={() => setSelectedDept(null)}
+              className={`-mb-px border-b-2 px-4 py-2.5 text-sm transition ${
+                selectedDept === null
+                  ? "border-brand font-medium text-[#F5F5F0]"
+                  : "border-transparent text-[#F5F5F0]/50 hover:text-[#F5F5F0]/75"
+              }`}
+            >
+              All
+            </button>
+            {visibleDepts.map((d) => (
+              <button
+                key={d.id}
+                type="button"
+                onClick={() => setSelectedDept(d.id)}
+                className={`-mb-px border-b-2 px-4 py-2.5 text-sm transition ${
+                  selectedDept === d.id
+                    ? "border-brand font-medium text-[#F5F5F0]"
+                    : "border-transparent text-[#F5F5F0]/50 hover:text-[#F5F5F0]/75"
+                }`}
+              >
+                {d.name}
+              </button>
+            ))}
+          </div>
+        ) : null}
+
         {loadError ? (
           <p className="mb-8 rounded-2xl border border-amber-500/25 bg-amber-500/10 px-4 py-3 text-sm text-amber-100">
             {loadError}

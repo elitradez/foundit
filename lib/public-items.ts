@@ -6,7 +6,7 @@ export async function fetchActiveItemsForPublic(): Promise<PublicItem[]> {
   const supabase = createAdminSupabaseClient();
   const { data, error } = await supabase
     .from("items")
-    .select("id, name, location, date_found, photo_path, pin_hash, value_tier, departments(location)")
+    .select("id, name, location, date_found, photo_path, pin_hash, value_tier, department_id, departments(location)")
     .is("returned_at", null)
     .order("created_at", { ascending: false });
 
@@ -21,6 +21,7 @@ export async function fetchActiveItemsForPublic(): Promise<PublicItem[]> {
       photo_path: string;
       pin_hash: string | null;
       value_tier: string | null;
+      department_id: string | null;
       departments: { location: string | null } | null;
     };
     const { pin_hash: _p, value_tier: vt, departments: dept, ...rest } = r;
@@ -31,4 +32,14 @@ export async function fetchActiveItemsForPublic(): Promise<PublicItem[]> {
       pickup_location: dept?.location ?? null,
     };
   });
+}
+
+export async function fetchDepartmentsForPublic(): Promise<{ id: string; name: string }[]> {
+  const supabase = createAdminSupabaseClient();
+  const { data, error } = await supabase
+    .from("departments")
+    .select("id, name")
+    .order("name");
+  if (error) return [];
+  return (data ?? []) as { id: string; name: string }[];
 }

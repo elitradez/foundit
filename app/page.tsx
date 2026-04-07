@@ -1,5 +1,5 @@
 import { HomeExplorer } from "@/components/student/HomeExplorer";
-import { fetchActiveItemsForPublic } from "@/lib/public-items";
+import { fetchActiveItemsForPublic, fetchDepartmentsForPublic } from "@/lib/public-items";
 import { getUniversityConfig } from "@/lib/university-config";
 import type { PublicItem } from "@/lib/types";
 import type { Metadata } from "next";
@@ -36,6 +36,7 @@ export default async function Home() {
     const msg = e instanceof Error ? e.message : "Unknown error";
     loadError = `Could not load items (${msg}). Set NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY, and apply supabase/schema.sql.`;
   }
+  const departments = await fetchDepartmentsForPublic();
   const { name: universityName, pickupLocation } = getUniversityConfig();
   return (
     <HomeExplorer
@@ -43,6 +44,7 @@ export default async function Home() {
       loadError={loadError}
       universityName={universityName}
       pickupLocation={pickupLocation}
+      departments={departments}
     />
   );
 }
