@@ -53,12 +53,47 @@ LOW_VALUE (common left-behinds — photo can be shown clearly):
 For LOW_VALUE items, "name" may be slightly descriptive (still short):
 - "Blue water bottle", "Black umbrella", "Gray hoodie", "House keys"`;
 
-function toMediaType(mime: string): "image/jpeg" | "image/png" | "image/gif" | "image/webp" {
+type MediaType = "image/jpeg" | "image/png" | "image/gif" | "image/webp";
+
+function toMediaType(mime: string): MediaType {
   if (mime === "image/png" || mime === "image/gif" || mime === "image/webp") return mime;
   return "image/jpeg";
 }
 
+async function callAnthropic(base64: string, mediaType: MediaType) {
+  const client = getAnthropicClient();
+  return client.messages.create({
+    model: getAnthropicModel(),
+    max_tokens: 1024,
+    system: SYSTEM_PROMPT,
+    messages: [
+      {
+        role: "user",
+        content: [
+          { type: "image", source: { type: "base64", media_type: mediaType, data: base64 } },
+          { type: "text", text: "Analyze this lost item photo. Output only the JSON object with name, description, color, and value_tier." },
+        ],
+      },
+    ],
+  });
+}
+
+async function callAnthropicWithRetry(base64: string, mediaType: MediaType) {
+  try {
+    return await callAnthropic(base64, mediaType);
+  } catch (err) {
+    console.error("[identify] Anthropic call failed, retrying in 2s:", err);
+    await new Promise((r) => setTimeout(r, 2000));
+    return await callAnthropic(base64, mediaType);
+  }
+}
+
 export async function POST(req: Request) {
+  if (!process.env.ANTHROPIC_API_KEY?.trim()) {
+    console.error("[identify] ANTHROPIC_API_KEY is missing or empty");
+    return NextResponse.json({ description: "" });
+  }
+
   const session = await getStaffSession();
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -77,28 +112,7 @@ export async function POST(req: Request) {
   const mediaType = toMediaType(file.type || "image/jpeg");
 
   try {
-    const client = getAnthropicClient();
-    const message = await client.messages.create({
-      model: getAnthropicModel(),
-      max_tokens: 1024,
-      system: SYSTEM_PROMPT,
-      messages: [
-        {
-          role: "user",
-          content: [
-            {
-              type: "image",
-              source: { type: "base64", media_type: mediaType, data: base64 },
-            },
-            {
-              type: "text",
-              text: "Analyze this lost item photo. Output only the JSON object with name, description, color, and value_tier.",
-            },
-          ],
-        },
-      ],
-    });
-
+    const message = await callAnthropicWithRetry(base64, mediaType);
     const text = extractTextContent(message);
     let parsed: unknown;
     try {
@@ -120,7 +134,8 @@ export async function POST(req: Request) {
     }
 
     return NextResponse.json({ name, description, color, value_tier });
-  } catch {
+  } catch (err) {
+    console.error("[identify] Anthropic call failed after retry:", err);
     return NextResponse.json({ description: "" });
   }
 }

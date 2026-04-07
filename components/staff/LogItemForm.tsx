@@ -53,14 +53,14 @@ export function LogItemForm({ onClose, onSaved }: Props) {
   const [location, setLocation] = useState("");
   const [dateFound, setDateFound] = useState(() => new Date().toISOString().slice(0, 10));
   const [optionalPin, setOptionalPin] = useState("");
-  const [identifyBusy, setIdentifyBusy] = useState(false);
+  const [aiStatus, setAiStatus] = useState<"idle" | "loading" | "done" | "failed">("idle");
   const [saveBusy, setSaveBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [valueTier, setValueTier] = useState<ValueTier>("low_value");
 
   async function runIdentify(file: File) {
     setError(null);
-    setIdentifyBusy(true);
+    setAiStatus("loading");
     try {
       const fd = new FormData();
       fd.set("photo", file);
@@ -73,15 +73,21 @@ export function LogItemForm({ onClose, onSaved }: Props) {
       };
       if (!res.ok) {
         setError(data.error ?? "Identification failed");
+        setAiStatus("failed");
         return;
       }
       if (data.name) setName(data.name);
-      if (data.description) setDescription(data.description);
+      if (data.description) {
+        setDescription(data.description);
+        setAiStatus("done");
+      } else {
+        setAiStatus("failed");
+      }
       if (data.value_tier === "low_value" || data.value_tier === "high_value") {
         setValueTier(data.value_tier);
       }
-    } finally {
-      setIdentifyBusy(false);
+    } catch {
+      setAiStatus("failed");
     }
   }
 
@@ -166,12 +172,6 @@ export function LogItemForm({ onClose, onSaved }: Props) {
                 />
               </label>
             </div>
-            {identifyBusy ? (
-              <p className="inline-flex items-center gap-2 text-xs text-[#F5F5F0]/60">
-                <Spinner className="h-3.5 w-3.5 text-brand" />
-                AI is analyzing the photo...
-              </p>
-            ) : null}
           </div>
 
           <label className="block space-y-2">
@@ -196,6 +196,14 @@ export function LogItemForm({ onClose, onSaved }: Props) {
               className="w-full rounded-xl border border-white/10 bg-black/40 px-4 py-2.5 text-[#F5F5F0] outline-none focus:border-brand/50 focus:ring-2 focus:ring-brand/30"
               required
             />
+            {aiStatus === "loading" ? (
+              <p className="inline-flex items-center gap-2 text-xs text-[#F5F5F0]/55">
+                <Spinner className="h-3.5 w-3.5 text-brand" />
+                Generating description...
+              </p>
+            ) : aiStatus === "failed" ? (
+              <p className="text-xs text-amber-400/80">AI unavailable — please describe the item manually</p>
+            ) : null}
           </label>
 
           <label className="block space-y-2">
