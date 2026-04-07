@@ -149,7 +149,7 @@ export function LogItemForm({ onClose, onSaved }: Props) {
                 <span className="font-medium">Upload photo</span>
                 <input
                   type="file"
-                  accept="image/jpeg,image/png,image/webp,image/gif"
+                  accept="image/*"
                   onChange={onPhotoChange}
                   className="hidden"
                 />
@@ -159,7 +159,7 @@ export function LogItemForm({ onClose, onSaved }: Props) {
                 <span>Take photo</span>
                 <input
                   type="file"
-                  accept="image/jpeg,image/png,image/webp,image/gif"
+                  accept="image/*"
                   capture="environment"
                   onChange={onPhotoChange}
                   className="hidden"

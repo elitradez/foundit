@@ -8,6 +8,8 @@ import {
 } from "@/lib/anthropic";
 import { parseValueTier } from "@/lib/value-tier";
 
+export const maxDuration = 30;
+
 const SYSTEM_PROMPT = `You analyze photos for a university lost-and-found desk. Respond with ONLY valid JSON (no markdown fences) in exactly this shape:
 {"name":"...","description":"...","color":"...","value_tier":"low_value" or "high_value"}
 
@@ -74,50 +76,51 @@ export async function POST(req: Request) {
   const base64 = buf.toString("base64");
   const mediaType = toMediaType(file.type || "image/jpeg");
 
-  const client = getAnthropicClient();
-  const message = await client.messages.create({
-    model: getAnthropicModel(),
-    max_tokens: 1024,
-    system: SYSTEM_PROMPT,
-    messages: [
-      {
-        role: "user",
-        content: [
-          {
-            type: "image",
-            source: { type: "base64", media_type: mediaType, data: base64 },
-          },
-          {
-            type: "text",
-            text: "Analyze this lost item photo. Output only the JSON object with name, description, color, and value_tier.",
-          },
-        ],
-      },
-    ],
-  });
-
-  const text = extractTextContent(message);
-  let parsed: unknown;
   try {
-    parsed = parseJsonFromModel(text);
+    const client = getAnthropicClient();
+    const message = await client.messages.create({
+      model: getAnthropicModel(),
+      max_tokens: 1024,
+      system: SYSTEM_PROMPT,
+      messages: [
+        {
+          role: "user",
+          content: [
+            {
+              type: "image",
+              source: { type: "base64", media_type: mediaType, data: base64 },
+            },
+            {
+              type: "text",
+              text: "Analyze this lost item photo. Output only the JSON object with name, description, color, and value_tier.",
+            },
+          ],
+        },
+      ],
+    });
+
+    const text = extractTextContent(message);
+    let parsed: unknown;
+    try {
+      parsed = parseJsonFromModel(text);
+    } catch {
+      return NextResponse.json({ description: "" });
+    }
+    if (typeof parsed !== "object" || parsed === null) {
+      return NextResponse.json({ description: "" });
+    }
+    const o = parsed as Record<string, unknown>;
+    const name = typeof o.name === "string" ? o.name.trim() : "";
+    const description = typeof o.description === "string" ? o.description.trim() : "";
+    const color = typeof o.color === "string" ? o.color.trim() : "";
+    const value_tier = parseValueTier(o.value_tier);
+
+    if (!name || !description || !color || !value_tier) {
+      return NextResponse.json({ description: "" });
+    }
+
+    return NextResponse.json({ name, description, color, value_tier });
   } catch {
-    return NextResponse.json(
-      { error: "Could not parse AI response", raw: text.slice(0, 500) },
-      { status: 502 },
-    );
+    return NextResponse.json({ description: "" });
   }
-  if (typeof parsed !== "object" || parsed === null) {
-    return NextResponse.json({ error: "Invalid AI JSON shape", raw: text.slice(0, 500) }, { status: 502 });
-  }
-  const o = parsed as Record<string, unknown>;
-  const name = typeof o.name === "string" ? o.name.trim() : "";
-  const description = typeof o.description === "string" ? o.description.trim() : "";
-  const color = typeof o.color === "string" ? o.color.trim() : "";
-  const value_tier = parseValueTier(o.value_tier);
-
-  if (!name || !description || !color || !value_tier) {
-    return NextResponse.json({ error: "Invalid AI JSON shape", raw: text.slice(0, 500) }, { status: 502 });
-  }
-
-  return NextResponse.json({ name, description, color, value_tier });
 }
