@@ -46,6 +46,45 @@ async function compressImageForUpload(file: File): Promise<File> {
   return new File([blob], `${stem || "photo"}.jpg`, { type: "image/jpeg" });
 }
 
+async function compressForIdentify(file: File): Promise<File> {
+  const maxBytes = 1 * 1024 * 1024;
+  if (!file.type.startsWith("image/") || file.size <= maxBytes) return file;
+
+  const dataUrl = await new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result ?? ""));
+    reader.onerror = () => reject(new Error("Could not read image"));
+    reader.readAsDataURL(file);
+  });
+
+  const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+    const el = new Image();
+    el.onload = () => resolve(el);
+    el.onerror = () => reject(new Error("Could not load image"));
+    el.src = dataUrl;
+  });
+
+  const canvas = document.createElement("canvas");
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return file;
+
+  const stem = file.name.replace(/\.[^.]+$/, "");
+
+  // Try progressively lower quality at 1600px max, then fall back to 800px
+  for (const [maxSide, quality] of [[1600, 0.85], [1600, 0.7], [1600, 0.55], [800, 0.75]] as [number, number][]) {
+    const scale = Math.min(1, maxSide / Math.max(img.width, img.height));
+    canvas.width = Math.max(1, Math.round(img.width * scale));
+    canvas.height = Math.max(1, Math.round(img.height * scale));
+    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+    const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/jpeg", quality));
+    if (blob && blob.size <= maxBytes) {
+      return new File([blob], `${stem || "photo"}.jpg`, { type: "image/jpeg" });
+    }
+  }
+
+  return file;
+}
+
 export function LogItemForm({ onClose, onSaved }: Props) {
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [name, setName] = useState("");
@@ -62,8 +101,9 @@ export function LogItemForm({ onClose, onSaved }: Props) {
     setError(null);
     setAiStatus("loading");
     try {
+      const compressed = await compressForIdentify(file);
       const fd = new FormData();
-      fd.set("photo", file);
+      fd.set("photo", compressed);
       const res = await fetch("/api/staff/identify", { method: "POST", body: fd });
       const data = (await res.json().catch(() => ({}))) as {
         name?: string;
