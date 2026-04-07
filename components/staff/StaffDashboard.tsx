@@ -591,6 +591,15 @@ export function StaffDashboard({
         </div>
       </header>
 
+      <div className="mx-auto max-w-6xl px-4 pt-6">
+        <a
+          href="/"
+          className="text-sm font-medium text-[#FF3333] underline decoration-[#FF3333]/40 underline-offset-4 hover:text-[#FF6666] hover:decoration-[#FF6666]/70"
+        >
+          Return to student view
+        </a>
+      </div>
+
       <main id="main-content" className="mx-auto max-w-6xl px-4 py-8">
         {loadError ? (
           <p className="mb-6 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-200">{loadError}</p>
