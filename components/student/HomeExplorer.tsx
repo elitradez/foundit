@@ -85,21 +85,22 @@ export function HomeExplorer({ initialItems, loadError, universityName = "Univer
   return (
     <div className="min-h-screen bg-transparent text-[#F5F5F0]">
       <header className="border-b border-white/10 bg-black/35 backdrop-blur">
-        <div className="mx-auto flex max-w-6xl items-center justify-end px-4 py-2">
+        <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
+          <Link href="/">
+            <Image src="/faro-logo.png" alt="University of Utah Lost & Found" height={32} width={120} style={{ height: 32, width: "auto" }} priority />
+          </Link>
           <Link
             href="/staff/login"
-            className="rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-white transition hover:bg-brand-hover"
+            className="rounded-lg bg-[#CC0000] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#AA0000]"
           >
             Staff sign in
           </Link>
         </div>
         <div className="mx-auto flex max-w-6xl flex-col gap-6 px-4 pb-10">
           <div className="space-y-2">
-            <p className="text-sm font-semibold uppercase tracking-[0.15em] text-[#F5F5F0]/70">Foundit</p>
-            <h1 className="text-3xl font-semibold tracking-tight text-brand sm:text-4xl">{universityName}</h1>
+            <h1 className="text-3xl font-semibold tracking-tight text-[#F5F5F0] sm:text-4xl">University of Utah Lost &amp; Found</h1>
             <p className="max-w-xl text-[#F5F5F0]/65">
-              Browse items turned in on campus. Higher-value items stay blurred until your description matches what we
-              logged; everyday items show a clear photo.
+              Search for lost items found across campus. Higher-value items require ownership verification before pickup.
             </p>
           </div>
           <div className="relative w-full">
@@ -214,8 +215,11 @@ export function HomeExplorer({ initialItems, loadError, universityName = "Univer
 
       {openItem ? <ClaimModal key={openItem.id} item={openItem} onClose={() => setOpenItem(null)} departmentName={openItem.department_name ?? "Lost & Found"} /> : null}
 
-      <footer className="border-t border-white/10 py-10 text-center text-base text-[#F5F5F0]/60">
-        Foundit
+      <footer className="border-t border-white/10 py-10 text-center text-sm text-[#F5F5F0]/40">
+        University of Utah Lost &amp; Found &nbsp;·&nbsp;{" "}
+        <Link href="/privacy" className="underline underline-offset-2 hover:text-[#F5F5F0]/70 transition">
+          Privacy
+        </Link>
       </footer>
     </div>
   );

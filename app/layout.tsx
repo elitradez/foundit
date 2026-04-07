@@ -18,32 +18,32 @@ const universityConfig = getUniversityConfig();
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl()),
-  title: "Foundit — Campus lost & found",
-  description: `Browse and claim items turned in at the ${universityConfig.name}.`,
+  title: `Lost & Found — ${universityConfig.name}`,
+  description: `Search for lost items found across campus at the ${universityConfig.name}.`,
   icons: {
-    icon: [{ url: absolute("/foundit-logo.png"), type: "image/png" }],
-    apple: [{ url: absolute("/foundit-logo.png"), type: "image/png" }],
+    icon: [{ url: absolute("/faro-logo.png"), type: "image/png" }],
+    apple: [{ url: absolute("/faro-logo.png"), type: "image/png" }],
   },
   openGraph: {
-    title: `Foundit — ${universityConfig.name}`,
-    description: "Campus lost and found — browse active items and submit a claim.",
+    title: `Lost & Found — ${universityConfig.name}`,
+    description: "Search for lost items found across campus. Higher-value items require ownership verification before pickup.",
     type: "website",
-    siteName: "Foundit",
+    siteName: `${universityConfig.name} Lost & Found`,
     images: [
       {
-        url: absolute("/foundit-logo.png"),
+        url: absolute("/faro-logo.png"),
         width: 1024,
         height: 1024,
         type: "image/png",
-        alt: "Foundit — campus lost and found logo",
+        alt: `${universityConfig.name} Lost & Found`,
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: `Foundit — ${universityConfig.name}`,
-    description: "Campus lost and found — browse active items and submit a claim.",
-    images: [absolute("/foundit-logo.png")],
+    title: `Lost & Found — ${universityConfig.name}`,
+    description: "Search for lost items found across campus. Higher-value items require ownership verification before pickup.",
+    images: [absolute("/faro-logo.png")],
   },
 };
 
