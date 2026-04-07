@@ -78,8 +78,15 @@ export function HomeExplorer({ initialItems, loadError, universityName = "Univer
   return (
     <div className="min-h-screen bg-transparent text-[#F5F5F0]">
       <header className="border-b border-white/10 bg-black/35 backdrop-blur">
-        <div className="mx-auto flex max-w-6xl flex-col gap-6 px-4 py-10">
-          <div className="flex items-start justify-between">
+        <div className="mx-auto flex max-w-6xl items-center justify-end px-4 py-2">
+          <Link
+            href="/staff/login"
+            className="text-xs text-[#F5F5F0]/35 transition hover:text-[#F5F5F0]/60"
+          >
+            Staff sign in
+          </Link>
+        </div>
+        <div className="mx-auto flex max-w-6xl flex-col gap-6 px-4 pb-10">
           <div className="space-y-2">
             <p className="text-sm font-semibold uppercase tracking-[0.15em] text-[#F5F5F0]/70">Foundit</p>
             <h1 className="text-3xl font-semibold tracking-tight text-brand sm:text-4xl">{universityName}</h1>
@@ -87,13 +94,6 @@ export function HomeExplorer({ initialItems, loadError, universityName = "Univer
               Browse items turned in on campus. Higher-value items stay blurred until your description matches what we
               logged; everyday items show a clear photo.
             </p>
-          </div>
-          <Link
-            href="/staff/login"
-            className="shrink-0 text-xs text-[#F5F5F0]/35 transition hover:text-[#F5F5F0]/60"
-          >
-            Staff sign in
-          </Link>
           </div>
           <div className="relative w-full">
             <span aria-hidden="true" className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[#F5F5F0]/60">
