@@ -18,7 +18,7 @@ export type ItemRow = {
 export type PublicItem = Pick<
   ItemRow,
   "id" | "name" | "location" | "date_found" | "photo_path" | "value_tier"
-> & { requires_pin: boolean; pickup_location: string | null; department_id: string | null };
+> & { requires_pin: boolean; department_name: string | null; department_id: string | null };
 
 export type AlertRow = {
   id: string;

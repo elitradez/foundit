@@ -12,11 +12,10 @@ type Props = {
   initialItems: PublicItem[];
   loadError?: string | null;
   universityName?: string;
-  pickupLocation?: string;
   departments?: Department[];
 };
 
-export function HomeExplorer({ initialItems, loadError, universityName = "University of Utah", pickupLocation = "Lassonde Studios", departments = [] }: Props) {
+export function HomeExplorer({ initialItems, loadError, universityName = "University of Utah", departments = [] }: Props) {
   const [query, setQuery] = useState("");
   const [openItem, setOpenItem] = useState<PublicItem | null>(null);
   const [searchBusy, setSearchBusy] = useState(false);
@@ -199,7 +198,7 @@ export function HomeExplorer({ initialItems, loadError, universityName = "Univer
                     <p className="font-medium text-[#F5F5F0]">{item.name}</p>
                     {item.value_tier === "low_value" ? (
                       <p className="rounded-xl border border-brand/25 bg-brand/10 px-3 py-2.5 text-sm font-medium leading-snug text-[#F5F5F0]">
-                        <span aria-hidden="true">📍 </span>Pick up at: {item.pickup_location ?? pickupLocation}
+                        <span aria-hidden="true">📍 </span>Pick up at: {item.department_name ?? "Lost & Found"}
                       </p>
                     ) : (
                       <p className="text-sm text-[#F5F5F0]/65"><span aria-hidden="true">🔒 </span>Describe to unlock — pickup location shown after you verify</p>
@@ -213,7 +212,7 @@ export function HomeExplorer({ initialItems, loadError, universityName = "Univer
         )}
       </main>
 
-      {openItem ? <ClaimModal key={openItem.id} item={openItem} onClose={() => setOpenItem(null)} pickupLocation={openItem.pickup_location ?? pickupLocation} /> : null}
+      {openItem ? <ClaimModal key={openItem.id} item={openItem} onClose={() => setOpenItem(null)} departmentName={openItem.department_name ?? "Lost & Found"} /> : null}
 
       <footer className="border-t border-white/10 py-10 text-center text-base text-[#F5F5F0]/60">
         Foundit
@@ -222,7 +221,7 @@ export function HomeExplorer({ initialItems, loadError, universityName = "Univer
   );
 }
 
-function ClaimModal({ item, onClose, pickupLocation }: { item: PublicItem; onClose: () => void; pickupLocation: string }) {
+function ClaimModal({ item, onClose, departmentName }: { item: PublicItem; onClose: () => void; departmentName: string }) {
   const [studentDescription, setStudentDescription] = useState("");
   const [pin, setPin] = useState("");
   const [score, setScore] = useState<number | null>(null);
@@ -343,7 +342,7 @@ function ClaimModal({ item, onClose, pickupLocation }: { item: PublicItem; onClo
         {claimSubmitted ? (
           <div className="space-y-6 px-5 py-8 text-center">
             <p className="text-base leading-relaxed text-[#F5F5F0]/85">
-              Your claim has been submitted. Head to {pickupLocation} with your student ID to pick up your item.
+              Your claim has been submitted. Head to {departmentName} with your student ID to pick up your item.
             </p>
             <button
               type="button"
@@ -368,7 +367,7 @@ function ClaimModal({ item, onClose, pickupLocation }: { item: PublicItem; onClo
             </div>
 
             <p className="rounded-xl border border-white/10 bg-black/30 px-4 py-3 text-sm font-medium text-[#F5F5F0]/90">
-              <span aria-hidden="true">📍 </span>Pick up at: {pickupLocation}
+              <span aria-hidden="true">📍 </span>Pick up at: {departmentName}
             </p>
 
             {showClaimForm ? (
@@ -515,7 +514,7 @@ function ClaimModal({ item, onClose, pickupLocation }: { item: PublicItem; onClo
               <p id="found-popup-title" className="mb-1 text-center text-2xl font-bold text-emerald-400"><span aria-hidden="true">✓ </span>Item Found!</p>
               <p className="text-center text-lg font-semibold text-[#F5F5F0]">{item.name}</p>
               <p className="mb-5 mt-4 rounded-xl border border-white/10 bg-black/30 p-3 text-sm font-medium text-[#F5F5F0]/90">
-                <span aria-hidden="true">📍 </span>Pick up at: {pickupLocation}
+                <span aria-hidden="true">📍 </span>Pick up at: {departmentName}
               </p>
               <div className="flex flex-col gap-2">
                 <button

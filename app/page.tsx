@@ -37,13 +37,12 @@ export default async function Home() {
     loadError = `Could not load items (${msg}). Set NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY, and apply supabase/schema.sql.`;
   }
   const departments = await fetchDepartmentsForPublic();
-  const { name: universityName, pickupLocation } = getUniversityConfig();
+  const { name: universityName } = getUniversityConfig();
   return (
     <HomeExplorer
       initialItems={items}
       loadError={loadError}
       universityName={universityName}
-      pickupLocation={pickupLocation}
       departments={departments}
     />
   );
