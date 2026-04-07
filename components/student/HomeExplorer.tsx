@@ -81,7 +81,7 @@ export function HomeExplorer({ initialItems, loadError, universityName = "Univer
         <div className="mx-auto flex max-w-6xl items-center justify-end px-4 py-2">
           <Link
             href="/staff/login"
-            className="rounded-lg bg-[#CC0000] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#AA0000]"
+            className="rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-white transition hover:bg-brand-hover"
           >
             Staff sign in
           </Link>
