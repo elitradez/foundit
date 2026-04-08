@@ -8,7 +8,8 @@ export async function fetchActiveItemsForPublic(): Promise<PublicItem[]> {
     .from("items")
     .select("id, name, location, date_found, photo_path, pin_hash, value_tier, department_id, departments(name)")
     .is("returned_at", null)
-    .order("created_at", { ascending: false });
+    .order("created_at", { ascending: false })
+    .limit(500);
 
   if (error) throw new Error(error.message);
 

@@ -45,6 +45,18 @@ create index if not exists claims_status_created_at_idx on public.claims (status
 create index if not exists claims_status_updated_at_idx on public.claims (status, updated_at desc);
 create index if not exists claims_item_id_idx on public.claims (item_id);
 
+-- Multi-department columns (added via migration; ensure they exist for fresh installs).
+alter table public.items add column if not exists department_id uuid;
+alter table public.items add column if not exists university_id text;
+alter table public.alerts add column if not exists university_id text;
+
+-- Indexes for multi-department queries. Every staff route filters on department_id
+-- and every alert-matching query filters on university_id — without these the DB
+-- does a full table scan on every request.
+create index if not exists items_department_id_idx on public.items (department_id);
+create index if not exists items_dept_active_idx   on public.items (department_id, returned_at);
+create index if not exists alerts_university_id_idx on public.alerts (university_id);
+
 alter table public.items enable row level security;
 
 -- No anon SELECT on items (avoids exposing pin_hash). Public catalog is loaded in Next.js via the service role.

@@ -109,7 +109,8 @@ export async function POST(req: Request) {
       .from("items")
       .select("id, name, description, location, date_found, departments(name)")
       .is("returned_at", null)
-      .order("created_at", { ascending: false });
+      .order("created_at", { ascending: false })
+      .limit(400);
 
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 

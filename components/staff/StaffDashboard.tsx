@@ -216,7 +216,7 @@ export function StaffDashboard({
     void load();
   }, [load]);
 
-  const activeItems = useMemo(() => items.filter((i) => !i.returned_at), [items]);
+  const activeItems = useMemo(() => items, [items]);
 
   const loadClaims = useCallback(async () => {
     setClaimsLoading(true);

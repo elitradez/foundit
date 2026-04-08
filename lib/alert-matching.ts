@@ -75,7 +75,8 @@ export async function processNewItemAlerts(
     .from("alerts")
     .select("id, phone, description")
     .eq("notified", false)
-    .eq("university_id", universityId);
+    .eq("university_id", universityId)
+    .limit(100);
 
   if (error) {
     console.error("[alerts] fetch unnotified:", error.message);

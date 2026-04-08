@@ -22,7 +22,9 @@ export async function GET() {
       "id, name, description, location, date_found, photo_path, returned_at, claim_description, pin_hash, pin_salt, created_at, value_tier",
     )
     .eq("department_id", session.department_id)
-    .order("created_at", { ascending: false });
+    .is("returned_at", null)
+    .order("created_at", { ascending: false })
+    .limit(500);
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
