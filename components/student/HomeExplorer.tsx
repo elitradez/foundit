@@ -15,6 +15,8 @@ type Props = {
   departments?: Department[];
 };
 
+const FONT = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+
 export function HomeExplorer({ initialItems, loadError, universityName = "University of Utah", departments = [] }: Props) {
   const [query, setQuery] = useState("");
   const [openItem, setOpenItem] = useState<PublicItem | null>(null);
@@ -22,6 +24,16 @@ export function HomeExplorer({ initialItems, loadError, universityName = "Univer
   const [aiItemIds, setAiItemIds] = useState<string[] | null>(null);
   const [selectedDept, setSelectedDept] = useState<string | null>(null);
   const searchCacheRef = useRef<Map<string, string[]>>(new Map());
+
+  const deptCounts = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const item of initialItems) {
+      if (item.department_id) {
+        counts.set(item.department_id, (counts.get(item.department_id) ?? 0) + 1);
+      }
+    }
+    return counts;
+  }, [initialItems]);
 
   useEffect(() => {
     const q = query.trim();
@@ -71,7 +83,7 @@ export function HomeExplorer({ initialItems, loadError, universityName = "Univer
   }, [query]);
 
   const filtered = useMemo(() => {
-    let base = selectedDept
+    const base = selectedDept
       ? initialItems.filter((i) => i.department_id === selectedDept)
       : initialItems;
     const q = query.trim();
@@ -82,139 +94,119 @@ export function HomeExplorer({ initialItems, loadError, universityName = "Univer
   }, [aiItemIds, initialItems, query, selectedDept]);
 
   return (
-    <div className="min-h-screen bg-white text-[#333333]">
-      {/* Nav */}
-      <header className="border-b-2 border-[#CC0000] bg-white">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
+    <div style={{ minHeight: "100vh", backgroundColor: "#FFFFFF", fontFamily: FONT, color: "#333333" }}>
+
+      {/* ── Nav ── */}
+      <header style={{ backgroundColor: "#FFFFFF", borderBottom: "3px solid #CC0000" }}>
+        <div style={{ maxWidth: 1152, margin: "0 auto", padding: "12px 16px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <div>
-            <p className="text-[10px] font-semibold uppercase tracking-widest text-[#CC0000]">{universityName}</p>
-            <p className="text-base font-bold leading-tight text-[#333333]">Lost &amp; Found</p>
+            <p style={{ color: "#CC0000", fontSize: 11, fontWeight: 600, letterSpacing: "0.12em", textTransform: "uppercase", lineHeight: 1.3, margin: 0 }}>
+              {universityName}
+            </p>
+            <p style={{ color: "#1a1a1a", fontSize: 18, fontWeight: 600, lineHeight: 1.2, margin: 0 }}>
+              Lost &amp; Found
+            </p>
           </div>
           <Link
             href="/staff/login"
-            className="text-sm font-medium text-[#CC0000] underline-offset-2 hover:underline"
+            style={{ color: "#CC0000", fontSize: 14, fontWeight: 500, textDecoration: "none" }}
+            onMouseEnter={(e) => (e.currentTarget.style.textDecoration = "underline")}
+            onMouseLeave={(e) => (e.currentTarget.style.textDecoration = "none")}
           >
             Staff sign in
           </Link>
         </div>
       </header>
 
-      {/* Hero / search */}
-      <div className="border-b border-[#E5E5E5] bg-[#F5F5F5]">
-        <div className="mx-auto max-w-6xl px-4 py-10">
-          <div className="mb-6 space-y-1">
-            <h1 className="text-3xl font-bold tracking-tight text-[#333333] sm:text-4xl">
-              Find a lost item
-            </h1>
-            <p className="max-w-xl text-sm text-[#555555]">
-              Search for lost items found across campus. Higher-value items require ownership verification before pickup.
-            </p>
-          </div>
-          <div className="relative w-full">
-            <span aria-hidden="true" className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[#999999] text-sm">
-              🔍
-            </span>
+      {/* ── Search / hero ── */}
+      <div style={{ backgroundColor: "#F5F5F5", borderBottom: "1px solid #E5E5E5" }}>
+        <div style={{ maxWidth: 1152, margin: "0 auto", padding: "24px 16px" }}>
+          <h1 style={{ color: "#1a1a1a", fontSize: 28, fontWeight: 600, margin: "0 0 4px 0" }}>
+            Find a lost item
+          </h1>
+          <p style={{ color: "#666666", fontSize: 14, margin: "0 0 16px 0" }}>
+            Search for lost items found across campus. Higher-value items require ownership verification before pickup.
+          </p>
+          <div style={{ position: "relative" }}>
             {query.trim() && searchBusy ? (
-              <span className="pointer-events-none absolute right-4 top-1/2 inline-flex -translate-y-1/2 items-center gap-1.5 text-xs text-[#777777]">
-                <Spinner className="h-3.5 w-3.5 text-[#CC0000]" />
-                Searching...
+              <span style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12, color: "#888888", pointerEvents: "none" }}>
+                <Spinner className="h-3.5 w-3.5" style={{ color: "#CC0000" }} />
+                Searching…
               </span>
             ) : null}
             <input
               type="search"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search by name, location, or date..."
-              className="w-full rounded-[4px] border border-[#E5E5E5] bg-white py-3 pl-10 pr-28 text-[#333333] outline-none placeholder:text-[#AAAAAA] focus:border-[#CC0000] focus:ring-2 focus:ring-[#CC0000]/20"
+              placeholder="Search by name, location, or date…"
               aria-label="Search items"
+              style={{ width: "100%", boxSizing: "border-box", backgroundColor: "#FFFFFF", border: "1px solid #CCCCCC", borderRadius: 8, padding: "10px 16px", fontSize: 14, color: "#333333", outline: "none" }}
+              onFocus={(e) => { e.currentTarget.style.borderColor = "#CC0000"; e.currentTarget.style.boxShadow = "0 0 0 3px rgba(204,0,0,0.12)"; }}
+              onBlur={(e) => { e.currentTarget.style.borderColor = "#CCCCCC"; e.currentTarget.style.boxShadow = "none"; }}
             />
           </div>
         </div>
       </div>
 
-      <main id="main-content" className="mx-auto max-w-6xl px-4 py-8">
+      {/* ── Main ── */}
+      <main id="main-content" style={{ maxWidth: 1152, margin: "0 auto", padding: "0 16px 48px" }}>
+
         {/* Department tabs */}
         {departments.length > 0 ? (
-          <div className="mb-6 flex flex-wrap gap-0 border-b border-[#E5E5E5]">
-            <button
-              type="button"
-              onClick={() => setSelectedDept(null)}
-              className={`-mb-px border-b-2 px-4 py-2.5 text-sm transition ${
-                selectedDept === null
-                  ? "border-[#CC0000] font-semibold text-[#CC0000]"
-                  : "border-transparent text-[#555555] hover:text-[#333333]"
-              }`}
-            >
-              All
-            </button>
-            {departments.map((d) => (
-              <button
-                key={d.id}
-                type="button"
-                onClick={() => setSelectedDept(d.id)}
-                className={`-mb-px border-b-2 px-4 py-2.5 text-sm transition ${
-                  selectedDept === d.id
-                    ? "border-[#CC0000] font-semibold text-[#CC0000]"
-                    : "border-transparent text-[#555555] hover:text-[#333333]"
-                }`}
-              >
-                {d.name}
-              </button>
-            ))}
+          <div style={{ overflowX: "auto", whiteSpace: "nowrap", borderBottom: "1px solid #E5E5E5", marginBottom: 24 }}>
+            {[{ id: null, name: "All", count: initialItems.length }, ...departments.map((d) => ({ id: d.id, name: d.name, count: deptCounts.get(d.id) ?? 0 }))].map((tab) => {
+              const active = selectedDept === tab.id;
+              return (
+                <button
+                  key={tab.id ?? "__all"}
+                  type="button"
+                  onClick={() => setSelectedDept(tab.id)}
+                  style={{
+                    display: "inline-block",
+                    padding: "12px 16px",
+                    fontSize: 14,
+                    fontWeight: active ? 600 : 400,
+                    color: active ? "#CC0000" : "#666666",
+                    background: "none",
+                    border: "none",
+                    borderBottom: active ? "2px solid #CC0000" : "2px solid transparent",
+                    marginBottom: -1,
+                    cursor: "pointer",
+                    whiteSpace: "nowrap",
+                    transition: "color 0.12s",
+                  }}
+                >
+                  {tab.name}{" "}
+                  <span style={{ color: active ? "#CC0000" : "#999999", fontWeight: 400 }}>({tab.count})</span>
+                </button>
+              );
+            })}
           </div>
         ) : null}
 
         {loadError ? (
-          <p className="mb-8 rounded-[4px] border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+          <p style={{ marginBottom: 24, padding: "12px 16px", border: "1px solid #FDE68A", backgroundColor: "#FFFBEB", borderRadius: 6, fontSize: 14, color: "#92400E" }}>
             {loadError}
           </p>
         ) : null}
 
+        {/* Empty state */}
         {filtered.length === 0 && !loadError ? (
-          <p className="rounded-[4px] border border-[#E5E5E5] bg-[#F5F5F5] px-6 py-16 text-center text-[#777777]">
-            {selectedDept && !query.trim()
-              ? "No items logged yet at this location."
-              : initialItems.length === 0
-              ? "No active items right now. Check back soon."
-              : "No items found matching your search. Try different keywords or check back later."}
-          </p>
+          <div style={{ textAlign: "center", padding: "64px 24px" }}>
+            <p style={{ fontSize: 36, marginBottom: 12 }}>📭</p>
+            <p style={{ fontSize: 14, color: "#888888" }}>
+              {selectedDept && !query.trim()
+                ? "No items found at this location."
+                : initialItems.length === 0
+                ? "No active items right now. Check back soon."
+                : "No items found matching your search."}
+            </p>
+          </div>
         ) : (
-          <ul className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+          <ul style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 20, listStyle: "none", padding: 0, margin: 0 }}>
             {filtered.map((item) => (
               <li key={item.id}>
-                <button
-                  type="button"
-                  onClick={() => setOpenItem(item)}
-                  aria-label={`Claim ${item.name}`}
-                  className="group w-full overflow-hidden rounded-[4px] border border-[#E5E5E5] bg-white text-left shadow-sm transition duration-200 hover:-translate-y-0.5 hover:border-[#CC0000]/40 hover:shadow-md"
-                >
-                  <div className="relative aspect-[4/3] w-full overflow-hidden bg-[#F5F5F5]">
-                    <Image
-                      src={`/api/items/${item.id}/blur`}
-                      alt=""
-                      fill
-                      className={
-                        item.value_tier === "high_value"
-                          ? "object-cover blur-xl transition duration-300 group-hover:blur-lg"
-                          : "object-cover transition duration-300"
-                      }
-                      sizes="(max-width: 640px) 100vw, 50vw"
-                      unoptimized
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent" />
-                  </div>
-                  <div className="space-y-2.5 px-4 py-4">
-                    <p className="font-semibold text-[#333333]">{item.name}</p>
-                    {item.value_tier === "low_value" ? (
-                      <p className="rounded-[4px] border border-[#E5E5E5] bg-[#F5F5F5] px-3 py-2 text-sm text-[#555555]">
-                        <span aria-hidden="true">📍 </span>Pick up at: {item.department_name ?? "Lost & Found"}
-                      </p>
-                    ) : (
-                      <p className="text-sm text-[#777777]"><span aria-hidden="true">🔒 </span>Describe to unlock — pickup location shown after you verify</p>
-                    )}
-                    <p className="text-xs text-[#999999]">Found {item.date_found}</p>
-                  </div>
-                </button>
+                <ItemCard item={item} onClick={() => setOpenItem(item)} />
               </li>
             ))}
           </ul>
@@ -223,13 +215,90 @@ export function HomeExplorer({ initialItems, loadError, universityName = "Univer
 
       {openItem ? <ClaimModal key={openItem.id} item={openItem} onClose={() => setOpenItem(null)} departmentName={openItem.department_name ?? "Lost & Found"} /> : null}
 
-      <footer className="border-t border-[#E5E5E5] bg-white py-8 text-center text-sm text-[#999999]">
-        {universityName} Lost &amp; Found &nbsp;·&nbsp;{" "}
-        <Link href="/privacy" className="underline underline-offset-2 hover:text-[#555555] transition">
-          Privacy
-        </Link>
+      {/* ── Footer ── */}
+      <footer style={{ borderTop: "1px solid #E5E5E5", backgroundColor: "#FFFFFF", padding: "24px 16px", textAlign: "center" }}>
+        <p style={{ fontSize: 13, color: "#888888", margin: 0 }}>
+          {universityName} Lost &amp; Found &nbsp;·&nbsp;{" "}
+          <Link
+            href="/privacy"
+            style={{ color: "#CC0000", textDecoration: "none" }}
+            onMouseEnter={(e) => (e.currentTarget.style.textDecoration = "underline")}
+            onMouseLeave={(e) => (e.currentTarget.style.textDecoration = "none")}
+          >
+            Privacy
+          </Link>
+        </p>
       </footer>
     </div>
+  );
+}
+
+function ItemCard({ item, onClick }: { item: PublicItem; onClick: () => void }) {
+  const [hovered, setHovered] = useState(false);
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label={`Claim ${item.name}`}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        width: "100%",
+        textAlign: "left",
+        backgroundColor: "#FFFFFF",
+        border: "1px solid #E5E5E5",
+        borderRadius: 8,
+        boxShadow: hovered ? "0 4px 12px rgba(0,0,0,0.12)" : "0 1px 4px rgba(0,0,0,0.08)",
+        transform: hovered ? "translateY(-2px)" : "none",
+        transition: "box-shadow 0.15s, transform 0.15s",
+        overflow: "hidden",
+        cursor: "pointer",
+      }}
+    >
+      {/* Photo */}
+      <div style={{ position: "relative", width: "100%", aspectRatio: "4/3", backgroundColor: "#F5F5F5", overflow: "hidden" }}>
+        <Image
+          src={`/api/items/${item.id}/blur`}
+          alt=""
+          fill
+          className={item.value_tier === "high_value" ? "object-cover blur-xl" : "object-cover"}
+          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+          unoptimized
+        />
+      </div>
+
+      {/* Content */}
+      <div style={{ display: "flex", flexDirection: "column", flex: 1, padding: "14px 16px 16px" }}>
+        <p style={{ fontSize: 15, fontWeight: 600, color: "#1a1a1a", margin: "0 0 4px 0" }}>{item.name}</p>
+        {item.value_tier === "low_value" ? (
+          <p style={{ fontSize: 12, color: "#CC0000", margin: "0 0 4px 0" }}>
+            {item.department_name ?? "Lost & Found"}
+          </p>
+        ) : (
+          <p style={{ fontSize: 12, color: "#888888", margin: "0 0 4px 0" }}>🔒 Verify ownership to unlock</p>
+        )}
+        <p style={{ fontSize: 12, color: "#888888", margin: "0 0 14px 0" }}>Found {item.date_found}</p>
+
+        {/* CTA */}
+        <div
+          style={{
+            marginTop: "auto",
+            backgroundColor: hovered ? "#A80000" : "#CC0000",
+            color: "#FFFFFF",
+            fontSize: 13,
+            fontWeight: 600,
+            textAlign: "center",
+            padding: "9px 0",
+            borderRadius: 4,
+            transition: "background-color 0.15s",
+          }}
+        >
+          Claim this item
+        </div>
+      </div>
+    </button>
   );
 }
 
@@ -259,24 +328,11 @@ function ClaimModal({ item, onClose, departmentName }: { item: PublicItem; onClo
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ itemId: item.id, studentDescription }),
       });
-      const data = (await res.json().catch(() => ({}))) as {
-        score?: number;
-        revealUrl?: string | null;
-        error?: string;
-      };
-      if (!res.ok) {
-        setError(data.error ?? "Could not verify description");
-        return;
-      }
-      if (typeof data.score !== "number") {
-        setError("Unexpected response");
-        return;
-      }
+      const data = (await res.json().catch(() => ({}))) as { score?: number; revealUrl?: string | null; error?: string };
+      if (!res.ok) { setError(data.error ?? "Could not verify description"); return; }
+      if (typeof data.score !== "number") { setError("Unexpected response"); return; }
       setScore(data.score);
-      if (data.revealUrl && data.score > 60) {
-        setRevealUrl(data.revealUrl);
-        setShowFoundPopup(true);
-      }
+      if (data.revealUrl && data.score > 60) { setRevealUrl(data.revealUrl); setShowFoundPopup(true); }
     } finally {
       setMatchBusy(false);
     }
@@ -298,11 +354,7 @@ function ClaimModal({ item, onClose, departmentName }: { item: PublicItem; onClo
     try {
       const name = studentName.trim();
       const studentId = studentIdNumber.trim();
-      if (!name || !studentId) {
-        setError("Please enter your name and student ID.");
-        return;
-      }
-
+      if (!name || !studentId) { setError("Please enter your name and student ID."); return; }
       const res = await fetch("/api/claims/submit", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -315,10 +367,7 @@ function ClaimModal({ item, onClose, departmentName }: { item: PublicItem; onClo
         }),
       });
       const data = (await res.json().catch(() => ({}))) as { error?: string };
-      if (!res.ok) {
-        setError(data.error ?? "Submit failed");
-        return;
-      }
+      if (!res.ok) { setError(data.error ?? "Submit failed"); return; }
       setShowFoundPopup(false);
       setShowClaimForm(false);
       setClaimSubmitted(true);
@@ -327,225 +376,196 @@ function ClaimModal({ item, onClose, departmentName }: { item: PublicItem; onClo
     }
   }
 
+  const inputStyle: React.CSSProperties = {
+    width: "100%",
+    boxSizing: "border-box",
+    backgroundColor: "#FFFFFF",
+    border: "1px solid #E5E5E5",
+    borderRadius: 6,
+    padding: "10px 14px",
+    fontSize: 14,
+    color: "#333333",
+    outline: "none",
+    fontFamily: FONT,
+  };
+
+  const primaryBtn: React.CSSProperties = {
+    display: "inline-flex",
+    width: "100%",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    minHeight: 44,
+    backgroundColor: "#CC0000",
+    color: "#FFFFFF",
+    fontSize: 14,
+    fontWeight: 600,
+    border: "none",
+    borderRadius: 4,
+    cursor: "pointer",
+    fontFamily: FONT,
+  };
+
   return (
-    <div className="anim-fade-in fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-4 backdrop-blur-sm sm:items-center">
+    <div className="anim-fade-in" style={{ position: "fixed", inset: 0, zIndex: 50, display: "flex", alignItems: "flex-end", justifyContent: "center", backgroundColor: "rgba(0,0,0,0.5)", padding: 16, backdropFilter: "blur(4px)" }}
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
       <div
         role="dialog"
         aria-modal="true"
         aria-labelledby="claim-title"
-        className="anim-pop-in max-h-[92vh] w-full max-w-lg overflow-y-auto rounded-[4px] border border-[#E5E5E5] bg-white shadow-2xl"
+        className="anim-pop-in sm:items-center"
+        style={{ maxHeight: "92vh", width: "100%", maxWidth: 512, overflowY: "auto", backgroundColor: "#FFFFFF", border: "1px solid #E5E5E5", borderRadius: 8, boxShadow: "0 20px 60px rgba(0,0,0,0.2)", fontFamily: FONT }}
       >
-        <div className="flex items-start justify-between gap-3 border-b border-[#E5E5E5] px-5 py-4">
+        {/* Modal header */}
+        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, borderBottom: "1px solid #E5E5E5", padding: "16px 20px" }}>
           <div>
-            <h2 id="claim-title" className="text-lg font-bold text-[#333333]">
+            <h2 id="claim-title" style={{ fontSize: 17, fontWeight: 600, color: "#1a1a1a", margin: 0 }}>
               {claimSubmitted ? "Claim submitted" : "Claim item"}
             </h2>
-            {!claimSubmitted ? <p className="mt-0.5 text-sm text-[#777777]">{item.name}</p> : null}
+            {!claimSubmitted ? <p style={{ marginTop: 2, fontSize: 13, color: "#666666" }}>{item.name}</p> : null}
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="min-h-11 rounded-[4px] border border-[#E5E5E5] px-3 py-2 text-sm text-[#555555] hover:bg-[#F5F5F5]"
+            style={{ minHeight: 36, padding: "6px 14px", backgroundColor: "#FFFFFF", border: "1px solid #E5E5E5", borderRadius: 4, fontSize: 13, color: "#555555", cursor: "pointer", fontFamily: FONT }}
           >
             Close
           </button>
         </div>
 
+        {/* Body */}
         {claimSubmitted ? (
-          <div className="space-y-6 px-5 py-8 text-center">
-            <p className="text-base leading-relaxed text-[#333333]">
-              Your claim has been submitted. Head to {departmentName} with your student ID to pick up your item.
+          <div style={{ padding: "40px 20px", textAlign: "center" }}>
+            <p style={{ fontSize: 28, marginBottom: 12 }}>✓</p>
+            <p style={{ fontSize: 15, color: "#333333", lineHeight: 1.6, marginBottom: 24 }}>
+              Your claim has been submitted. Head to <strong>{departmentName}</strong> with your student ID to pick up your item.
             </p>
-            <button
-              type="button"
-              onClick={onClose}
-              className="inline-flex min-h-11 min-w-[10rem] items-center justify-center rounded-[4px] bg-[#CC0000] px-6 py-3 text-sm font-semibold text-white transition hover:bg-[#A80000] focus:outline-none focus:ring-2 focus:ring-[#CC0000]/40"
-            >
+            <button type="button" onClick={onClose} style={{ ...primaryBtn, width: "auto", minWidth: 140, padding: "10px 24px" }}>
               Done
             </button>
           </div>
+
         ) : item.value_tier === "low_value" ? (
-          <div className="space-y-4 px-5 py-5">
-            <div className="relative aspect-[4/3] w-full overflow-hidden rounded-[4px] border border-[#E5E5E5] bg-[#F5F5F5]">
-              <Image
-                src={`/api/items/${item.id}/blur`}
-                alt={item.name}
-                fill
-                className="object-cover"
-                sizes="(max-width: 640px) 100vw, 640px"
-                unoptimized
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent" />
+          <div style={{ padding: "20px" }}>
+            <div style={{ position: "relative", width: "100%", aspectRatio: "4/3", backgroundColor: "#F5F5F5", borderRadius: 6, overflow: "hidden", marginBottom: 16, border: "1px solid #E5E5E5" }}>
+              <Image src={`/api/items/${item.id}/blur`} alt={item.name} fill className="object-cover" sizes="512px" unoptimized />
             </div>
 
-            <p className="rounded-[4px] border border-[#E5E5E5] bg-[#F5F5F5] px-4 py-3 text-sm font-medium text-[#333333]">
-              <span aria-hidden="true">📍 </span>Pick up at: {departmentName}
+            <p style={{ backgroundColor: "#F5F5F5", border: "1px solid #E5E5E5", borderRadius: 6, padding: "10px 14px", fontSize: 14, color: "#333333", marginBottom: 16 }}>
+              <span aria-hidden="true">📍 </span>Pick up at: <strong>{departmentName}</strong>
             </p>
 
             {showClaimForm ? (
-              <div className="space-y-3">
-                <label className="block space-y-1.5">
-                  <span className="text-sm font-medium text-[#333333]">Your name</span>
-                  <input
-                    value={studentName}
-                    onChange={(e) => setStudentName(e.target.value)}
-                    className="w-full rounded-[4px] border border-[#E5E5E5] bg-white px-4 py-3 text-[#333333] outline-none focus:border-[#CC0000] focus:ring-2 focus:ring-[#CC0000]/20"
-                    autoComplete="name"
-                  />
+              <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                <label style={{ display: "block" }}>
+                  <span style={{ display: "block", fontSize: 13, fontWeight: 500, color: "#333333", marginBottom: 6 }}>Your name</span>
+                  <input value={studentName} onChange={(e) => setStudentName(e.target.value)} style={inputStyle} autoComplete="name"
+                    onFocus={(e) => { e.currentTarget.style.borderColor = "#CC0000"; e.currentTarget.style.boxShadow = "0 0 0 3px rgba(204,0,0,0.12)"; }}
+                    onBlur={(e) => { e.currentTarget.style.borderColor = "#E5E5E5"; e.currentTarget.style.boxShadow = "none"; }} />
                 </label>
-                <label className="block space-y-1.5">
-                  <span className="text-sm font-medium text-[#333333]">Student ID</span>
-                  <input
-                    value={studentIdNumber}
-                    onChange={(e) => setStudentIdNumber(e.target.value)}
-                    className="w-full rounded-[4px] border border-[#E5E5E5] bg-white px-4 py-3 text-[#333333] outline-none focus:border-[#CC0000] focus:ring-2 focus:ring-[#CC0000]/20"
-                  />
+                <label style={{ display: "block" }}>
+                  <span style={{ display: "block", fontSize: 13, fontWeight: 500, color: "#333333", marginBottom: 6 }}>Student ID</span>
+                  <input value={studentIdNumber} onChange={(e) => setStudentIdNumber(e.target.value)} style={inputStyle}
+                    onFocus={(e) => { e.currentTarget.style.borderColor = "#CC0000"; e.currentTarget.style.boxShadow = "0 0 0 3px rgba(204,0,0,0.12)"; }}
+                    onBlur={(e) => { e.currentTarget.style.borderColor = "#E5E5E5"; e.currentTarget.style.boxShadow = "none"; }} />
                 </label>
-
                 {item.requires_pin ? (
-                  <label className="block space-y-1.5">
-                    <span className="text-sm font-medium text-[#333333]">Item PIN</span>
-                    <input
-                      type="password"
-                      value={pin}
-                      onChange={(e) => setPin(e.target.value)}
-                      placeholder="Provided when the item was logged"
-                      className="w-full rounded-[4px] border border-[#E5E5E5] bg-white px-4 py-3 text-[#333333] outline-none focus:border-[#CC0000] focus:ring-2 focus:ring-[#CC0000]/20"
-                    />
+                  <label style={{ display: "block" }}>
+                    <span style={{ display: "block", fontSize: 13, fontWeight: 500, color: "#333333", marginBottom: 6 }}>Item PIN</span>
+                    <input type="password" value={pin} onChange={(e) => setPin(e.target.value)} placeholder="Provided when the item was logged" style={inputStyle}
+                      onFocus={(e) => { e.currentTarget.style.borderColor = "#CC0000"; e.currentTarget.style.boxShadow = "0 0 0 3px rgba(204,0,0,0.12)"; }}
+                      onBlur={(e) => { e.currentTarget.style.borderColor = "#E5E5E5"; e.currentTarget.style.boxShadow = "none"; }} />
                   </label>
                 ) : null}
-
-                <button
-                  type="button"
-                  onClick={() => void submitClaim()}
-                  disabled={submitBusy}
-                  className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-[4px] bg-[#CC0000] py-3 text-sm font-semibold text-white transition hover:bg-[#A80000] disabled:opacity-40"
-                >
-                  {submitBusy ? (
-                    <>
-                      <Spinner className="h-4 w-4 text-white" />
-                      Submitting...
-                    </>
-                  ) : (
-                    "Submit claim"
-                  )}
+                <button type="button" onClick={() => void submitClaim()} disabled={submitBusy} style={{ ...primaryBtn, opacity: submitBusy ? 0.6 : 1 }}>
+                  {submitBusy ? <><Spinner className="h-4 w-4" style={{ color: "#fff" }} /> Submitting…</> : "Submit claim"}
                 </button>
               </div>
             ) : (
-              <button
-                type="button"
-                onClick={() => setShowClaimForm(true)}
-                className="inline-flex min-h-11 w-full items-center justify-center rounded-[4px] bg-[#CC0000] py-3 text-sm font-semibold text-white transition hover:bg-[#A80000]"
-              >
+              <button type="button" onClick={() => setShowClaimForm(true)} style={primaryBtn}>
                 This is mine →
               </button>
             )}
 
-            {error ? <p className="text-sm text-red-600">{error}</p> : null}
+            {error ? <p style={{ marginTop: 10, fontSize: 13, color: "#CC0000" }}>{error}</p> : null}
           </div>
+
         ) : (
-          <div className="space-y-5 px-5 py-5">
+          <div style={{ padding: "20px", display: "flex", flexDirection: "column", gap: 16 }}>
             {score !== null ? (
-              <p className="text-sm text-[#555555]">
-                Match score: <span className="font-semibold text-[#333333]">{score}</span>
-                {score > 60 ? (
-                  <span className="text-emerald-600"> — strong match</span>
-                ) : (
-                  <span className="text-amber-600"> — need a stronger match to unlock (&gt; 60)</span>
-                )}
+              <p style={{ fontSize: 14, color: "#555555" }}>
+                Match score: <strong style={{ color: "#1a1a1a" }}>{score}</strong>
+                {score > 60
+                  ? <span style={{ color: "#16a34a" }}> — strong match</span>
+                  : <span style={{ color: "#d97706" }}> — need a stronger match to unlock (&gt; 60)</span>}
               </p>
             ) : null}
 
-            <label className="block space-y-2">
-              <span className="text-sm font-medium text-[#333333]">Describe your item so we can verify it&apos;s yours</span>
+            <label style={{ display: "block" }}>
+              <span style={{ display: "block", fontSize: 13, fontWeight: 500, color: "#333333", marginBottom: 6 }}>
+                Describe your item so we can verify it&apos;s yours
+              </span>
               <textarea
                 value={studentDescription}
                 onChange={(e) => setStudentDescription(e.target.value)}
                 rows={4}
-                placeholder="Describe your item so we can verify it&apos;s yours"
-                className="w-full rounded-[4px] border border-[#E5E5E5] bg-white px-4 py-3 text-[#333333] outline-none focus:border-[#CC0000] focus:ring-2 focus:ring-[#CC0000]/20"
+                placeholder="Color, brand, distinguishing features…"
+                style={{ ...inputStyle, resize: "vertical" }}
+                onFocus={(e) => { e.currentTarget.style.borderColor = "#CC0000"; e.currentTarget.style.boxShadow = "0 0 0 3px rgba(204,0,0,0.12)"; }}
+                onBlur={(e) => { e.currentTarget.style.borderColor = "#E5E5E5"; e.currentTarget.style.boxShadow = "none"; }}
               />
             </label>
 
             {item.requires_pin ? (
-              <label className="block space-y-2">
-                <span className="text-sm font-medium text-[#333333]">Item PIN</span>
-                <input
-                  type="password"
-                  value={pin}
-                  onChange={(e) => setPin(e.target.value)}
-                  placeholder="Provided when the item was logged"
-                  className="w-full rounded-[4px] border border-[#E5E5E5] bg-white px-4 py-3 text-[#333333] outline-none focus:border-[#CC0000] focus:ring-2 focus:ring-[#CC0000]/20"
-                />
+              <label style={{ display: "block" }}>
+                <span style={{ display: "block", fontSize: 13, fontWeight: 500, color: "#333333", marginBottom: 6 }}>Item PIN</span>
+                <input type="password" value={pin} onChange={(e) => setPin(e.target.value)} placeholder="Provided when the item was logged" style={inputStyle}
+                  onFocus={(e) => { e.currentTarget.style.borderColor = "#CC0000"; e.currentTarget.style.boxShadow = "0 0 0 3px rgba(204,0,0,0.12)"; }}
+                  onBlur={(e) => { e.currentTarget.style.borderColor = "#E5E5E5"; e.currentTarget.style.boxShadow = "none"; }} />
               </label>
             ) : null}
 
-            <button
-              type="button"
-              onClick={() => void checkMatch()}
-              disabled={matchBusy || !studentDescription.trim()}
-              className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-[4px] bg-[#CC0000] py-3 text-sm font-semibold text-white transition hover:bg-[#A80000] disabled:opacity-40"
-            >
-              {matchBusy ? (
-                <>
-                  <Spinner className="h-4 w-4 text-white" />
-                  Checking...
-                </>
-              ) : (
-                "Verify description"
-              )}
+            <button type="button" onClick={() => void checkMatch()} disabled={matchBusy || !studentDescription.trim()} style={{ ...primaryBtn, opacity: matchBusy || !studentDescription.trim() ? 0.5 : 1 }}>
+              {matchBusy ? <><Spinner className="h-4 w-4" style={{ color: "#fff" }} /> Checking…</> : "Verify description"}
             </button>
 
-            {error ? <p className="text-sm text-red-600">{error}</p> : null}
+            {error ? <p style={{ fontSize: 13, color: "#CC0000" }}>{error}</p> : null}
           </div>
         )}
       </div>
 
+      {/* Found popup */}
       {showFoundPopup && revealUrl ? (
-        <div className="anim-fade-in fixed inset-0 z-[60] flex items-center justify-center bg-black/60 p-4">
+        <div className="anim-fade-in" style={{ position: "fixed", inset: 0, zIndex: 60, display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: "rgba(0,0,0,0.65)", padding: 16 }}>
           <div
             role="dialog"
             aria-modal="true"
             aria-labelledby="found-popup-title"
-            className="anim-pop-in w-full max-w-md overflow-hidden rounded-[4px] border border-[#E5E5E5] bg-white shadow-2xl"
+            className="anim-pop-in"
+            style={{ width: "100%", maxWidth: 448, backgroundColor: "#FFFFFF", border: "1px solid #E5E5E5", borderRadius: 8, boxShadow: "0 20px 60px rgba(0,0,0,0.25)", overflow: "hidden", fontFamily: FONT }}
           >
-            <div className="flex justify-end px-4 pt-4">
-              <button
-                type="button"
-                onClick={() => setShowFoundPopup(false)}
-                aria-label="Close"
-                className="min-h-11 rounded-[4px] border border-[#E5E5E5] px-3 py-2 text-sm text-[#555555] hover:bg-[#F5F5F5]"
-              >
-                <span aria-hidden="true">✕</span>
+            <div style={{ display: "flex", justifyContent: "flex-end", padding: "12px 16px 0" }}>
+              <button type="button" onClick={() => setShowFoundPopup(false)} aria-label="Close"
+                style={{ minHeight: 36, padding: "6px 14px", backgroundColor: "#FFFFFF", border: "1px solid #E5E5E5", borderRadius: 4, fontSize: 13, color: "#555555", cursor: "pointer", fontFamily: FONT }}>
+                ✕
               </button>
             </div>
-            <div className="px-5 pb-5">
-              <div className="relative mb-4 aspect-[4/3] w-full overflow-hidden rounded-[4px] border border-[#E5E5E5]">
-                <Image src={revealUrl} alt={item.name} fill className="object-cover" sizes="(max-width: 512px) 100vw, 512px" unoptimized />
+            <div style={{ padding: "0 20px 20px" }}>
+              <div style={{ position: "relative", width: "100%", aspectRatio: "4/3", backgroundColor: "#F5F5F5", borderRadius: 6, overflow: "hidden", marginBottom: 16, border: "1px solid #E5E5E5" }}>
+                <Image src={revealUrl} alt={item.name} fill className="object-cover" sizes="448px" unoptimized />
               </div>
-              <p id="found-popup-title" className="mb-1 text-center text-2xl font-bold text-emerald-600"><span aria-hidden="true">✓ </span>Item Found!</p>
-              <p className="text-center text-lg font-semibold text-[#333333]">{item.name}</p>
-              <p className="mb-5 mt-4 rounded-[4px] border border-[#E5E5E5] bg-[#F5F5F5] p-3 text-sm font-medium text-[#333333]">
-                <span aria-hidden="true">📍 </span>Pick up at: {departmentName}
+              <p id="found-popup-title" style={{ textAlign: "center", fontSize: 22, fontWeight: 700, color: "#16a34a", marginBottom: 4 }}>✓ Item Found!</p>
+              <p style={{ textAlign: "center", fontSize: 16, fontWeight: 600, color: "#1a1a1a", marginBottom: 16 }}>{item.name}</p>
+              <p style={{ backgroundColor: "#F5F5F5", border: "1px solid #E5E5E5", borderRadius: 6, padding: "10px 14px", fontSize: 14, color: "#333333", marginBottom: 16 }}>
+                <span aria-hidden="true">📍 </span>Pick up at: <strong>{departmentName}</strong>
               </p>
-              <div className="flex flex-col gap-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowFoundPopup(false);
-                    setShowClaimForm(true);
-                  }}
-                  disabled={submitBusy}
-                  className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-[4px] bg-emerald-600 py-3 text-sm font-semibold text-white transition hover:bg-emerald-700 active:scale-[0.99] disabled:opacity-50"
-                >
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                <button type="button" onClick={() => { setShowFoundPopup(false); setShowClaimForm(true); }} disabled={submitBusy}
+                  style={{ ...primaryBtn, opacity: submitBusy ? 0.6 : 1 }}>
                   This is mine →
                 </button>
-                <button
-                  type="button"
-                  onClick={handleNotMineGoBack}
-                  disabled={submitBusy}
-                  className="inline-flex min-h-11 w-full items-center justify-center rounded-[4px] border border-[#E5E5E5] bg-white py-3 text-sm font-semibold text-[#333333] transition hover:bg-[#F5F5F5] active:scale-[0.99] disabled:opacity-50"
-                >
+                <button type="button" onClick={handleNotMineGoBack} disabled={submitBusy}
+                  style={{ display: "inline-flex", width: "100%", alignItems: "center", justifyContent: "center", minHeight: 44, backgroundColor: "#FFFFFF", color: "#333333", fontSize: 14, fontWeight: 600, border: "1px solid #E5E5E5", borderRadius: 4, cursor: "pointer", opacity: submitBusy ? 0.5 : 1, fontFamily: FONT }}>
                   Not mine — go back
                 </button>
               </div>
