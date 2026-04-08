@@ -43,6 +43,24 @@ function daysSince(dateString: string): number {
   return Math.floor((now - then) / (1000 * 60 * 60 * 24));
 }
 
+function SurplusBadge({ daysUntilEligible, isEligible }: { daysUntilEligible: number; isEligible: boolean }) {
+  let bg: string, color: string, label: string;
+  if (isEligible) {
+    bg = "#FEE2E2"; color = "#991B1B"; label = "Eligible for surplus";
+  } else if (daysUntilEligible <= 7) {
+    bg = "#FEE2E2"; color = "#991B1B"; label = `Surplus in ${daysUntilEligible}d`;
+  } else if (daysUntilEligible <= 20) {
+    bg = "#FFEDD5"; color = "#9A3412"; label = `Surplus in ${daysUntilEligible}d`;
+  } else {
+    bg = "#FEF3C7"; color = "#92400E"; label = `Surplus in ${daysUntilEligible}d`;
+  }
+  return (
+    <span style={{ backgroundColor: bg, color, fontSize: 11, fontWeight: 600, padding: "2px 8px", borderRadius: 4, whiteSpace: "nowrap" }}>
+      {label}
+    </span>
+  );
+}
+
 function StaffDashboardItemPhoto({
   photoUrl,
   sizes,
@@ -54,9 +72,9 @@ function StaffDashboardItemPhoto({
 }) {
   const [loaded, setLoaded] = useState(false);
   return (
-    <div className={`relative shrink-0 overflow-hidden border border-white/10 ${className}`}>
+    <div className={`relative shrink-0 overflow-hidden border border-[#E5E5E5] ${className}`}>
       {!loaded ? (
-        <div className="staff-dashboard-photo-shimmer pointer-events-none absolute inset-0 z-0" aria-hidden />
+        <div className="pointer-events-none absolute inset-0 animate-pulse bg-[#F5F5F5]" aria-hidden />
       ) : null}
       <Image
         src={photoUrl}
@@ -109,6 +127,17 @@ async function compressImageForUpload(file: File): Promise<File> {
   const stem = file.name.replace(/\.[^.]+$/, "");
   return new File([blob], `${stem || "photo"}.jpg`, { type: "image/jpeg" });
 }
+
+// ── Shared modal styles ──────────────────────────────────────────────────────
+const MODAL_INPUT =
+  "w-full rounded-lg border border-[#E5E5E5] bg-white px-3 py-2 text-base text-[#1a1a1a] outline-none focus:border-[#CC0000] focus:ring-2 focus:ring-[#CC0000]/20";
+const MODAL_LABEL = "text-sm font-medium text-[#555555]";
+const MODAL_BTN_CANCEL =
+  "inline-flex min-h-11 items-center rounded-lg border border-[#E5E5E5] bg-white px-4 py-2 text-sm text-[#555555] hover:bg-[#F5F5F5]";
+const MODAL_BTN_PRIMARY =
+  "inline-flex min-h-11 items-center rounded-lg bg-[#CC0000] px-5 py-2 text-sm font-semibold text-white hover:bg-[#A80000] disabled:opacity-50";
+const MODAL_BTN_DANGER =
+  "inline-flex min-h-11 items-center rounded-lg bg-[#CC0000] px-4 py-2 text-sm font-semibold text-white hover:bg-[#A80000] disabled:opacity-50";
 
 export function StaffDashboard({
   departmentName = "Lost & Found",
@@ -496,6 +525,7 @@ export function StaffDashboard({
     }
   }
 
+  // ── Tab button ───────────────────────────────────────────────────────────────
   function TabButton({ id, label }: { id: Tab; label: string }) {
     const active = tab === id;
     return (
@@ -503,10 +533,10 @@ export function StaffDashboard({
         type="button"
         onClick={() => setTab(id)}
         aria-current={active ? "true" : undefined}
-        className={`inline-flex min-h-11 items-center rounded-xl border px-4 py-2 text-sm font-semibold transition ${
+        className={`inline-flex min-h-9 items-center rounded px-3 py-1.5 text-sm font-medium transition ${
           active
-            ? "border-brand/60 bg-brand/25 text-[#F5F5F0]"
-            : "border-white/10 bg-white/[0.03] text-[#F5F5F0]/75 hover:bg-white/[0.06]"
+            ? "bg-[#CC0000] text-white"
+            : "text-white/75 hover:bg-white/10 hover:text-white"
         }`}
       >
         {label}
@@ -514,19 +544,21 @@ export function StaffDashboard({
     );
   }
 
+  // ── Skeletons ────────────────────────────────────────────────────────────────
   function ActiveItemsSkeleton() {
     return (
-      <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        {Array.from({ length: 4 }).map((_, i) => (
-          <li key={`active-skel-${i}`} className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
-            <div className="flex gap-4">
-              <div className="h-20 w-20 shrink-0 animate-pulse rounded-lg bg-white/10" />
-              <div className="flex-1 space-y-2">
-                <div className="h-4 w-2/3 animate-pulse rounded bg-white/10" />
-                <div className="h-3 w-1/2 animate-pulse rounded bg-white/10" />
-                <div className="h-3 w-1/3 animate-pulse rounded bg-white/10" />
-                <div className="mt-2 h-8 w-full animate-pulse rounded bg-white/10" />
-              </div>
+      <ul className="divide-y divide-[#E5E5E5] border border-[#E5E5E5] rounded-lg">
+        {Array.from({ length: 5 }).map((_, i) => (
+          <li key={`active-skel-${i}`} className={`flex items-center gap-4 px-4 py-4 ${i % 2 === 1 ? "bg-[#F5F5F5]" : "bg-white"}`}>
+            <div className="h-20 w-20 shrink-0 animate-pulse rounded-lg bg-[#E5E5E5]" />
+            <div className="flex-1 space-y-2">
+              <div className="h-4 w-1/3 animate-pulse rounded bg-[#E5E5E5]" />
+              <div className="h-3 w-1/2 animate-pulse rounded bg-[#E5E5E5]" />
+              <div className="h-3 w-1/4 animate-pulse rounded bg-[#E5E5E5]" />
+            </div>
+            <div className="space-y-2 text-right">
+              <div className="h-3 w-20 animate-pulse rounded bg-[#E5E5E5]" />
+              <div className="h-5 w-28 animate-pulse rounded bg-[#E5E5E5]" />
             </div>
           </li>
         ))}
@@ -536,14 +568,14 @@ export function StaffDashboard({
 
   function TableSkeleton({ rows = 6, cols = 6 }: { rows?: number; cols?: number }) {
     return (
-      <div className="overflow-x-auto rounded-2xl border border-white/10">
-        <table className="w-full min-w-[860px] text-left text-sm">
-          <tbody className="divide-y divide-white/10">
+      <div className="overflow-x-auto rounded-lg border border-[#E5E5E5]">
+        <table className="w-full text-left text-sm">
+          <tbody className="divide-y divide-[#E5E5E5]">
             {Array.from({ length: rows }).map((_, r) => (
-              <tr key={`tbl-skel-${r}`} className="bg-black/20">
+              <tr key={`tbl-skel-${r}`} className={r % 2 === 1 ? "bg-[#F5F5F5]" : "bg-white"}>
                 {Array.from({ length: cols }).map((__, c) => (
                   <td key={`tbl-skel-${r}-${c}`} className="px-4 py-3">
-                    <div className="h-4 w-full animate-pulse rounded bg-white/10" />
+                    <div className="h-4 w-full animate-pulse rounded bg-[#E5E5E5]" />
                   </td>
                 ))}
               </tr>
@@ -554,36 +586,41 @@ export function StaffDashboard({
     );
   }
 
+  // ── Render ───────────────────────────────────────────────────────────────────
   return (
-    <div className="min-h-screen bg-transparent text-[#F5F5F0]">
-      <header className="sticky top-0 z-20 border-b border-white/10 bg-[#0c0c0c]/90 backdrop-blur">
-        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-4">
+    <div className="min-h-screen bg-white text-[#1a1a1a]">
+
+      {/* Dark header */}
+      <header className="sticky top-0 z-20 bg-[#111111]" style={{ borderBottom: "1px solid #2a2a2a" }}>
+        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-3">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-wider text-[#FF3333]">Staff</p>
-            <h1 className="text-xl font-semibold">{departmentName}</h1>
+            <p className="text-[11px] font-semibold uppercase tracking-widest text-[#CC0000]">Staff</p>
+            <h1 className="text-lg font-semibold text-white leading-tight">{departmentName}</h1>
             {universityName ? (
-              <p className="text-xs text-[#F5F5F0]/50 mt-0.5">{universityName}</p>
+              <p className="text-xs text-white/50 mt-0.5">{universityName}</p>
             ) : null}
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <button
               type="button"
               onClick={() => setShowForm(true)}
-              className="inline-flex min-h-11 items-center rounded-xl bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-hover"
+              className="inline-flex min-h-9 items-center rounded bg-[#CC0000] px-4 py-1.5 text-sm font-semibold text-white hover:bg-[#A80000] transition"
             >
               Log new item
             </button>
+            <div className="h-5 w-px bg-white/20" />
             <TabButton id="active" label="Active Items" />
             <TabButton id="claims" label="Claims" />
             <TabButton id="log" label="Student Log" />
             <TabButton id="surplus" label="Surplus" />
+            <div className="h-5 w-px bg-white/20" />
             <button
               type="button"
               onClick={async () => {
                 await fetch("/api/staff/logout", { method: "POST" });
                 window.location.href = "/staff/login";
               }}
-              className="inline-flex min-h-11 items-center rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-[#F5F5F0]/70 hover:bg-white/10 hover:text-[#F5F5F0]"
+              className="inline-flex min-h-9 items-center rounded border border-white/20 px-3 py-1.5 text-sm text-white/70 hover:bg-white/10 hover:text-white transition"
             >
               Switch Department
             </button>
@@ -591,81 +628,87 @@ export function StaffDashboard({
         </div>
       </header>
 
-      <div className="mx-auto max-w-6xl px-4 pt-6">
-        <a
-          href="/"
-          className="text-sm font-medium text-[#FF3333] underline decoration-[#FF3333]/40 underline-offset-4 hover:text-[#FF6666] hover:decoration-[#FF6666]/70"
-        >
-          Return to student view
-        </a>
+      {/* Return to student view */}
+      <div className="border-b border-[#E5E5E5] bg-white px-4 py-2">
+        <div className="mx-auto max-w-6xl">
+          <a
+            href="/"
+            className="text-xs font-medium text-[#CC0000] hover:underline"
+          >
+            ← Return to student view
+          </a>
+        </div>
       </div>
 
-      <main id="main-content" className="mx-auto max-w-6xl px-4 py-8">
+      {/* Content */}
+      <main id="main-content" className="mx-auto max-w-6xl px-4 py-6">
         {loadError ? (
-          <p className="mb-6 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-200">{loadError}</p>
+          <p className="mb-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{loadError}</p>
         ) : null}
 
+        {/* ── Active Items ── */}
         {tab === "active" ? (
           <>
-            {loading ? (
-              <ActiveItemsSkeleton />
-            ) : null}
+            {loading ? <ActiveItemsSkeleton /> : null}
 
             {!loading && activeItems.length === 0 ? (
-              <p className="rounded-2xl border border-white/10 bg-white/[0.03] px-6 py-16 text-center text-[#F5F5F0]/55">
+              <div className="rounded-lg border border-[#E5E5E5] px-6 py-16 text-center text-[#999999]">
                 No active items.
-              </p>
+              </div>
             ) : null}
 
             {!loading && activeItems.length > 0 ? (
-              <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                {activeItems.map((item) => {
+              <ul className="overflow-hidden rounded-lg border border-[#E5E5E5]">
+                {activeItems.map((item, idx) => {
                   const daysOld = daysSince(item.date_found);
                   const daysUntilEligible = Math.max(0, Math.min(30, 30 - daysOld));
                   const isEligible = daysOld >= 30;
                   return (
-                    <li key={item.id} className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
-                      <div className="flex gap-4">
-                        <StaffDashboardItemPhoto
-                          photoUrl={`/api/staff/items/${item.id}/photo`}
-                          sizes="80px"
-                          className="h-20 w-20 rounded-lg"
-                        />
-                        <div className="min-w-0 flex-1 space-y-1">
-                          <p className="truncate text-base font-semibold text-[#F5F5F0]">{item.name}</p>
-                          <p className="truncate text-sm text-[#F5F5F0]/75">{item.location}</p>
-                          <p className="text-xs text-[#F5F5F0]/60">Found {item.date_found}</p>
-                          <p className={`text-xs ${isEligible ? "text-red-300" : "text-[#F5F5F0]/55"}`}>
-                            {isEligible ? "Eligible for surplus" : `${daysUntilEligible} days until surplus eligible`}
-                          </p>
-                          <div className="mt-2 flex items-center gap-2">
-                            <button
-                              type="button"
-                              onClick={() => openEditActiveItem(item)}
-                              aria-label={`Edit details for ${item.name}`}
-                              className="inline-flex min-h-9 items-center rounded-lg border border-white/15 bg-white/[0.04] px-3 py-1.5 text-xs font-medium text-[#F5F5F0]/90 hover:bg-white/[0.08]"
-                            >
-                              Edit details
-                            </button>
-                            <button
-                              type="button"
-                              disabled={!isEligible || busyId === item.id}
-                              onClick={() => setActiveSurplusConfirmItem(item)}
-                              aria-label={isEligible ? `Send ${item.name} to surplus` : `${item.name} surplus eligible in ${daysUntilEligible} days`}
-                              className="inline-flex min-h-8 items-center rounded-lg bg-zinc-700 px-2.5 py-1 text-xs font-medium text-white hover:bg-zinc-600 disabled:cursor-not-allowed disabled:opacity-40"
-                            >
-                              {isEligible ? "Send to Surplus" : `Surplus in ${daysUntilEligible} days`}
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => setDeleteConfirmItem(item)}
-                              aria-label={`Delete ${item.name}`}
-                              className="inline-flex min-h-8 items-center rounded-lg px-2 py-1 text-xs font-medium text-red-400/90 underline decoration-red-400/30 underline-offset-2 hover:text-red-300"
-                            >
-                              Delete
-                            </button>
-                          </div>
+                    <li
+                      key={item.id}
+                      className={`flex items-center gap-4 px-4 py-4 ${idx % 2 === 1 ? "bg-[#F5F5F5]" : "bg-white"}`}
+                      style={{ borderTop: idx === 0 ? "none" : "1px solid #E5E5E5" }}
+                    >
+                      <StaffDashboardItemPhoto
+                        photoUrl={`/api/staff/items/${item.id}/photo`}
+                        sizes="80px"
+                        className="h-20 w-20 rounded-lg"
+                      />
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-[15px] font-semibold text-[#1a1a1a]">{item.name}</p>
+                        <p className="mt-0.5 truncate text-sm text-[#666666]">{item.description}</p>
+                        <p className="mt-0.5 text-xs text-[#999999]">{item.location}</p>
+                        <div className="mt-2.5 flex flex-wrap items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => openEditActiveItem(item)}
+                            aria-label={`Edit details for ${item.name}`}
+                            className="inline-flex min-h-8 items-center rounded border border-[#E5E5E5] bg-white px-3 py-1 text-xs font-medium text-[#333333] hover:bg-[#F5F5F5] transition"
+                          >
+                            Edit
+                          </button>
+                          <button
+                            type="button"
+                            disabled={!isEligible || busyId === item.id}
+                            onClick={() => setActiveSurplusConfirmItem(item)}
+                            aria-label={isEligible ? `Send ${item.name} to surplus` : `${item.name} surplus eligible in ${daysUntilEligible} days`}
+                            className="inline-flex min-h-8 items-center rounded border border-[#E5E5E5] bg-white px-3 py-1 text-xs font-medium text-[#333333] hover:bg-[#F5F5F5] disabled:cursor-not-allowed disabled:opacity-40 transition"
+                          >
+                            Send to Surplus
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setDeleteConfirmItem(item)}
+                            aria-label={`Delete ${item.name}`}
+                            className="inline-flex min-h-8 items-center rounded px-2 py-1 text-xs font-medium text-[#CC0000] hover:underline"
+                          >
+                            Delete
+                          </button>
                         </div>
+                      </div>
+                      <div className="shrink-0 text-right space-y-1.5">
+                        <p className="text-xs text-[#888888]">Found {item.date_found}</p>
+                        <SurplusBadge daysUntilEligible={daysUntilEligible} isEligible={isEligible} />
                       </div>
                     </li>
                   );
@@ -675,86 +718,81 @@ export function StaffDashboard({
           </>
         ) : null}
 
+        {/* ── Claims ── */}
         {tab === "claims" ? (
           <>
             {claimsError ? (
-              <p className="mb-6 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-200">
-                {claimsError}
-              </p>
+              <p className="mb-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{claimsError}</p>
             ) : null}
-            {claimsLoading ? (
-              <TableSkeleton rows={6} cols={6} />
-            ) : null}
+            {claimsLoading ? <TableSkeleton rows={6} cols={6} /> : null}
 
             {!claimsLoading ? (
-              <div className="overflow-x-auto rounded-2xl border border-white/10">
-                <table className="w-full min-w-[980px] text-left text-sm">
-                  <thead className="border-b border-white/10 bg-white/[0.04] text-[#F5F5F0]/70">
+              <div className="overflow-x-auto rounded-lg border border-[#E5E5E5]">
+                <table className="w-full min-w-[860px] text-left text-sm">
+                  <thead style={{ borderBottom: "1px solid #E5E5E5", backgroundColor: "#F5F5F5" }}>
                     <tr>
-                      <th scope="col" className="px-4 py-3 font-medium">Photo</th>
-                      <th scope="col" className="px-4 py-3 font-medium">Item</th>
-                      <th scope="col" className="px-4 py-3 font-medium">Student name</th>
-                      <th scope="col" className="px-4 py-3 font-medium">Student ID</th>
-                      <th scope="col" className="px-4 py-3 font-medium">Date submitted</th>
-                      <th scope="col" className="px-4 py-3 font-medium"><span className="sr-only">Actions</span></th>
+                      <th scope="col" className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-[#666666]">Photo</th>
+                      <th scope="col" className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-[#666666]">Item</th>
+                      <th scope="col" className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-[#666666]">Student name</th>
+                      <th scope="col" className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-[#666666]">Student ID</th>
+                      <th scope="col" className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-[#666666]">Date submitted</th>
+                      <th scope="col" className="px-4 py-3"><span className="sr-only">Actions</span></th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-white/10">
+                  <tbody className="divide-y divide-[#E5E5E5]">
                     {claims.length === 0 ? (
                       <tr>
-                        <td colSpan={6} className="px-4 py-10 text-center text-[#F5F5F0]/50">
+                        <td colSpan={6} className="px-4 py-10 text-center text-[#999999]">
                           No pending claims.
                         </td>
                       </tr>
                     ) : null}
-                    {claims.map((c) => (
-                      (() => {
-                        const daysOld = c.date_found ? daysSince(c.date_found) : 0;
-                        const daysUntilEligible = Math.max(0, Math.min(30, 30 - daysOld));
-                        const canSendToSurplus = c.date_found ? daysOld >= 30 : false;
-                        return (
-                      <tr key={c.id} className="bg-black/20">
-                        <td className="px-4 py-3">
-                          <StaffDashboardItemPhoto
-                            photoUrl={`/api/staff/items/${c.item_id}/photo`}
-                            sizes="48px"
-                            className="h-12 w-12 rounded-lg"
-                          />
-                        </td>
-                        <td className="px-4 py-3 font-medium">{c.item_name}</td>
-                        <td className="px-4 py-3 text-[#F5F5F0]/85">
-                          {c.student_name?.trim() ? c.student_name : <span className="text-[#F5F5F0]/55">Not provided</span>}
-                        </td>
-                        <td className="px-4 py-3 text-[#F5F5F0]/85">
-                          {c.student_id_number?.trim() ? c.student_id_number : <span className="text-[#F5F5F0]/55">Not provided</span>}
-                        </td>
-                        <td className="px-4 py-3 text-[#F5F5F0]/70">{c.created_at.slice(0, 10)}</td>
-                        <td className="px-4 py-3">
-                          <div className="flex gap-2">
-                            <button
-                              type="button"
-                              disabled={busyId === c.id}
-                              onClick={() => openReturnClaimModal(c)}
-                              aria-label={`Mark ${c.item_name} as returned`}
-                              className="inline-flex min-h-10 items-center rounded-xl bg-emerald-600 px-3 py-2 text-xs font-semibold text-white hover:bg-emerald-500 disabled:opacity-50"
-                            >
-                              Mark as Returned
-                            </button>
-                            <button
-                              type="button"
-                              disabled={!canSendToSurplus || busyId === c.id}
-                              onClick={() => void resolveClaim(c.id, "surplus")}
-                              aria-label={canSendToSurplus ? `Send ${c.item_name} to surplus` : `${c.item_name} surplus eligible in ${daysUntilEligible} days`}
-                              className="inline-flex min-h-10 items-center rounded-xl bg-zinc-700 px-3 py-2 text-xs font-semibold text-white hover:bg-zinc-600 disabled:cursor-not-allowed disabled:opacity-40"
-                            >
-                              {canSendToSurplus ? "Send to Surplus" : `Surplus in ${daysUntilEligible} days`}
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                        );
-                      })()
-                    ))}
+                    {claims.map((c, idx) => {
+                      const daysOld = c.date_found ? daysSince(c.date_found) : 0;
+                      const daysUntilEligible = Math.max(0, Math.min(30, 30 - daysOld));
+                      const canSendToSurplus = c.date_found ? daysOld >= 30 : false;
+                      return (
+                        <tr key={c.id} className={idx % 2 === 1 ? "bg-[#F5F5F5]" : "bg-white"}>
+                          <td className="px-4 py-3">
+                            <StaffDashboardItemPhoto
+                              photoUrl={`/api/staff/items/${c.item_id}/photo`}
+                              sizes="48px"
+                              className="h-12 w-12 rounded-lg"
+                            />
+                          </td>
+                          <td className="px-4 py-3 font-semibold text-[#1a1a1a]">{c.item_name}</td>
+                          <td className="px-4 py-3 text-[#333333]">
+                            {c.student_name?.trim() ? c.student_name : <span className="text-[#AAAAAA]">Not provided</span>}
+                          </td>
+                          <td className="px-4 py-3 text-[#333333]">
+                            {c.student_id_number?.trim() ? c.student_id_number : <span className="text-[#AAAAAA]">Not provided</span>}
+                          </td>
+                          <td className="px-4 py-3 text-[#666666]">{c.created_at.slice(0, 10)}</td>
+                          <td className="px-4 py-3">
+                            <div className="flex gap-2">
+                              <button
+                                type="button"
+                                disabled={busyId === c.id}
+                                onClick={() => openReturnClaimModal(c)}
+                                aria-label={`Mark ${c.item_name} as returned`}
+                                className="inline-flex min-h-9 items-center rounded bg-[#CC0000] px-3 py-1.5 text-xs font-semibold text-white hover:bg-[#A80000] disabled:opacity-50 transition"
+                              >
+                                Mark as Returned
+                              </button>
+                              <button
+                                type="button"
+                                disabled={!canSendToSurplus || busyId === c.id}
+                                onClick={() => void resolveClaim(c.id, "surplus")}
+                                aria-label={canSendToSurplus ? `Send ${c.item_name} to surplus` : `${c.item_name} surplus eligible in ${daysUntilEligible} days`}
+                                className="inline-flex min-h-9 items-center rounded border border-[#E5E5E5] bg-white px-3 py-1.5 text-xs font-semibold text-[#333333] hover:bg-[#F5F5F5] disabled:cursor-not-allowed disabled:opacity-40 transition"
+                              >
+                                {canSendToSurplus ? "Send to Surplus" : `Surplus in ${daysUntilEligible}d`}
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
@@ -762,55 +800,52 @@ export function StaffDashboard({
           </>
         ) : null}
 
+        {/* ── Surplus ── */}
         {tab === "surplus" ? (
           <>
             {surplusError ? (
-              <p className="mb-6 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-200">
-                {surplusError}
-              </p>
+              <p className="mb-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{surplusError}</p>
             ) : null}
-            {surplusLoading ? (
-              <TableSkeleton rows={6} cols={5} />
-            ) : null}
+            {surplusLoading ? <TableSkeleton rows={6} cols={5} /> : null}
             {!surplusLoading ? (
-              <div className="overflow-x-auto rounded-2xl border border-white/10">
-                <table className="w-full min-w-[860px] text-left text-sm">
-                  <thead className="border-b border-white/10 bg-white/[0.04] text-[#F5F5F0]/70">
+              <div className="overflow-x-auto rounded-lg border border-[#E5E5E5]">
+                <table className="w-full min-w-[720px] text-left text-sm">
+                  <thead style={{ borderBottom: "1px solid #E5E5E5", backgroundColor: "#F5F5F5" }}>
                     <tr>
-                      <th scope="col" className="px-4 py-3 font-medium">Photo</th>
-                      <th scope="col" className="px-4 py-3 font-medium">Item</th>
-                      <th scope="col" className="px-4 py-3 font-medium">Location</th>
-                      <th scope="col" className="px-4 py-3 font-medium">Date found</th>
-                      <th scope="col" className="px-4 py-3 font-medium">Sent to surplus</th>
+                      <th scope="col" className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-[#666666]">Photo</th>
+                      <th scope="col" className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-[#666666]">Item</th>
+                      <th scope="col" className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-[#666666]">Location</th>
+                      <th scope="col" className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-[#666666]">Date found</th>
+                      <th scope="col" className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-[#666666]">Sent to surplus</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-white/10">
+                  <tbody className="divide-y divide-[#E5E5E5]">
                     {surplusItems.length === 0 ? (
                       <tr>
-                        <td colSpan={5} className="px-4 py-10 text-center text-[#F5F5F0]/50">
+                        <td colSpan={5} className="px-4 py-10 text-center text-[#999999]">
                           No items in surplus yet.
                         </td>
                       </tr>
                     ) : null}
-                    {surplusItems.map((s) => {
+                    {surplusItems.map((s, idx) => {
                       const sent = new Date(s.sent_to_surplus_at).getTime();
                       const daysInSurplus = Number.isFinite(sent)
                         ? Math.max(0, Math.floor((Date.now() - sent) / (1000 * 60 * 60 * 24)))
                         : null;
                       return (
-                        <tr key={s.id} className="bg-black/20">
+                        <tr key={s.id} className={idx % 2 === 1 ? "bg-[#F5F5F5]" : "bg-white"}>
                           <td className="px-4 py-3">
-                            <div className="relative h-12 w-12 overflow-hidden rounded-lg border border-white/10">
+                            <div className="relative h-12 w-12 overflow-hidden rounded-lg border border-[#E5E5E5]">
                               <Image src={`/api/staff/items/${s.id}/photo`} alt="" fill className="object-cover" sizes="48px" unoptimized loading="lazy" />
                             </div>
                           </td>
-                          <td className="px-4 py-3 font-medium">{s.name}</td>
-                          <td className="px-4 py-3 text-[#F5F5F0]/80">{s.location}</td>
-                          <td className="px-4 py-3 text-[#F5F5F0]/70">{s.date_found}</td>
-                          <td className="px-4 py-3 text-[#F5F5F0]/70">
+                          <td className="px-4 py-3 font-semibold text-[#1a1a1a]">{s.name}</td>
+                          <td className="px-4 py-3 text-[#555555]">{s.location}</td>
+                          <td className="px-4 py-3 text-[#666666]">{s.date_found}</td>
+                          <td className="px-4 py-3 text-[#666666]">
                             <span>{s.sent_to_surplus_at.slice(0, 10)}</span>
                             {daysInSurplus !== null ? (
-                              <span className="ml-2 text-xs text-[#F5F5F0]/60">({daysInSurplus}d in surplus)</span>
+                              <span className="ml-2 text-xs text-[#AAAAAA]">({daysInSurplus}d in surplus)</span>
                             ) : null}
                           </td>
                         </tr>
@@ -823,52 +858,57 @@ export function StaffDashboard({
           </>
         ) : null}
 
+        {/* ── Student Log ── */}
         {tab === "log" ? (
           <>
             {logError ? (
-              <p className="mb-6 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-200">
-                {logError}
-              </p>
+              <p className="mb-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{logError}</p>
             ) : null}
-            {logLoading ? (
-              <TableSkeleton rows={6} cols={7} />
-            ) : null}
+            {logLoading ? <TableSkeleton rows={6} cols={7} /> : null}
             {!logLoading ? (
-              <div className="overflow-x-auto rounded-2xl border border-white/10">
+              <div className="overflow-x-auto rounded-lg border border-[#E5E5E5]">
                 <table className="w-full min-w-[900px] text-left text-sm">
-                  <thead className="border-b border-white/10 bg-white/[0.04] text-[#F5F5F0]/70">
+                  <thead style={{ borderBottom: "1px solid #E5E5E5", backgroundColor: "#F5F5F5" }}>
                     <tr>
-                      <th scope="col" className="px-4 py-3 font-medium">Item name</th>
-                      <th scope="col" className="px-4 py-3 font-medium">Name</th>
-                      <th scope="col" className="px-4 py-3 font-medium">Student ID</th>
-                      <th scope="col" className="px-4 py-3 font-medium">Phone number</th>
-                      <th scope="col" className="px-4 py-3 font-medium">Date</th>
-                      <th scope="col" className="px-4 py-3 font-medium">Status</th>
-                      <th scope="col" className="px-4 py-3 font-medium"><span className="sr-only">Actions</span></th>
+                      <th scope="col" className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-[#666666]">Item name</th>
+                      <th scope="col" className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-[#666666]">Name</th>
+                      <th scope="col" className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-[#666666]">Student ID</th>
+                      <th scope="col" className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-[#666666]">Phone number</th>
+                      <th scope="col" className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-[#666666]">Date</th>
+                      <th scope="col" className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-[#666666]">Status</th>
+                      <th scope="col" className="px-4 py-3"><span className="sr-only">Actions</span></th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-white/10">
+                  <tbody className="divide-y divide-[#E5E5E5]">
                     {logRows.length === 0 ? (
                       <tr>
-                        <td colSpan={7} className="px-4 py-10 text-center text-[#F5F5F0]/50">
+                        <td colSpan={7} className="px-4 py-10 text-center text-[#999999]">
                           No returned or claimed items.
                         </td>
                       </tr>
                     ) : null}
-                    {logRows.map((r) => (
-                      <tr key={`${r.kind}-${r.claim_id ?? r.item_id}`} className="bg-black/20">
-                        <td className="px-4 py-3 font-medium">{r.item_name}</td>
-                        <td className="px-4 py-3 text-[#F5F5F0]/85">
-                          {r.student_name?.trim() ? r.student_name : <span className="text-[#F5F5F0]/55">Not provided</span>}
+                    {logRows.map((r, idx) => (
+                      <tr key={`${r.kind}-${r.claim_id ?? r.item_id}`} className={idx % 2 === 1 ? "bg-[#F5F5F5]" : "bg-white"}>
+                        <td className="px-4 py-3 font-semibold text-[#1a1a1a]">{r.item_name}</td>
+                        <td className="px-4 py-3 text-[#333333]">
+                          {r.student_name?.trim() ? r.student_name : <span className="text-[#AAAAAA]">Not provided</span>}
                         </td>
-                        <td className="px-4 py-3 text-[#F5F5F0]/85">
-                          {r.student_id_number?.trim() ? r.student_id_number : <span className="text-[#F5F5F0]/55">Not provided</span>}
+                        <td className="px-4 py-3 text-[#333333]">
+                          {r.student_id_number?.trim() ? r.student_id_number : <span className="text-[#AAAAAA]">Not provided</span>}
                         </td>
-                        <td className="px-4 py-3 text-[#F5F5F0]/85">
-                          {r.phone_number?.trim() ? r.phone_number : <span className="text-[#F5F5F0]/55">Not provided</span>}
+                        <td className="px-4 py-3 text-[#333333]">
+                          {r.phone_number?.trim() ? r.phone_number : <span className="text-[#AAAAAA]">Not provided</span>}
                         </td>
-                        <td className="px-4 py-3 text-[#F5F5F0]/70">{r.date}</td>
-                        <td className="px-4 py-3">{r.status}</td>
+                        <td className="px-4 py-3 text-[#666666]">{r.date}</td>
+                        <td className="px-4 py-3">
+                          <span className={`inline-block rounded px-2 py-0.5 text-xs font-semibold ${
+                            r.status === "Returned"
+                              ? "bg-emerald-100 text-emerald-800"
+                              : "bg-blue-100 text-blue-800"
+                          }`}>
+                            {r.status}
+                          </span>
+                        </td>
                         <td className="px-4 py-3">
                           <div className="flex gap-2">
                             {r.kind === "returned" ? (
@@ -877,9 +917,9 @@ export function StaffDashboard({
                                 disabled={busyId === r.item_id}
                                 onClick={() => openEditStudentInfo(r)}
                                 aria-label={`Add or edit student info for ${r.item_name}`}
-                                className="inline-flex min-h-10 items-center rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2 text-xs font-semibold text-white hover:bg-white/[0.06] disabled:opacity-50"
+                                className="inline-flex min-h-8 items-center rounded border border-[#E5E5E5] bg-white px-3 py-1 text-xs font-medium text-[#333333] hover:bg-[#F5F5F5] disabled:opacity-50 transition"
                               >
-                                Add/Edit student info
+                                Edit student info
                               </button>
                             ) : null}
                             <button
@@ -887,7 +927,7 @@ export function StaffDashboard({
                               disabled={busyId === (r.kind === "claimed" ? r.claim_id ?? r.item_id : r.item_id)}
                               onClick={() => void relist(r)}
                               aria-label={`Relist ${r.item_name}`}
-                              className="inline-flex min-h-10 items-center rounded-xl bg-zinc-700 px-3 py-2 text-xs font-semibold text-white hover:bg-zinc-600 disabled:opacity-50"
+                              className="inline-flex min-h-8 items-center rounded border border-[#E5E5E5] bg-white px-3 py-1 text-xs font-medium text-[#333333] hover:bg-[#F5F5F5] disabled:opacity-50 transition"
                             >
                               Relist
                             </button>
@@ -896,7 +936,7 @@ export function StaffDashboard({
                               disabled={busyId === r.item_id}
                               onClick={() => setDeleteLogRow(r)}
                               aria-label={`Delete log entry for ${r.item_name}`}
-                              className="inline-flex min-h-10 items-center rounded-xl border border-red-500/35 px-3 py-2 text-xs font-semibold text-red-300 hover:bg-red-500/10 disabled:opacity-50"
+                              className="inline-flex min-h-8 items-center rounded px-2 py-1 text-xs font-medium text-[#CC0000] hover:underline disabled:opacity-50"
                             >
                               Delete
                             </button>
@@ -912,32 +952,19 @@ export function StaffDashboard({
         ) : null}
       </main>
 
-
       {showForm ? <LogItemForm onClose={() => setShowForm(false)} onSaved={() => void load()} /> : null}
 
+      {/* ── Delete item confirm ── */}
       {deleteConfirmItem ? (
-        <div className="anim-fade-in fixed inset-0 z-[88] flex items-center justify-center bg-black/75 p-4">
-          <div role="dialog" aria-modal="true" aria-labelledby="delete-item-title" className="anim-pop-in w-full max-w-sm rounded-2xl border border-white/10 bg-[#141414] p-5 shadow-2xl">
-            <h3 id="delete-item-title" className="text-lg font-semibold text-[#F5F5F0]">Delete item?</h3>
-            <p className="mt-2 text-sm text-[#F5F5F0]/65">
-              Remove{" "}
-              <span className="font-medium text-[#F5F5F0]/90">{deleteConfirmItem.name}</span> from lost and found. This
-              cannot be undone.
+        <div className="anim-fade-in fixed inset-0 z-[88] flex items-center justify-center bg-black/60 p-4">
+          <div role="dialog" aria-modal="true" aria-labelledby="delete-item-title" className="anim-pop-in w-full max-w-sm rounded-lg border border-[#E5E5E5] bg-white p-5 shadow-2xl">
+            <h3 id="delete-item-title" className="text-base font-semibold text-[#1a1a1a]">Delete item?</h3>
+            <p className="mt-2 text-sm text-[#555555]">
+              Remove <span className="font-semibold text-[#1a1a1a]">{deleteConfirmItem.name}</span> from lost and found. This cannot be undone.
             </p>
             <div className="mt-5 flex justify-end gap-2">
-              <button
-                type="button"
-                onClick={() => setDeleteConfirmItem(null)}
-                className="inline-flex min-h-11 items-center rounded-xl border border-white/15 px-4 py-2 text-sm text-[#F5F5F0]/85 hover:bg-white/5"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={() => void confirmDeleteActiveItem()}
-                disabled={busyId === deleteConfirmItem.id}
-                className="inline-flex min-h-11 items-center rounded-xl bg-red-700 px-4 py-2 text-sm font-semibold text-white hover:bg-red-600 disabled:opacity-50"
-              >
+              <button type="button" onClick={() => setDeleteConfirmItem(null)} className={MODAL_BTN_CANCEL}>Cancel</button>
+              <button type="button" onClick={() => void confirmDeleteActiveItem()} disabled={busyId === deleteConfirmItem.id} className={MODAL_BTN_DANGER}>
                 {busyId === deleteConfirmItem.id ? "Deleting…" : "Delete"}
               </button>
             </div>
@@ -945,71 +972,52 @@ export function StaffDashboard({
         </div>
       ) : null}
 
+      {/* ── Send to surplus confirm ── */}
       {activeSurplusConfirmItem ? (
-        <div className="anim-fade-in fixed inset-0 z-[89] flex items-center justify-center bg-black/75 p-4">
-          <div role="dialog" aria-modal="true" aria-labelledby="surplus-confirm-title" className="anim-pop-in w-full max-w-sm rounded-2xl border border-white/10 bg-[#141414] p-5 shadow-2xl">
-            <h3 id="surplus-confirm-title" className="text-lg font-semibold text-[#F5F5F0]">Send this item to surplus?</h3>
-            <p className="mt-2 text-sm text-[#F5F5F0]/65">
-              Send this item to surplus? It will be removed from the active list.
+        <div className="anim-fade-in fixed inset-0 z-[89] flex items-center justify-center bg-black/60 p-4">
+          <div role="dialog" aria-modal="true" aria-labelledby="surplus-confirm-title" className="anim-pop-in w-full max-w-sm rounded-lg border border-[#E5E5E5] bg-white p-5 shadow-2xl">
+            <h3 id="surplus-confirm-title" className="text-base font-semibold text-[#1a1a1a]">Send to surplus?</h3>
+            <p className="mt-2 text-sm text-[#555555]">
+              <span className="font-semibold text-[#1a1a1a]">{activeSurplusConfirmItem.name}</span> will be removed from the active list.
             </p>
             <div className="mt-5 flex justify-end gap-2">
-              <button
-                type="button"
-                onClick={() => setActiveSurplusConfirmItem(null)}
-                className="inline-flex min-h-11 items-center rounded-xl border border-white/15 px-4 py-2 text-sm text-[#F5F5F0]/85 hover:bg-white/5"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={() => void confirmSendActiveItemToSurplus()}
-                disabled={busyId === activeSurplusConfirmItem.id}
-                className="inline-flex min-h-11 items-center rounded-xl bg-zinc-700 px-4 py-2 text-sm font-semibold text-white hover:bg-zinc-600 disabled:opacity-50"
-              >
-                {busyId === activeSurplusConfirmItem.id ? "Sending..." : "Confirm"}
+              <button type="button" onClick={() => setActiveSurplusConfirmItem(null)} className={MODAL_BTN_CANCEL}>Cancel</button>
+              <button type="button" onClick={() => void confirmSendActiveItemToSurplus()} disabled={busyId === activeSurplusConfirmItem.id} className={MODAL_BTN_PRIMARY}>
+                {busyId === activeSurplusConfirmItem.id ? "Sending…" : "Confirm"}
               </button>
             </div>
           </div>
         </div>
       ) : null}
 
+      {/* ── Delete log row confirm ── */}
       {deleteLogRow ? (
-        <div className="anim-fade-in fixed inset-0 z-[89] flex items-center justify-center bg-black/75 p-4">
-          <div role="dialog" aria-modal="true" aria-labelledby="delete-log-title" className="anim-pop-in w-full max-w-sm rounded-2xl border border-white/10 bg-[#141414] p-5 shadow-2xl">
-            <h3 id="delete-log-title" className="text-lg font-semibold text-[#F5F5F0]">Delete this log entry?</h3>
-            <p className="mt-2 text-sm text-[#F5F5F0]/65">
-              This will permanently delete <span className="font-medium text-[#F5F5F0]/90">{deleteLogRow.item_name}</span>.
+        <div className="anim-fade-in fixed inset-0 z-[89] flex items-center justify-center bg-black/60 p-4">
+          <div role="dialog" aria-modal="true" aria-labelledby="delete-log-title" className="anim-pop-in w-full max-w-sm rounded-lg border border-[#E5E5E5] bg-white p-5 shadow-2xl">
+            <h3 id="delete-log-title" className="text-base font-semibold text-[#1a1a1a]">Delete this log entry?</h3>
+            <p className="mt-2 text-sm text-[#555555]">
+              This will permanently delete <span className="font-semibold text-[#1a1a1a]">{deleteLogRow.item_name}</span>.
             </p>
             <div className="mt-5 flex justify-end gap-2">
-              <button
-                type="button"
-                onClick={() => setDeleteLogRow(null)}
-                className="inline-flex min-h-11 items-center rounded-xl border border-white/15 px-4 py-2 text-sm text-[#F5F5F0]/85 hover:bg-white/5"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={() => void confirmDeleteLogRow()}
-                disabled={busyId === deleteLogRow.item_id}
-                className="inline-flex min-h-11 items-center rounded-xl bg-red-700 px-4 py-2 text-sm font-semibold text-white hover:bg-red-600 disabled:opacity-50"
-              >
-                {busyId === deleteLogRow.item_id ? "Deleting..." : "Delete"}
+              <button type="button" onClick={() => setDeleteLogRow(null)} className={MODAL_BTN_CANCEL}>Cancel</button>
+              <button type="button" onClick={() => void confirmDeleteLogRow()} disabled={busyId === deleteLogRow.item_id} className={MODAL_BTN_DANGER}>
+                {busyId === deleteLogRow.item_id ? "Deleting…" : "Delete"}
               </button>
             </div>
           </div>
         </div>
       ) : null}
 
+      {/* ── Edit active item ── */}
       {editActiveItem ? (
-        <div className="anim-fade-in fixed inset-0 z-[85] flex items-end justify-center bg-black/75 p-0 sm:items-center sm:p-4">
-          <div role="dialog" aria-modal="true" aria-labelledby="edit-item-title" className="anim-pop-in max-h-[95vh] w-full overflow-y-auto rounded-none border border-white/10 bg-[#141414] p-5 shadow-2xl sm:max-h-[90vh] sm:max-w-lg sm:rounded-2xl">
-            <h3 id="edit-item-title" className="text-lg font-semibold text-[#F5F5F0]">Edit item</h3>
-            <p className="mt-1 text-sm text-[#F5F5F0]/55">Update how this listing appears for staff and on the student site.</p>
+        <div className="anim-fade-in fixed inset-0 z-[85] flex items-end justify-center bg-black/60 p-0 sm:items-center sm:p-4">
+          <div role="dialog" aria-modal="true" aria-labelledby="edit-item-title" className="anim-pop-in max-h-[95vh] w-full overflow-y-auto rounded-none border border-[#E5E5E5] bg-white p-5 shadow-2xl sm:max-h-[90vh] sm:max-w-lg sm:rounded-lg">
+            <h3 id="edit-item-title" className="text-base font-semibold text-[#1a1a1a]">Edit item</h3>
+            <p className="mt-1 text-sm text-[#666666]">Update how this listing appears for staff and on the student site.</p>
 
             <div className="mt-4 space-y-3">
               <div className="flex gap-4">
-                <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-lg border border-white/10">
+                <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-lg border border-[#E5E5E5]">
                   <Image
                     src={editActivePhotoPreview ?? `/api/staff/items/${editActiveItem.id}/photo`}
                     alt=""
@@ -1021,69 +1029,40 @@ export function StaffDashboard({
                   />
                 </div>
                 <label className="min-w-0 flex-1 cursor-pointer space-y-1">
-                  <span className="text-sm text-[#F5F5F0]/70">Replace photo (optional)</span>
+                  <span className={MODAL_LABEL}>Replace photo (optional)</span>
                   <input
                     type="file"
                     accept="image/jpeg,image/png,image/webp,image/gif"
                     onChange={(e) => setEditActivePhotoFile(e.target.files?.[0] ?? null)}
-                    className="w-full text-sm text-[#F5F5F0]/80 file:mr-3 file:rounded-lg file:border-0 file:bg-white/10 file:px-3 file:py-2 file:text-sm file:text-[#F5F5F0]"
+                    className="w-full text-sm text-[#555555] file:mr-3 file:rounded file:border-0 file:bg-[#F5F5F5] file:px-3 file:py-1.5 file:text-sm file:text-[#333333] hover:file:bg-[#E5E5E5]"
                   />
                 </label>
               </div>
 
               <label className="block space-y-1">
-                <span className="text-sm text-[#F5F5F0]/70">Name</span>
-                <input
-                  value={editActiveName}
-                  onChange={(e) => setEditActiveName(e.target.value)}
-                  className="w-full rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-base outline-none focus:border-brand/45 focus:ring-2 focus:ring-brand/25"
-                />
+                <span className={MODAL_LABEL}>Name</span>
+                <input value={editActiveName} onChange={(e) => setEditActiveName(e.target.value)} className={MODAL_INPUT} />
               </label>
 
               <label className="block space-y-1">
-                <span className="text-sm text-[#F5F5F0]/70">Description</span>
-                <textarea
-                  value={editActiveDescription}
-                  onChange={(e) => setEditActiveDescription(e.target.value)}
-                  rows={4}
-                  className="w-full resize-y rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-base outline-none focus:border-brand/45 focus:ring-2 focus:ring-brand/25"
-                />
+                <span className={MODAL_LABEL}>Description</span>
+                <textarea value={editActiveDescription} onChange={(e) => setEditActiveDescription(e.target.value)} rows={4} className={`${MODAL_INPUT} resize-y`} />
               </label>
 
               <label className="block space-y-1">
-                <span className="text-sm text-[#F5F5F0]/70">Location found</span>
-                <input
-                  value={editActiveLocation}
-                  onChange={(e) => setEditActiveLocation(e.target.value)}
-                  className="w-full rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-base outline-none focus:border-brand/45 focus:ring-2 focus:ring-brand/25"
-                />
+                <span className={MODAL_LABEL}>Location found</span>
+                <input value={editActiveLocation} onChange={(e) => setEditActiveLocation(e.target.value)} className={MODAL_INPUT} />
               </label>
 
               <label className="block space-y-1">
-                <span className="text-sm text-[#F5F5F0]/70">Date found</span>
-                <input
-                  type="date"
-                  value={editActiveDateFound}
-                  onChange={(e) => setEditActiveDateFound(e.target.value)}
-                  className="w-full rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-base outline-none focus:border-brand/45 focus:ring-2 focus:ring-brand/25"
-                />
+                <span className={MODAL_LABEL}>Date found</span>
+                <input type="date" value={editActiveDateFound} onChange={(e) => setEditActiveDateFound(e.target.value)} className={MODAL_INPUT} />
               </label>
             </div>
 
             <div className="mt-5 flex flex-wrap justify-end gap-2">
-              <button
-                type="button"
-                onClick={closeEditActiveItem}
-                className="inline-flex min-h-11 items-center rounded-xl border border-white/15 px-4 py-2 text-sm text-[#F5F5F0]/85 hover:bg-white/5"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={() => void saveActiveItem()}
-                disabled={busyId === editActiveItem.id}
-                className="inline-flex min-h-11 items-center rounded-xl bg-brand px-5 py-2 text-sm font-semibold text-white hover:bg-brand-hover disabled:opacity-50"
-              >
+              <button type="button" onClick={closeEditActiveItem} className={MODAL_BTN_CANCEL}>Cancel</button>
+              <button type="button" onClick={() => void saveActiveItem()} disabled={busyId === editActiveItem.id} className={MODAL_BTN_PRIMARY}>
                 {busyId === editActiveItem.id ? "Saving…" : "Save changes"}
               </button>
             </div>
@@ -1091,106 +1070,66 @@ export function StaffDashboard({
         </div>
       ) : null}
 
+      {/* ── Edit student info (returned item) ── */}
       {editReturnedItemId ? (
-        <div className="anim-fade-in fixed inset-0 z-[90] flex items-center justify-center bg-black/75 p-4">
-          <div role="dialog" aria-modal="true" aria-labelledby="edit-student-title" className="anim-pop-in w-full max-w-md rounded-2xl border border-white/10 bg-[#141414] p-5 shadow-2xl">
-            <h3 id="edit-student-title" className="text-lg font-semibold text-[#F5F5F0]">Returned item student info</h3>
-            <p className="mt-2 text-sm text-[#F5F5F0]/70">This will appear in the Student Log.</p>
+        <div className="anim-fade-in fixed inset-0 z-[90] flex items-center justify-center bg-black/60 p-4">
+          <div role="dialog" aria-modal="true" aria-labelledby="edit-student-title" className="anim-pop-in w-full max-w-md rounded-lg border border-[#E5E5E5] bg-white p-5 shadow-2xl">
+            <h3 id="edit-student-title" className="text-base font-semibold text-[#1a1a1a]">Returned item student info</h3>
+            <p className="mt-2 text-sm text-[#666666]">This will appear in the Student Log.</p>
 
             <div className="mt-4 space-y-3">
               <label className="block space-y-1">
-                <span className="text-sm text-[#F5F5F0]/70">Student name</span>
-                <input
-                  value={editStudentName}
-                  onChange={(e) => setEditStudentName(e.target.value)}
-                  className="w-full rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-base outline-none focus:border-brand/45 focus:ring-2 focus:ring-brand/25"
-                />
+                <span className={MODAL_LABEL}>Student name</span>
+                <input value={editStudentName} onChange={(e) => setEditStudentName(e.target.value)} className={MODAL_INPUT} />
               </label>
               <label className="block space-y-1">
-                <span className="text-sm text-[#F5F5F0]/70">Student ID</span>
-                <input
-                  value={editStudentIdNumber}
-                  onChange={(e) => setEditStudentIdNumber(e.target.value)}
-                  className="w-full rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-base outline-none focus:border-brand/45 focus:ring-2 focus:ring-brand/25"
-                />
+                <span className={MODAL_LABEL}>Student ID</span>
+                <input value={editStudentIdNumber} onChange={(e) => setEditStudentIdNumber(e.target.value)} className={MODAL_INPUT} />
               </label>
             </div>
 
             <div className="mt-5 flex justify-end gap-2">
-              <button
-                type="button"
-                onClick={() => setEditReturnedItemId(null)}
-                className="inline-flex min-h-11 items-center rounded-xl border border-white/15 px-4 py-2 text-sm text-[#F5F5F0]/85 hover:bg-white/5"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={() => void saveStudentInfo()}
-                disabled={busyId === editReturnedItemId}
-                className="inline-flex min-h-11 items-center rounded-xl bg-brand px-5 py-2 text-sm font-semibold text-white hover:bg-brand-hover disabled:opacity-50"
-              >
-                {busyId === editReturnedItemId ? "..." : "Save"}
+              <button type="button" onClick={() => setEditReturnedItemId(null)} className={MODAL_BTN_CANCEL}>Cancel</button>
+              <button type="button" onClick={() => void saveStudentInfo()} disabled={busyId === editReturnedItemId} className={MODAL_BTN_PRIMARY}>
+                {busyId === editReturnedItemId ? "…" : "Save"}
               </button>
             </div>
           </div>
         </div>
       ) : null}
 
+      {/* ── Confirm return claim ── */}
       {returnClaimId && returnClaimItemId ? (
-        <div className="anim-fade-in fixed inset-0 z-[90] flex items-center justify-center bg-black/75 p-4">
-          <div role="dialog" aria-modal="true" aria-labelledby="confirm-return-title" className="anim-pop-in w-full max-w-md rounded-2xl border border-white/10 bg-[#141414] p-5 shadow-2xl">
-            <h3 id="confirm-return-title" className="text-lg font-semibold text-[#F5F5F0]">Confirm return</h3>
-            <p className="mt-2 text-sm text-[#F5F5F0]/70">This will move the item into the Student Log.</p>
+        <div className="anim-fade-in fixed inset-0 z-[90] flex items-center justify-center bg-black/60 p-4">
+          <div role="dialog" aria-modal="true" aria-labelledby="confirm-return-title" className="anim-pop-in w-full max-w-md rounded-lg border border-[#E5E5E5] bg-white p-5 shadow-2xl">
+            <h3 id="confirm-return-title" className="text-base font-semibold text-[#1a1a1a]">Confirm return</h3>
+            <p className="mt-2 text-sm text-[#666666]">This will move the item into the Student Log.</p>
 
             <div className="mt-4 space-y-3">
-              <div className="rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2 text-sm text-[#F5F5F0]/80">
-                <span className="text-[#F5F5F0]/55">Item:</span> {returnClaimItemName}
+              <div className="rounded-lg border border-[#E5E5E5] bg-[#F5F5F5] px-3 py-2 text-sm text-[#333333]">
+                <span className="text-[#888888]">Item: </span>{returnClaimItemName}
               </div>
 
               <label className="block space-y-1">
-                <span className="text-sm text-[#F5F5F0]/70">Student name</span>
-                <input
-                  value={returnStudentName}
-                  onChange={(e) => setReturnStudentName(e.target.value)}
-                  className="w-full rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-base outline-none focus:border-brand/45 focus:ring-2 focus:ring-brand/25"
-                />
+                <span className={MODAL_LABEL}>Student name</span>
+                <input value={returnStudentName} onChange={(e) => setReturnStudentName(e.target.value)} className={MODAL_INPUT} />
               </label>
 
               <label className="block space-y-1">
-                <span className="text-sm text-[#F5F5F0]/70">Student ID (optional)</span>
-                <input
-                  value={returnStudentIdNumber}
-                  onChange={(e) => setReturnStudentIdNumber(e.target.value)}
-                  className="w-full rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-base outline-none focus:border-brand/45 focus:ring-2 focus:ring-brand/25"
-                />
+                <span className={MODAL_LABEL}>Student ID (optional)</span>
+                <input value={returnStudentIdNumber} onChange={(e) => setReturnStudentIdNumber(e.target.value)} className={MODAL_INPUT} />
               </label>
 
               <label className="block space-y-1">
-                <span className="text-sm text-[#F5F5F0]/70">Phone number (optional)</span>
-                <input
-                  value={returnPhoneNumber}
-                  onChange={(e) => setReturnPhoneNumber(e.target.value)}
-                  className="w-full rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-base outline-none focus:border-brand/45 focus:ring-2 focus:ring-brand/25"
-                />
+                <span className={MODAL_LABEL}>Phone number (optional)</span>
+                <input value={returnPhoneNumber} onChange={(e) => setReturnPhoneNumber(e.target.value)} className={MODAL_INPUT} />
               </label>
             </div>
 
             <div className="mt-5 flex justify-end gap-2">
-              <button
-                type="button"
-                onClick={closeReturnClaimModal}
-                className="inline-flex min-h-11 items-center rounded-xl border border-white/15 px-4 py-2 text-sm text-[#F5F5F0]/85 hover:bg-white/5"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={() => void confirmReturnClaim()}
-                disabled={busyId === returnClaimId}
-                className="inline-flex min-h-11 items-center rounded-xl bg-emerald-600 px-5 py-2 text-sm font-semibold text-white hover:bg-emerald-500 disabled:opacity-50"
-              >
-                {busyId === returnClaimId ? "..." : "Confirm Return"}
+              <button type="button" onClick={closeReturnClaimModal} className={MODAL_BTN_CANCEL}>Cancel</button>
+              <button type="button" onClick={() => void confirmReturnClaim()} disabled={busyId === returnClaimId} className={MODAL_BTN_PRIMARY}>
+                {busyId === returnClaimId ? "…" : "Confirm Return"}
               </button>
             </div>
           </div>
