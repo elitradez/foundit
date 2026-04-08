@@ -97,7 +97,7 @@ export function HomeExplorer({ initialItems, loadError, universityName = "Univer
     <div style={{ minHeight: "100vh", backgroundColor: "#FFFFFF", fontFamily: FONT, color: "#333333" }}>
 
       {/* ── Nav ── */}
-      <header style={{ backgroundColor: "#FFFFFF", borderBottom: "3px solid #CC0000" }}>
+      <header style={{ backgroundColor: "#FFFFFF", borderBottom: "1px solid #E5E5E5" }}>
         <div style={{ maxWidth: 1152, margin: "0 auto", padding: "12px 16px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <div>
             <p style={{ color: "#CC0000", fontSize: 11, fontWeight: 600, letterSpacing: "0.12em", textTransform: "uppercase", lineHeight: 1.3, margin: 0 }}>
