@@ -2,15 +2,23 @@ import { createAdminSupabaseClient } from "@/lib/supabase-admin";
 import type { PublicItem } from "@/lib/types";
 import { normalizeValueTier } from "@/lib/value-tier";
 
-export async function fetchActiveItemsForPublic(): Promise<PublicItem[]> {
+export async function fetchActiveItemsForPublic(
+  universityId?: string,
+  offset = 0,
+): Promise<PublicItem[]> {
   const supabase = createAdminSupabaseClient();
-  const { data, error } = await supabase
+  let query = supabase
     .from("items")
     .select("id, name, location, date_found, photo_path, pin_hash, value_tier, department_id, departments(name)")
     .is("returned_at", null)
     .order("created_at", { ascending: false })
-    .limit(500);
+    .range(offset, offset + 499); // 500 rows per page
 
+  if (universityId) {
+    query = query.eq("university_id", universityId);
+  }
+
+  const { data, error } = await query;
   if (error) throw new Error(error.message);
 
   return (data ?? []).map((row) => {
@@ -35,12 +43,15 @@ export async function fetchActiveItemsForPublic(): Promise<PublicItem[]> {
   });
 }
 
-export async function fetchDepartmentsForPublic(): Promise<{ id: string; name: string }[]> {
+export async function fetchDepartmentsForPublic(
+  universityId?: string,
+): Promise<{ id: string; name: string }[]> {
   const supabase = createAdminSupabaseClient();
-  const { data, error } = await supabase
-    .from("departments")
-    .select("id, name")
-    .order("name");
+  let query = supabase.from("departments").select("id, name").order("name");
+  if (universityId) {
+    query = query.eq("university_id", universityId);
+  }
+  const { data, error } = await query;
   if (error) return [];
   return (data ?? []) as { id: string; name: string }[];
 }

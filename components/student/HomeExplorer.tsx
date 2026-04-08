@@ -18,6 +18,9 @@ type Props = {
 const FONT = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
 
 export function HomeExplorer({ initialItems, loadError, universityName = "University of Utah", departments = [] }: Props) {
+  const [allItems, setAllItems] = useState<PublicItem[]>(initialItems);
+  const [hasMore, setHasMore] = useState(initialItems.length === 500);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [query, setQuery] = useState("");
   const [openItem, setOpenItem] = useState<PublicItem | null>(null);
   const [searchBusy, setSearchBusy] = useState(false);
@@ -25,15 +28,29 @@ export function HomeExplorer({ initialItems, loadError, universityName = "Univer
   const [selectedDept, setSelectedDept] = useState<string | null>(null);
   const searchCacheRef = useRef<Map<string, string[]>>(new Map());
 
+  async function loadMore() {
+    setLoadingMore(true);
+    try {
+      const res = await fetch(`/api/items/public?offset=${allItems.length}`);
+      const data = (await res.json().catch(() => ({}))) as { items?: PublicItem[] };
+      if (res.ok && Array.isArray(data.items)) {
+        setAllItems((prev) => [...prev, ...data.items!]);
+        if (data.items.length < 500) setHasMore(false);
+      }
+    } finally {
+      setLoadingMore(false);
+    }
+  }
+
   const deptCounts = useMemo(() => {
     const counts = new Map<string, number>();
-    for (const item of initialItems) {
+    for (const item of allItems) {
       if (item.department_id) {
         counts.set(item.department_id, (counts.get(item.department_id) ?? 0) + 1);
       }
     }
     return counts;
-  }, [initialItems]);
+  }, [allItems]);
 
   useEffect(() => {
     const q = query.trim();
@@ -84,14 +101,14 @@ export function HomeExplorer({ initialItems, loadError, universityName = "Univer
 
   const filtered = useMemo(() => {
     const base = selectedDept
-      ? initialItems.filter((i) => i.department_id === selectedDept)
-      : initialItems;
+      ? allItems.filter((i) => i.department_id === selectedDept)
+      : allItems;
     const q = query.trim();
     if (!q) return base;
     if (aiItemIds === null) return base;
     const idSet = new Set(aiItemIds);
     return base.filter((i) => idSet.has(i.id));
-  }, [aiItemIds, initialItems, query, selectedDept]);
+  }, [aiItemIds, allItems, query, selectedDept]);
 
   return (
     <div style={{ minHeight: "100vh", backgroundColor: "#FFFFFF", fontFamily: FONT, color: "#333333" }}>
@@ -154,7 +171,7 @@ export function HomeExplorer({ initialItems, loadError, universityName = "Univer
         {/* Department tabs */}
         {departments.length > 0 ? (
           <div style={{ overflowX: "auto", whiteSpace: "nowrap", borderBottom: "1px solid #E5E5E5", marginBottom: 24 }}>
-            {[{ id: null, name: "All", count: initialItems.length }, ...departments.map((d) => ({ id: d.id, name: d.name, count: deptCounts.get(d.id) ?? 0 }))].map((tab) => {
+            {[{ id: null, name: "All", count: allItems.length }, ...departments.map((d) => ({ id: d.id, name: d.name, count: deptCounts.get(d.id) ?? 0 }))].map((tab) => {
               const active = selectedDept === tab.id;
               return (
                 <button
@@ -197,19 +214,42 @@ export function HomeExplorer({ initialItems, loadError, universityName = "Univer
             <p style={{ fontSize: 14, color: "#888888" }}>
               {selectedDept && !query.trim()
                 ? "No items found at this location."
-                : initialItems.length === 0
+                : allItems.length === 0
                 ? "No active items right now. Check back soon."
                 : "No items found matching your search."}
             </p>
           </div>
         ) : (
-          <ul style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 20, listStyle: "none", padding: 0, margin: 0 }}>
-            {filtered.map((item) => (
-              <li key={item.id}>
-                <ItemCard item={item} onClick={() => setOpenItem(item)} />
-              </li>
-            ))}
-          </ul>
+          <>
+            <ul style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 20, listStyle: "none", padding: 0, margin: 0 }}>
+              {filtered.map((item) => (
+                <li key={item.id}>
+                  <ItemCard item={item} onClick={() => setOpenItem(item)} />
+                </li>
+              ))}
+            </ul>
+            {hasMore && !query.trim() ? (
+              <div style={{ textAlign: "center", marginTop: 32 }}>
+                <button
+                  type="button"
+                  onClick={() => void loadMore()}
+                  disabled={loadingMore}
+                  style={{
+                    backgroundColor: "#FFFFFF",
+                    border: "1px solid #E5E5E5",
+                    borderRadius: 6,
+                    padding: "10px 28px",
+                    fontSize: 14,
+                    fontWeight: 500,
+                    color: loadingMore ? "#AAAAAA" : "#333333",
+                    cursor: loadingMore ? "default" : "pointer",
+                  }}
+                >
+                  {loadingMore ? "Loading…" : "Load more"}
+                </button>
+              </div>
+            ) : null}
+          </>
         )}
       </main>
 

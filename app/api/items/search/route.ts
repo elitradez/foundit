@@ -105,12 +105,15 @@ export async function POST(req: Request) {
     if (!query) return NextResponse.json({ itemIds: [] as string[] });
 
     const supabase = createAdminSupabaseClient();
-    const { data, error } = await supabase
+    const universityId = process.env.NEXT_PUBLIC_UNIVERSITY_ID?.trim() || null;
+    let itemsQuery = supabase
       .from("items")
       .select("id, name, description, location, date_found, departments(name)")
       .is("returned_at", null)
       .order("created_at", { ascending: false })
-      .limit(400);
+      .limit(300);
+    if (universityId) itemsQuery = itemsQuery.eq("university_id", universityId);
+    const { data, error } = await itemsQuery;
 
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 

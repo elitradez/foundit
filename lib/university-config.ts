@@ -4,6 +4,7 @@ export type UniversityConfig = {
   brandColorHover: string;
   pickupLocation: string;
   siteUrl: string;
+  universityId: string | undefined;
 };
 
 export function getUniversityConfig(): UniversityConfig {
@@ -13,5 +14,6 @@ export function getUniversityConfig(): UniversityConfig {
     brandColorHover: process.env.NEXT_PUBLIC_BRAND_COLOR_HOVER ?? "#a80000",
     pickupLocation: process.env.NEXT_PUBLIC_PICKUP_LOCATION ?? "Lassonde Studios",
     siteUrl: process.env.NEXT_PUBLIC_SITE_URL ?? "founditcampus.com",
+    universityId: process.env.NEXT_PUBLIC_UNIVERSITY_ID?.trim() || undefined,
   };
 }
