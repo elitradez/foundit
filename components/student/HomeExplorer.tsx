@@ -70,7 +70,6 @@ export function HomeExplorer({ initialItems, loadError, universityName = "Univer
     };
   }, [query]);
 
-
   const filtered = useMemo(() => {
     let base = selectedDept
       ? initialItems.filter((i) => i.department_id === selectedDept)
@@ -83,33 +82,41 @@ export function HomeExplorer({ initialItems, loadError, universityName = "Univer
   }, [aiItemIds, initialItems, query, selectedDept]);
 
   return (
-    <div className="min-h-screen bg-transparent text-[#F5F5F0]">
-      <header className="border-b border-white/10 bg-black/35 backdrop-blur">
+    <div className="min-h-screen bg-white text-[#333333]">
+      {/* Nav */}
+      <header className="border-b-2 border-[#CC0000] bg-white">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
-          <Link href="/">
-            <Image src="/faro-logo.png" alt="University of Utah Lost & Found" height={32} width={120} style={{ height: 32, width: "auto" }} priority />
-          </Link>
+          <div>
+            <p className="text-[10px] font-semibold uppercase tracking-widest text-[#CC0000]">{universityName}</p>
+            <p className="text-base font-bold leading-tight text-[#333333]">Lost &amp; Found</p>
+          </div>
           <Link
             href="/staff/login"
-            className="rounded-lg bg-[#CC0000] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#AA0000]"
+            className="text-sm font-medium text-[#CC0000] underline-offset-2 hover:underline"
           >
             Staff sign in
           </Link>
         </div>
-        <div className="mx-auto flex max-w-6xl flex-col gap-6 px-4 pb-10">
-          <div className="space-y-2">
-            <h1 className="text-3xl font-semibold tracking-tight text-[#F5F5F0] sm:text-4xl">University of Utah Lost &amp; Found</h1>
-            <p className="max-w-xl text-[#F5F5F0]/65">
+      </header>
+
+      {/* Hero / search */}
+      <div className="border-b border-[#E5E5E5] bg-[#F5F5F5]">
+        <div className="mx-auto max-w-6xl px-4 py-10">
+          <div className="mb-6 space-y-1">
+            <h1 className="text-3xl font-bold tracking-tight text-[#333333] sm:text-4xl">
+              Find a lost item
+            </h1>
+            <p className="max-w-xl text-sm text-[#555555]">
               Search for lost items found across campus. Higher-value items require ownership verification before pickup.
             </p>
           </div>
           <div className="relative w-full">
-            <span aria-hidden="true" className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[#F5F5F0]/60">
-              Search
+            <span aria-hidden="true" className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[#999999] text-sm">
+              🔍
             </span>
             {query.trim() && searchBusy ? (
-              <span className="pointer-events-none absolute right-4 top-1/2 inline-flex -translate-y-1/2 items-center gap-1.5 text-xs text-[#F5F5F0]/55">
-                <Spinner className="h-3.5 w-3.5 text-brand" />
+              <span className="pointer-events-none absolute right-4 top-1/2 inline-flex -translate-y-1/2 items-center gap-1.5 text-xs text-[#777777]">
+                <Spinner className="h-3.5 w-3.5 text-[#CC0000]" />
                 Searching...
               </span>
             ) : null}
@@ -118,23 +125,24 @@ export function HomeExplorer({ initialItems, loadError, universityName = "Univer
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Search by name, location, or date..."
-              className="w-full rounded-2xl border border-white/10 bg-black/35 py-3.5 pl-24 pr-28 text-[#F5F5F0] outline-none placeholder:text-[#F5F5F0]/35 focus:border-brand/45 focus:ring-2 focus:ring-brand/25"
+              className="w-full rounded-[4px] border border-[#E5E5E5] bg-white py-3 pl-10 pr-28 text-[#333333] outline-none placeholder:text-[#AAAAAA] focus:border-[#CC0000] focus:ring-2 focus:ring-[#CC0000]/20"
               aria-label="Search items"
             />
           </div>
         </div>
-      </header>
+      </div>
 
-      <main id="main-content" className="mx-auto max-w-6xl px-4 py-10">
+      <main id="main-content" className="mx-auto max-w-6xl px-4 py-8">
+        {/* Department tabs */}
         {departments.length > 0 ? (
-          <div className="mb-6 flex flex-wrap gap-1 border-b border-white/10 pb-1">
+          <div className="mb-6 flex flex-wrap gap-0 border-b border-[#E5E5E5]">
             <button
               type="button"
               onClick={() => setSelectedDept(null)}
               className={`-mb-px border-b-2 px-4 py-2.5 text-sm transition ${
                 selectedDept === null
-                  ? "border-brand font-medium text-[#F5F5F0]"
-                  : "border-transparent text-[#F5F5F0]/50 hover:text-[#F5F5F0]/75"
+                  ? "border-[#CC0000] font-semibold text-[#CC0000]"
+                  : "border-transparent text-[#555555] hover:text-[#333333]"
               }`}
             >
               All
@@ -146,8 +154,8 @@ export function HomeExplorer({ initialItems, loadError, universityName = "Univer
                 onClick={() => setSelectedDept(d.id)}
                 className={`-mb-px border-b-2 px-4 py-2.5 text-sm transition ${
                   selectedDept === d.id
-                    ? "border-brand font-medium text-[#F5F5F0]"
-                    : "border-transparent text-[#F5F5F0]/50 hover:text-[#F5F5F0]/75"
+                    ? "border-[#CC0000] font-semibold text-[#CC0000]"
+                    : "border-transparent text-[#555555] hover:text-[#333333]"
                 }`}
               >
                 {d.name}
@@ -157,13 +165,13 @@ export function HomeExplorer({ initialItems, loadError, universityName = "Univer
         ) : null}
 
         {loadError ? (
-          <p className="mb-8 rounded-2xl border border-amber-500/25 bg-amber-500/10 px-4 py-3 text-sm text-amber-100">
+          <p className="mb-8 rounded-[4px] border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-800">
             {loadError}
           </p>
         ) : null}
 
         {filtered.length === 0 && !loadError ? (
-          <p className="rounded-2xl border border-white/10 bg-white/[0.03] px-6 py-16 text-center text-[#F5F5F0]/55">
+          <p className="rounded-[4px] border border-[#E5E5E5] bg-[#F5F5F5] px-6 py-16 text-center text-[#777777]">
             {selectedDept && !query.trim()
               ? "No items logged yet at this location."
               : initialItems.length === 0
@@ -171,16 +179,16 @@ export function HomeExplorer({ initialItems, loadError, universityName = "Univer
               : "No items found matching your search. Try different keywords or check back later."}
           </p>
         ) : (
-          <ul className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+          <ul className="grid grid-cols-1 gap-5 sm:grid-cols-2">
             {filtered.map((item) => (
               <li key={item.id}>
                 <button
                   type="button"
                   onClick={() => setOpenItem(item)}
                   aria-label={`Claim ${item.name}`}
-                  className="group w-full overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04] text-left transition duration-200 hover:-translate-y-0.5 hover:border-brand/35 hover:bg-white/[0.06]"
+                  className="group w-full overflow-hidden rounded-[4px] border border-[#E5E5E5] bg-white text-left shadow-sm transition duration-200 hover:-translate-y-0.5 hover:border-[#CC0000]/40 hover:shadow-md"
                 >
-                  <div className="relative aspect-[4/3] w-full overflow-hidden bg-black/50">
+                  <div className="relative aspect-[4/3] w-full overflow-hidden bg-[#F5F5F5]">
                     <Image
                       src={`/api/items/${item.id}/blur`}
                       alt=""
@@ -193,18 +201,18 @@ export function HomeExplorer({ initialItems, loadError, universityName = "Univer
                       sizes="(max-width: 640px) 100vw, 50vw"
                       unoptimized
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent" />
                   </div>
-                  <div className="space-y-3 px-4 py-4">
-                    <p className="font-medium text-[#F5F5F0]">{item.name}</p>
+                  <div className="space-y-2.5 px-4 py-4">
+                    <p className="font-semibold text-[#333333]">{item.name}</p>
                     {item.value_tier === "low_value" ? (
-                      <p className="rounded-xl border border-brand/25 bg-brand/10 px-3 py-2.5 text-sm font-medium leading-snug text-[#F5F5F0]">
+                      <p className="rounded-[4px] border border-[#E5E5E5] bg-[#F5F5F5] px-3 py-2 text-sm text-[#555555]">
                         <span aria-hidden="true">📍 </span>Pick up at: {item.department_name ?? "Lost & Found"}
                       </p>
                     ) : (
-                      <p className="text-sm text-[#F5F5F0]/65"><span aria-hidden="true">🔒 </span>Describe to unlock — pickup location shown after you verify</p>
+                      <p className="text-sm text-[#777777]"><span aria-hidden="true">🔒 </span>Describe to unlock — pickup location shown after you verify</p>
                     )}
-                    <p className="text-xs text-[#F5F5F0]/60">Found {item.date_found}</p>
+                    <p className="text-xs text-[#999999]">Found {item.date_found}</p>
                   </div>
                 </button>
               </li>
@@ -215,9 +223,9 @@ export function HomeExplorer({ initialItems, loadError, universityName = "Univer
 
       {openItem ? <ClaimModal key={openItem.id} item={openItem} onClose={() => setOpenItem(null)} departmentName={openItem.department_name ?? "Lost & Found"} /> : null}
 
-      <footer className="border-t border-white/10 py-10 text-center text-sm text-[#F5F5F0]/40">
-        University of Utah Lost &amp; Found &nbsp;·&nbsp;{" "}
-        <Link href="/privacy" className="underline underline-offset-2 hover:text-[#F5F5F0]/70 transition">
+      <footer className="border-t border-[#E5E5E5] bg-white py-8 text-center text-sm text-[#999999]">
+        {universityName} Lost &amp; Found &nbsp;·&nbsp;{" "}
+        <Link href="/privacy" className="underline underline-offset-2 hover:text-[#555555] transition">
           Privacy
         </Link>
       </footer>
@@ -320,24 +328,24 @@ function ClaimModal({ item, onClose, departmentName }: { item: PublicItem; onClo
   }
 
   return (
-    <div className="anim-fade-in fixed inset-0 z-50 flex items-end justify-center bg-black/75 p-4 backdrop-blur-sm sm:items-center">
+    <div className="anim-fade-in fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-4 backdrop-blur-sm sm:items-center">
       <div
         role="dialog"
         aria-modal="true"
         aria-labelledby="claim-title"
-        className="anim-pop-in max-h-[92vh] w-full max-w-lg overflow-y-auto rounded-2xl border border-white/10 bg-[#141414] shadow-2xl"
+        className="anim-pop-in max-h-[92vh] w-full max-w-lg overflow-y-auto rounded-[4px] border border-[#E5E5E5] bg-white shadow-2xl"
       >
-        <div className="flex items-start justify-between gap-3 border-b border-white/10 px-5 py-4">
+        <div className="flex items-start justify-between gap-3 border-b border-[#E5E5E5] px-5 py-4">
           <div>
-            <h2 id="claim-title" className="text-lg font-semibold">
+            <h2 id="claim-title" className="text-lg font-bold text-[#333333]">
               {claimSubmitted ? "Claim submitted" : "Claim item"}
             </h2>
-            {!claimSubmitted ? <p className="mt-0.5 text-sm text-[#F5F5F0]/55">{item.name}</p> : null}
+            {!claimSubmitted ? <p className="mt-0.5 text-sm text-[#777777]">{item.name}</p> : null}
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="min-h-11 rounded-lg border border-white/10 px-3 py-2 text-sm text-[#F5F5F0]/70 hover:bg-white/5"
+            className="min-h-11 rounded-[4px] border border-[#E5E5E5] px-3 py-2 text-sm text-[#555555] hover:bg-[#F5F5F5]"
           >
             Close
           </button>
@@ -345,20 +353,20 @@ function ClaimModal({ item, onClose, departmentName }: { item: PublicItem; onClo
 
         {claimSubmitted ? (
           <div className="space-y-6 px-5 py-8 text-center">
-            <p className="text-base leading-relaxed text-[#F5F5F0]/85">
+            <p className="text-base leading-relaxed text-[#333333]">
               Your claim has been submitted. Head to {departmentName} with your student ID to pick up your item.
             </p>
             <button
               type="button"
               onClick={onClose}
-              className="inline-flex min-h-11 min-w-[10rem] items-center justify-center rounded-xl border border-brand/45 bg-brand/12 px-6 py-3 text-sm font-medium text-[#F5F5F0] transition hover:bg-brand/22 focus:outline-none focus:ring-2 focus:ring-brand/35"
+              className="inline-flex min-h-11 min-w-[10rem] items-center justify-center rounded-[4px] bg-[#CC0000] px-6 py-3 text-sm font-semibold text-white transition hover:bg-[#A80000] focus:outline-none focus:ring-2 focus:ring-[#CC0000]/40"
             >
               Done
             </button>
           </div>
         ) : item.value_tier === "low_value" ? (
           <div className="space-y-4 px-5 py-5">
-            <div className="relative aspect-[4/3] w-full overflow-hidden rounded-xl border border-white/10 bg-black/50">
+            <div className="relative aspect-[4/3] w-full overflow-hidden rounded-[4px] border border-[#E5E5E5] bg-[#F5F5F5]">
               <Image
                 src={`/api/items/${item.id}/blur`}
                 alt={item.name}
@@ -367,42 +375,42 @@ function ClaimModal({ item, onClose, departmentName }: { item: PublicItem; onClo
                 sizes="(max-width: 640px) 100vw, 640px"
                 unoptimized
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/35 via-transparent to-transparent" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent" />
             </div>
 
-            <p className="rounded-xl border border-white/10 bg-black/30 px-4 py-3 text-sm font-medium text-[#F5F5F0]/90">
+            <p className="rounded-[4px] border border-[#E5E5E5] bg-[#F5F5F5] px-4 py-3 text-sm font-medium text-[#333333]">
               <span aria-hidden="true">📍 </span>Pick up at: {departmentName}
             </p>
 
             {showClaimForm ? (
               <div className="space-y-3">
                 <label className="block space-y-1.5">
-                  <span className="text-sm text-[#F5F5F0]/80">Your name</span>
+                  <span className="text-sm font-medium text-[#333333]">Your name</span>
                   <input
                     value={studentName}
                     onChange={(e) => setStudentName(e.target.value)}
-                    className="w-full rounded-xl border border-white/10 bg-black/40 px-4 py-3 text-[#F5F5F0] outline-none focus:border-brand/45 focus:ring-2 focus:ring-brand/25"
+                    className="w-full rounded-[4px] border border-[#E5E5E5] bg-white px-4 py-3 text-[#333333] outline-none focus:border-[#CC0000] focus:ring-2 focus:ring-[#CC0000]/20"
                     autoComplete="name"
                   />
                 </label>
                 <label className="block space-y-1.5">
-                  <span className="text-sm text-[#F5F5F0]/80">Student ID</span>
+                  <span className="text-sm font-medium text-[#333333]">Student ID</span>
                   <input
                     value={studentIdNumber}
                     onChange={(e) => setStudentIdNumber(e.target.value)}
-                    className="w-full rounded-xl border border-white/10 bg-black/40 px-4 py-3 text-[#F5F5F0] outline-none focus:border-brand/45 focus:ring-2 focus:ring-brand/25"
+                    className="w-full rounded-[4px] border border-[#E5E5E5] bg-white px-4 py-3 text-[#333333] outline-none focus:border-[#CC0000] focus:ring-2 focus:ring-[#CC0000]/20"
                   />
                 </label>
 
                 {item.requires_pin ? (
                   <label className="block space-y-1.5">
-                    <span className="text-sm text-[#F5F5F0]/80">Item PIN</span>
+                    <span className="text-sm font-medium text-[#333333]">Item PIN</span>
                     <input
                       type="password"
                       value={pin}
                       onChange={(e) => setPin(e.target.value)}
                       placeholder="Provided when the item was logged"
-                      className="w-full rounded-xl border border-white/10 bg-black/40 px-4 py-3 text-[#F5F5F0] outline-none focus:border-brand/45 focus:ring-2 focus:ring-brand/25"
+                      className="w-full rounded-[4px] border border-[#E5E5E5] bg-white px-4 py-3 text-[#333333] outline-none focus:border-[#CC0000] focus:ring-2 focus:ring-[#CC0000]/20"
                     />
                   </label>
                 ) : null}
@@ -411,11 +419,11 @@ function ClaimModal({ item, onClose, departmentName }: { item: PublicItem; onClo
                   type="button"
                   onClick={() => void submitClaim()}
                   disabled={submitBusy}
-                  className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-brand/40 bg-brand/15 py-3 text-sm font-medium text-[#F5F5F0] hover:bg-brand/25 disabled:opacity-40"
+                  className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-[4px] bg-[#CC0000] py-3 text-sm font-semibold text-white transition hover:bg-[#A80000] disabled:opacity-40"
                 >
                   {submitBusy ? (
                     <>
-                      <Spinner className="h-4 w-4 text-brand" />
+                      <Spinner className="h-4 w-4 text-white" />
                       Submitting...
                     </>
                   ) : (
@@ -427,47 +435,47 @@ function ClaimModal({ item, onClose, departmentName }: { item: PublicItem; onClo
               <button
                 type="button"
                 onClick={() => setShowClaimForm(true)}
-                className="inline-flex min-h-11 w-full items-center justify-center rounded-xl border border-brand/40 bg-brand/15 py-3 text-sm font-medium text-[#F5F5F0] hover:bg-brand/25"
+                className="inline-flex min-h-11 w-full items-center justify-center rounded-[4px] bg-[#CC0000] py-3 text-sm font-semibold text-white transition hover:bg-[#A80000]"
               >
                 This is mine →
               </button>
             )}
 
-            {error ? <p className="text-sm text-red-400">{error}</p> : null}
+            {error ? <p className="text-sm text-red-600">{error}</p> : null}
           </div>
         ) : (
           <div className="space-y-5 px-5 py-5">
             {score !== null ? (
-              <p className="text-sm text-[#F5F5F0]/70">
-                Match score: <span className="font-semibold text-[#F5F5F0]">{score}</span>
+              <p className="text-sm text-[#555555]">
+                Match score: <span className="font-semibold text-[#333333]">{score}</span>
                 {score > 60 ? (
-                  <span className="text-emerald-400"> — strong match</span>
+                  <span className="text-emerald-600"> — strong match</span>
                 ) : (
-                  <span className="text-amber-300"> — need a stronger match to unlock (&gt; 60)</span>
+                  <span className="text-amber-600"> — need a stronger match to unlock (&gt; 60)</span>
                 )}
               </p>
             ) : null}
 
             <label className="block space-y-2">
-              <span className="text-sm text-[#F5F5F0]/80">Describe your item so we can verify it&apos;s yours</span>
+              <span className="text-sm font-medium text-[#333333]">Describe your item so we can verify it&apos;s yours</span>
               <textarea
                 value={studentDescription}
                 onChange={(e) => setStudentDescription(e.target.value)}
                 rows={4}
                 placeholder="Describe your item so we can verify it&apos;s yours"
-                className="w-full rounded-xl border border-white/10 bg-black/40 px-4 py-3 text-[#F5F5F0] outline-none focus:border-brand/45 focus:ring-2 focus:ring-brand/25"
+                className="w-full rounded-[4px] border border-[#E5E5E5] bg-white px-4 py-3 text-[#333333] outline-none focus:border-[#CC0000] focus:ring-2 focus:ring-[#CC0000]/20"
               />
             </label>
 
             {item.requires_pin ? (
               <label className="block space-y-2">
-                <span className="text-sm text-[#F5F5F0]/80">Item PIN</span>
+                <span className="text-sm font-medium text-[#333333]">Item PIN</span>
                 <input
                   type="password"
                   value={pin}
                   onChange={(e) => setPin(e.target.value)}
                   placeholder="Provided when the item was logged"
-                  className="w-full rounded-xl border border-white/10 bg-black/40 px-4 py-3 text-[#F5F5F0] outline-none focus:border-brand/45 focus:ring-2 focus:ring-brand/25"
+                  className="w-full rounded-[4px] border border-[#E5E5E5] bg-white px-4 py-3 text-[#333333] outline-none focus:border-[#CC0000] focus:ring-2 focus:ring-[#CC0000]/20"
                 />
               </label>
             ) : null}
@@ -476,11 +484,11 @@ function ClaimModal({ item, onClose, departmentName }: { item: PublicItem; onClo
               type="button"
               onClick={() => void checkMatch()}
               disabled={matchBusy || !studentDescription.trim()}
-              className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-brand/40 bg-brand/15 py-3 text-sm font-medium text-[#F5F5F0] hover:bg-brand/25 disabled:opacity-40"
+              className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-[4px] bg-[#CC0000] py-3 text-sm font-semibold text-white transition hover:bg-[#A80000] disabled:opacity-40"
             >
               {matchBusy ? (
                 <>
-                  <Spinner className="h-4 w-4 text-brand" />
+                  <Spinner className="h-4 w-4 text-white" />
                   Checking...
                 </>
               ) : (
@@ -488,36 +496,36 @@ function ClaimModal({ item, onClose, departmentName }: { item: PublicItem; onClo
               )}
             </button>
 
-            {error ? <p className="text-sm text-red-400">{error}</p> : null}
+            {error ? <p className="text-sm text-red-600">{error}</p> : null}
           </div>
         )}
       </div>
 
       {showFoundPopup && revealUrl ? (
-        <div className="anim-fade-in fixed inset-0 z-[60] flex items-center justify-center bg-black/80 p-4">
+        <div className="anim-fade-in fixed inset-0 z-[60] flex items-center justify-center bg-black/60 p-4">
           <div
             role="dialog"
             aria-modal="true"
             aria-labelledby="found-popup-title"
-            className="anim-pop-in w-full max-w-md overflow-hidden rounded-2xl border border-white/10 bg-[#141414] shadow-2xl"
+            className="anim-pop-in w-full max-w-md overflow-hidden rounded-[4px] border border-[#E5E5E5] bg-white shadow-2xl"
           >
             <div className="flex justify-end px-4 pt-4">
               <button
                 type="button"
                 onClick={() => setShowFoundPopup(false)}
                 aria-label="Close"
-                className="min-h-11 rounded-lg border border-white/10 px-3 py-2 text-sm text-[#F5F5F0]/70 hover:bg-white/5"
+                className="min-h-11 rounded-[4px] border border-[#E5E5E5] px-3 py-2 text-sm text-[#555555] hover:bg-[#F5F5F5]"
               >
                 <span aria-hidden="true">✕</span>
               </button>
             </div>
             <div className="px-5 pb-5">
-              <div className="relative mb-4 aspect-[4/3] w-full overflow-hidden rounded-xl border border-white/10">
+              <div className="relative mb-4 aspect-[4/3] w-full overflow-hidden rounded-[4px] border border-[#E5E5E5]">
                 <Image src={revealUrl} alt={item.name} fill className="object-cover" sizes="(max-width: 512px) 100vw, 512px" unoptimized />
               </div>
-              <p id="found-popup-title" className="mb-1 text-center text-2xl font-bold text-emerald-400"><span aria-hidden="true">✓ </span>Item Found!</p>
-              <p className="text-center text-lg font-semibold text-[#F5F5F0]">{item.name}</p>
-              <p className="mb-5 mt-4 rounded-xl border border-white/10 bg-black/30 p-3 text-sm font-medium text-[#F5F5F0]/90">
+              <p id="found-popup-title" className="mb-1 text-center text-2xl font-bold text-emerald-600"><span aria-hidden="true">✓ </span>Item Found!</p>
+              <p className="text-center text-lg font-semibold text-[#333333]">{item.name}</p>
+              <p className="mb-5 mt-4 rounded-[4px] border border-[#E5E5E5] bg-[#F5F5F5] p-3 text-sm font-medium text-[#333333]">
                 <span aria-hidden="true">📍 </span>Pick up at: {departmentName}
               </p>
               <div className="flex flex-col gap-2">
@@ -528,7 +536,7 @@ function ClaimModal({ item, onClose, departmentName }: { item: PublicItem; onClo
                     setShowClaimForm(true);
                   }}
                   disabled={submitBusy}
-                  className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 py-3 text-sm font-semibold text-white transition duration-200 hover:bg-emerald-500 active:scale-[0.99] disabled:opacity-50"
+                  className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-[4px] bg-emerald-600 py-3 text-sm font-semibold text-white transition hover:bg-emerald-700 active:scale-[0.99] disabled:opacity-50"
                 >
                   This is mine →
                 </button>
@@ -536,7 +544,7 @@ function ClaimModal({ item, onClose, departmentName }: { item: PublicItem; onClo
                   type="button"
                   onClick={handleNotMineGoBack}
                   disabled={submitBusy}
-                  className="inline-flex min-h-11 w-full items-center justify-center rounded-xl border border-white/15 bg-zinc-700 py-3 text-sm font-semibold text-[#F5F5F0] transition duration-200 hover:bg-zinc-600 active:scale-[0.99] disabled:opacity-50"
+                  className="inline-flex min-h-11 w-full items-center justify-center rounded-[4px] border border-[#E5E5E5] bg-white py-3 text-sm font-semibold text-[#333333] transition hover:bg-[#F5F5F5] active:scale-[0.99] disabled:opacity-50"
                 >
                   Not mine — go back
                 </button>

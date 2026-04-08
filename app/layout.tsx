@@ -61,7 +61,7 @@ export default function RootLayout({
   const cssVars = `--color-brand:${brandColor};--color-brand-hover:${brandColorHover};`;
   return (
     <html lang="en" className="h-full antialiased">
-      <body style={{ ["--color-brand" as string]: brandColor, ["--color-brand-hover" as string]: brandColorHover }} className="min-h-full flex flex-col bg-transparent text-[#F5F5F0]">
+      <body style={{ ["--color-brand" as string]: brandColor, ["--color-brand-hover" as string]: brandColorHover }} className="min-h-full flex flex-col bg-white text-[#333333]">
         <style>{`:root{${cssVars}}`}</style>
         <a href="#main-content" className="skip-nav">
           Skip to main content
