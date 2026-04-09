@@ -594,10 +594,10 @@ export function StaffDashboard({
       <header className="sticky top-0 z-20 bg-[#111111]" style={{ borderBottom: "1px solid #2a2a2a" }}>
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-3">
           <div>
-            <p className="text-[11px] font-semibold uppercase tracking-widest text-[#CC0000]">Staff</p>
+            <p className="text-[11px] font-semibold uppercase tracking-widest text-[#FF6666]">Staff</p>
             <h1 className="text-lg font-semibold text-white leading-tight">{departmentName}</h1>
             {universityName ? (
-              <p className="text-xs text-white/50 mt-0.5">{universityName}</p>
+              <p className="text-xs text-white/70 mt-0.5">{universityName}</p>
             ) : null}
           </div>
           <div className="flex flex-wrap items-center gap-2">
@@ -652,7 +652,7 @@ export function StaffDashboard({
             {loading ? <ActiveItemsSkeleton /> : null}
 
             {!loading && activeItems.length === 0 ? (
-              <div className="rounded-lg border border-[#E5E5E5] px-6 py-16 text-center text-[#999999]">
+              <div className="rounded-lg border border-[#E5E5E5] px-6 py-16 text-center text-[#767676]">
                 No active items.
               </div>
             ) : null}
@@ -677,7 +677,7 @@ export function StaffDashboard({
                       <div className="min-w-0 flex-1">
                         <p className="truncate text-[15px] font-semibold text-[#1a1a1a]">{item.name}</p>
                         <p className="mt-0.5 truncate text-sm text-[#666666]">{item.description}</p>
-                        <p className="mt-0.5 text-xs text-[#999999]">{item.location}</p>
+                        <p className="mt-0.5 text-xs text-[#767676]">{item.location}</p>
                         <div className="mt-2.5 flex flex-wrap items-center gap-2">
                           <button
                             type="button"
@@ -707,7 +707,7 @@ export function StaffDashboard({
                         </div>
                       </div>
                       <div className="shrink-0 text-right space-y-1.5">
-                        <p className="text-xs text-[#888888]">Found {item.date_found}</p>
+                        <p className="text-xs text-[#767676]">Found {item.date_found}</p>
                         <SurplusBadge daysUntilEligible={daysUntilEligible} isEligible={isEligible} />
                       </div>
                     </li>
@@ -742,7 +742,7 @@ export function StaffDashboard({
                   <tbody className="divide-y divide-[#E5E5E5]">
                     {claims.length === 0 ? (
                       <tr>
-                        <td colSpan={6} className="px-4 py-10 text-center text-[#999999]">
+                        <td colSpan={6} className="px-4 py-10 text-center text-[#767676]">
                           No pending claims.
                         </td>
                       </tr>
@@ -762,10 +762,10 @@ export function StaffDashboard({
                           </td>
                           <td className="px-4 py-3 font-semibold text-[#1a1a1a]">{c.item_name}</td>
                           <td className="px-4 py-3 text-[#333333]">
-                            {c.student_name?.trim() ? c.student_name : <span className="text-[#AAAAAA]">Not provided</span>}
+                            {c.student_name?.trim() ? c.student_name : <span className="text-[#767676]">Not provided</span>}
                           </td>
                           <td className="px-4 py-3 text-[#333333]">
-                            {c.student_id_number?.trim() ? c.student_id_number : <span className="text-[#AAAAAA]">Not provided</span>}
+                            {c.student_id_number?.trim() ? c.student_id_number : <span className="text-[#767676]">Not provided</span>}
                           </td>
                           <td className="px-4 py-3 text-[#666666]">{c.created_at.slice(0, 10)}</td>
                           <td className="px-4 py-3">
@@ -822,7 +822,7 @@ export function StaffDashboard({
                   <tbody className="divide-y divide-[#E5E5E5]">
                     {surplusItems.length === 0 ? (
                       <tr>
-                        <td colSpan={5} className="px-4 py-10 text-center text-[#999999]">
+                        <td colSpan={5} className="px-4 py-10 text-center text-[#767676]">
                           No items in surplus yet.
                         </td>
                       </tr>
@@ -845,7 +845,7 @@ export function StaffDashboard({
                           <td className="px-4 py-3 text-[#666666]">
                             <span>{s.sent_to_surplus_at.slice(0, 10)}</span>
                             {daysInSurplus !== null ? (
-                              <span className="ml-2 text-xs text-[#AAAAAA]">({daysInSurplus}d in surplus)</span>
+                              <span className="ml-2 text-xs text-[#767676]">({daysInSurplus}d in surplus)</span>
                             ) : null}
                           </td>
                         </tr>
@@ -882,7 +882,7 @@ export function StaffDashboard({
                   <tbody className="divide-y divide-[#E5E5E5]">
                     {logRows.length === 0 ? (
                       <tr>
-                        <td colSpan={7} className="px-4 py-10 text-center text-[#999999]">
+                        <td colSpan={7} className="px-4 py-10 text-center text-[#767676]">
                           No returned or claimed items.
                         </td>
                       </tr>
@@ -891,13 +891,13 @@ export function StaffDashboard({
                       <tr key={`${r.kind}-${r.claim_id ?? r.item_id}`} className={idx % 2 === 1 ? "bg-[#F5F5F5]" : "bg-white"}>
                         <td className="px-4 py-3 font-semibold text-[#1a1a1a]">{r.item_name}</td>
                         <td className="px-4 py-3 text-[#333333]">
-                          {r.student_name?.trim() ? r.student_name : <span className="text-[#AAAAAA]">Not provided</span>}
+                          {r.student_name?.trim() ? r.student_name : <span className="text-[#767676]">Not provided</span>}
                         </td>
                         <td className="px-4 py-3 text-[#333333]">
-                          {r.student_id_number?.trim() ? r.student_id_number : <span className="text-[#AAAAAA]">Not provided</span>}
+                          {r.student_id_number?.trim() ? r.student_id_number : <span className="text-[#767676]">Not provided</span>}
                         </td>
                         <td className="px-4 py-3 text-[#333333]">
-                          {r.phone_number?.trim() ? r.phone_number : <span className="text-[#AAAAAA]">Not provided</span>}
+                          {r.phone_number?.trim() ? r.phone_number : <span className="text-[#767676]">Not provided</span>}
                         </td>
                         <td className="px-4 py-3 text-[#666666]">{r.date}</td>
                         <td className="px-4 py-3">
@@ -1107,7 +1107,7 @@ export function StaffDashboard({
 
             <div className="mt-4 space-y-3">
               <div className="rounded-lg border border-[#E5E5E5] bg-[#F5F5F5] px-3 py-2 text-sm text-[#333333]">
-                <span className="text-[#888888]">Item: </span>{returnClaimItemName}
+                <span className="text-[#767676]">Item: </span>{returnClaimItemName}
               </div>
 
               <label className="block space-y-1">
