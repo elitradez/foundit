@@ -146,9 +146,10 @@ export function HomeExplorer({ initialItems, loadError, universityName = "Univer
           </p>
           <div style={{ position: "relative" }}>
             {query.trim() && searchBusy ? (
-              <span style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12, color: "#888888", pointerEvents: "none" }}>
-                <Spinner className="h-3.5 w-3.5" style={{ color: "#CC0000" }} />
-                Searching…
+              <span style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", display: "inline-flex", alignItems: "center", gap: 5, pointerEvents: "none" }}>
+                <span className="uu-dot uu-dot-1" />
+                <span className="uu-dot uu-dot-2" />
+                <span className="uu-dot uu-dot-3" />
               </span>
             ) : null}
             <input
@@ -167,6 +168,13 @@ export function HomeExplorer({ initialItems, loadError, universityName = "Univer
 
       {/* ── Main ── */}
       <main id="main-content" style={{ maxWidth: 1152, margin: "0 auto", padding: "0 16px 48px" }}>
+
+        {/* Search progress bar */}
+        {searchBusy ? (
+          <div className="uu-progress-track" style={{ marginBottom: 0 }}>
+            <div className="uu-progress-bar" />
+          </div>
+        ) : null}
 
         {/* Department tabs */}
         {departments.length > 0 ? (
@@ -229,25 +237,32 @@ export function HomeExplorer({ initialItems, loadError, universityName = "Univer
               ))}
             </ul>
             {hasMore && !query.trim() ? (
-              <div style={{ textAlign: "center", marginTop: 32 }}>
-                <button
-                  type="button"
-                  onClick={() => void loadMore()}
-                  disabled={loadingMore}
-                  style={{
-                    backgroundColor: "#FFFFFF",
-                    border: "1px solid #E5E5E5",
-                    borderRadius: 6,
-                    padding: "10px 28px",
-                    fontSize: 14,
-                    fontWeight: 500,
-                    color: loadingMore ? "#AAAAAA" : "#333333",
-                    cursor: loadingMore ? "default" : "pointer",
-                  }}
-                >
-                  {loadingMore ? "Loading…" : "Load more"}
-                </button>
-              </div>
+              loadingMore ? (
+                <ul style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 20, listStyle: "none", padding: 0, margin: "20px 0 0" }}>
+                  {Array.from({ length: 6 }).map((_, i) => (
+                    <li key={i}><div className="uu-skeleton-card" /></li>
+                  ))}
+                </ul>
+              ) : (
+                <div style={{ textAlign: "center", marginTop: 32 }}>
+                  <button
+                    type="button"
+                    onClick={() => void loadMore()}
+                    style={{
+                      backgroundColor: "#FFFFFF",
+                      border: "1px solid #E5E5E5",
+                      borderRadius: 6,
+                      padding: "10px 28px",
+                      fontSize: 14,
+                      fontWeight: 500,
+                      color: "#333333",
+                      cursor: "pointer",
+                    }}
+                  >
+                    Load more
+                  </button>
+                </div>
+              )
             ) : null}
           </>
         )}
