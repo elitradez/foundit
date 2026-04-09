@@ -202,7 +202,7 @@ export function HomeExplorer({ initialItems, loadError, universityName = "Univer
                   }}
                 >
                   {tab.name}{" "}
-                  <span style={{ color: active ? "#CC0000" : "#999999", fontWeight: 400 }}>({tab.count})</span>
+                  <span style={{ color: active ? "#CC0000" : "#767676", fontWeight: 400 }}>({tab.count})</span>
                 </button>
               );
             })}
@@ -219,7 +219,7 @@ export function HomeExplorer({ initialItems, loadError, universityName = "Univer
         {filtered.length === 0 && !loadError ? (
           <div style={{ textAlign: "center", padding: "64px 24px" }}>
             <p style={{ fontSize: 36, marginBottom: 12 }}>📭</p>
-            <p style={{ fontSize: 14, color: "#888888" }}>
+            <p style={{ fontSize: 14, color: "#767676" }}>
               {selectedDept && !query.trim()
                 ? "No items found at this location."
                 : allItems.length === 0
@@ -272,7 +272,7 @@ export function HomeExplorer({ initialItems, loadError, universityName = "Univer
 
       {/* ── Footer ── */}
       <footer style={{ borderTop: "1px solid #E5E5E5", backgroundColor: "#FFFFFF", padding: "24px 16px", textAlign: "center" }}>
-        <p style={{ fontSize: 13, color: "#888888", margin: 0 }}>
+        <p style={{ fontSize: 13, color: "#767676", margin: 0 }}>
           {universityName} Lost &amp; Found &nbsp;·&nbsp;{" "}
           <Link
             href="/privacy"
@@ -332,9 +332,9 @@ function ItemCard({ item, onClick }: { item: PublicItem; onClick: () => void }) 
             {item.department_name ?? "Lost & Found"}
           </p>
         ) : (
-          <p style={{ fontSize: 12, color: "#888888", margin: "0 0 4px 0" }}>🔒 Verify ownership to unlock</p>
+          <p style={{ fontSize: 12, color: "#767676", margin: "0 0 4px 0" }}>🔒 Verify ownership to unlock</p>
         )}
-        <p style={{ fontSize: 12, color: "#888888", margin: "0 0 14px 0" }}>Found {item.date_found}</p>
+        <p style={{ fontSize: 12, color: "#767676", margin: "0 0 14px 0" }}>Found {item.date_found}</p>
 
         {/* CTA */}
         <div
