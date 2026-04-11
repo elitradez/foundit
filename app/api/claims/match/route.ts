@@ -22,7 +22,7 @@ export async function POST(req: Request) {
     const supabase = createAdminSupabaseClient();
     const { data: item, error } = await supabase
       .from("items")
-      .select("id, description, returned_at, photo_path, value_tier")
+      .select("id, description, returned_at, photo_path, value_tier, pin_hash")
       .eq("id", itemId)
       .maybeSingle();
 
@@ -69,7 +69,7 @@ Return ONLY valid JSON: {"score": <number>} where score is an integer from 0 to 
     const clamped = Math.min(100, Math.max(0, score));
 
     let revealUrl: string | null = null;
-    if (clamped > 60) {
+    if (clamped > 60 && item.pin_hash === null) {
       const { data: signed, error: signErr } = await supabase.storage
         .from("items")
         .createSignedUrl(item.photo_path, 60 * 10);

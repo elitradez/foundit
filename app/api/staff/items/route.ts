@@ -49,6 +49,9 @@ export async function POST(req: Request) {
   if (!(file instanceof File) || file.size === 0) {
     return NextResponse.json({ error: "Missing photo" }, { status: 400 });
   }
+  if (file.size > 10 * 1024 * 1024) {
+    return NextResponse.json({ error: "Photo must be under 10MB" }, { status: 400 });
+  }
   if (!name || !description || !location || !dateFound) {
     return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
   }
