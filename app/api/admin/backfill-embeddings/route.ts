@@ -10,13 +10,14 @@ export async function POST(req: Request) {
   const supabase = createAdminSupabaseClient();
   const { data: items } = await supabase
     .from("items")
-    .select("id, name, description")
-    .is("embedding", null)
+    .select("id, name, description, embedding")
     .limit(100);
+
+  const unembedded = (items ?? []).filter((item) => !item.embedding);
 
   const results = { processed: 0, errors: [] as string[] };
 
-  for (const item of items ?? []) {
+  for (const item of unembedded) {
     try {
       const input = `${item.name}. ${item.description}`.trim();
       const embRes = await fetch("https://api.openai.com/v1/embeddings", {
