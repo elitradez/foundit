@@ -83,21 +83,17 @@ export async function POST(req: Request) {
       }
     }
 
-    // 3. Fallback: if no vector results (items not yet embedded), use simple keyword match
+    // 3. Fallback: if no vector results (items not yet embedded), use SQL ILIKE
     if (matchedIds.size === 0) {
-      let fallback = supabase
-        .from("items")
-        .select("id, name, description")
-        .is("returned_at", null)
-        .limit(300);
-      if (universityId) fallback = fallback.eq("university_id", universityId);
-      const { data } = await fallback;
-      const q = query.toLowerCase();
-      for (const row of data ?? []) {
-        if (row.name?.toLowerCase().includes(q) || row.description?.toLowerCase().includes(q)) {
-          matchedIds.add(row.id);
-        }
+      const pattern = `%${query.replace(/[%_]/g, "\\$&")}%`;
+      let nameQ = supabase.from("items").select("id").ilike("name", pattern).is("returned_at", null);
+      let descQ = supabase.from("items").select("id").ilike("description", pattern).is("returned_at", null);
+      if (universityId) {
+        nameQ = nameQ.eq("university_id", universityId);
+        descQ = descQ.eq("university_id", universityId);
       }
+      const [{ data: nameData }, { data: descData }] = await Promise.all([nameQ, descQ]);
+      for (const row of [...(nameData ?? []), ...(descData ?? [])]) matchedIds.add(row.id);
     }
 
     return NextResponse.json({ itemIds: Array.from(matchedIds) });

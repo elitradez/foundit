@@ -24,21 +24,11 @@ function isPendingStaffEntry(value: string | null): boolean {
 async function getPendingClaims(departmentId: string): Promise<PendingClaimRow[]> {
   const supabase = createAdminSupabaseClient();
 
-  // Get item IDs for this department first.
-  const { data: itemData, error: itemErr } = await supabase
-    .from("items")
-    .select("id")
-    .eq("department_id", departmentId);
-  if (itemErr) throw new Error(itemErr.message);
-
-  const itemIds = (itemData ?? []).map((r: { id: string }) => r.id);
-  if (itemIds.length === 0) return [];
-
   const { data, error } = await supabase
     .from("claims")
-    .select("id, student_name, student_id_number, student_email, created_at, items(name)")
+    .select("id, student_name, student_id_number, student_email, created_at, items!inner(name)")
     .eq("status", "pending")
-    .in("item_id", itemIds)
+    .eq("items.department_id", departmentId)
     .order("created_at", { ascending: false });
 
   if (error) throw new Error(error.message);
