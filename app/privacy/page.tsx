@@ -1,0 +1,102 @@
+import Link from "next/link";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Privacy Policy — Lost & Found",
+};
+
+const FONT = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+
+export default function PrivacyPage() {
+  return (
+    <div style={{ minHeight: "100vh", backgroundColor: "#FFFFFF", fontFamily: FONT, color: "#333333" }}>
+
+      {/* Nav */}
+      <header style={{ backgroundColor: "#FFFFFF", borderBottom: "1px solid #E5E5E5" }}>
+        <div style={{ maxWidth: 1152, margin: "0 auto", padding: "12px 16px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <Link href="/" style={{ textDecoration: "none" }}>
+            <p style={{ color: "#CC0000", fontSize: 11, fontWeight: 600, letterSpacing: "0.12em", textTransform: "uppercase", lineHeight: 1.3, margin: 0 }}>
+              University of Utah
+            </p>
+            <p style={{ color: "#1a1a1a", fontSize: 18, fontWeight: 600, lineHeight: 1.2, margin: 0 }}>
+              Lost &amp; Found
+            </p>
+          </Link>
+          <Link
+            href="/staff/login"
+            style={{ color: "#CC0000", fontSize: 14, fontWeight: 500, textDecoration: "none" }}
+          >
+            Staff sign in
+          </Link>
+        </div>
+      </header>
+
+      {/* Content */}
+      <main id="main-content" style={{ maxWidth: 720, margin: "0 auto", padding: "48px 24px 80px" }}>
+        <h1 style={{ fontSize: 28, fontWeight: 700, color: "#1a1a1a", margin: "0 0 6px" }}>Privacy Policy</h1>
+        <p style={{ fontSize: 14, color: "#767676", margin: "0 0 40px" }}>Last updated April 2026</p>
+
+        <Section title="What data we collect">
+          <p>When an item is logged by staff, we collect: a photo of the item, a brief description, the location where it was found, and the date found.</p>
+          <p>When you submit a claim, we may collect: your name, email address, phone number, and a description of the item you believe is yours. All claim fields are optional.</p>
+          <p>We do not collect login credentials, payment information, or any data beyond what is needed to reunite lost items with their owners.</p>
+        </Section>
+
+        <Section title="How we use your data">
+          <p>Information is used solely to match lost items with their rightful owners and to allow department staff to contact claimants if needed.</p>
+          <p>Your claim description is used to help staff verify ownership at pickup. Your contact information (if provided) may be used to notify you about the status of your claim.</p>
+        </Section>
+
+        <Section title="Who can access your data">
+          <p>Only authorized department staff at the University of Utah can view claims and item records. Staff access is limited to items and claims belonging to their own department — they cannot view records from other departments.</p>
+          <p>No third parties have access to your personal information. We do not sell, share, or license your data to any outside organization.</p>
+        </Section>
+
+        <Section title="Data retention">
+          <p>Item records remain active until the item is returned to its owner or transferred to surplus. Claim records are retained for audit and accountability purposes after resolution.</p>
+          <p>If you would like your claim or contact information deleted, email us at <a href="mailto:ebunting07@gmail.com" style={{ color: "#CC0000" }}>ebunting07@gmail.com</a> and we will remove it promptly.</p>
+        </Section>
+
+        <Section title="FERPA compliance">
+          <p>This service is operated in compliance with the Family Educational Rights and Privacy Act (FERPA). Student records are not shared with unauthorized parties. Staff access is limited to what is necessary to operate the lost and found service.</p>
+        </Section>
+
+        <Section title="No advertising, no data sales">
+          <p>We do not use your data for advertising purposes. We do not sell, trade, or transfer your personal information to outside parties under any circumstances.</p>
+        </Section>
+
+        <Section title="Your rights">
+          <p>You have the right to request access to, correction of, or deletion of any personal information you have submitted. To exercise these rights, contact us at:</p>
+          <p><a href="mailto:ebunting07@gmail.com" style={{ color: "#CC0000", fontWeight: 500 }}>ebunting07@gmail.com</a></p>
+        </Section>
+
+        <Section title="Contact">
+          <p>Questions about this policy? Email <a href="mailto:ebunting07@gmail.com" style={{ color: "#CC0000" }}>ebunting07@gmail.com</a>.</p>
+        </Section>
+      </main>
+
+      {/* Footer */}
+      <footer style={{ borderTop: "1px solid #E5E5E5", backgroundColor: "#FFFFFF", padding: "24px 16px", textAlign: "center" }}>
+        <p style={{ fontSize: 13, color: "#767676", margin: 0 }}>
+          University of Utah Lost &amp; Found &nbsp;·&nbsp;{" "}
+          <Link href="/privacy" style={{ color: "#CC0000", textDecoration: "none" }}>
+            Privacy
+          </Link>
+        </p>
+      </footer>
+    </div>
+  );
+}
+
+function Section({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <section style={{ marginBottom: 36 }}>
+      <h2 style={{ fontSize: 16, fontWeight: 600, color: "#1a1a1a", margin: "0 0 10px", paddingBottom: 8, borderBottom: "1px solid #E5E5E5" }}>
+        {title}
+      </h2>
+      <div style={{ fontSize: 14, color: "#444444", lineHeight: 1.7, display: "flex", flexDirection: "column", gap: 10 }}>
+        {children}
+      </div>
+    </section>
+  );
+}

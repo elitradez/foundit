@@ -318,7 +318,7 @@ function ItemCard({ item, onClick }: { item: PublicItem; onClick: () => void }) 
           src={`/api/items/${item.id}/blur`}
           alt=""
           fill
-          className={item.value_tier === "high_value" ? "object-cover blur-xl" : "object-cover"}
+          className="object-cover blur-xl"
           sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
           unoptimized
         />
@@ -327,13 +327,9 @@ function ItemCard({ item, onClick }: { item: PublicItem; onClick: () => void }) 
       {/* Content */}
       <div style={{ display: "flex", flexDirection: "column", flex: 1, padding: "14px 16px 16px" }}>
         <p style={{ fontSize: 15, fontWeight: 600, color: "#1a1a1a", margin: "0 0 4px 0" }}>{item.name}</p>
-        {item.value_tier === "low_value" ? (
-          <p style={{ fontSize: 12, color: "#CC0000", margin: "0 0 4px 0" }}>
-            {item.department_name ?? "Lost & Found"}
-          </p>
-        ) : (
-          <p style={{ fontSize: 12, color: "#767676", margin: "0 0 4px 0" }}>🔒 Verify ownership to unlock</p>
-        )}
+        <p style={{ fontSize: 12, color: "#CC0000", margin: "0 0 4px 0" }}>
+          {item.department_name ?? "Lost & Found"}
+        </p>
         <p style={{ fontSize: 12, color: "#767676", margin: "0 0 14px 0" }}>Found {item.date_found}</p>
 
         {/* CTA */}
@@ -358,73 +354,31 @@ function ItemCard({ item, onClick }: { item: PublicItem; onClick: () => void }) 
 }
 
 function ClaimModal({ item, onClose, departmentName }: { item: PublicItem; onClose: () => void; departmentName: string }) {
-  const [studentDescription, setStudentDescription] = useState("");
-  const [pin, setPin] = useState("");
-  const [score, setScore] = useState<number | null>(null);
-  const [revealUrl, setRevealUrl] = useState<string | null>(null);
-  const [showFoundPopup, setShowFoundPopup] = useState(false);
-  const [matchBusy, setMatchBusy] = useState(false);
-  const [submitBusy, setSubmitBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [showClaimForm, setShowClaimForm] = useState(false);
   const [studentName, setStudentName] = useState("");
-  const [studentIdNumber, setStudentIdNumber] = useState("");
+  const [email, setEmail] = useState("");
+  const [phoneNumber, setPhoneNumber] = useState("");
+  const [studentDescription, setStudentDescription] = useState("");
+  const [submitBusy, setSubmitBusy] = useState(false);
   const [claimSubmitted, setClaimSubmitted] = useState(false);
-
-  async function checkMatch() {
-    setError(null);
-    setMatchBusy(true);
-    setScore(null);
-    setRevealUrl(null);
-    setShowFoundPopup(false);
-    try {
-      const res = await fetch("/api/claims/match", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ itemId: item.id, studentDescription }),
-      });
-      const data = (await res.json().catch(() => ({}))) as { score?: number; revealUrl?: string | null; error?: string };
-      if (!res.ok) { setError(data.error ?? "Could not verify description"); return; }
-      if (typeof data.score !== "number") { setError("Unexpected response"); return; }
-      setScore(data.score);
-      if (data.revealUrl && data.score > 60) { setRevealUrl(data.revealUrl); setShowFoundPopup(true); }
-    } finally {
-      setMatchBusy(false);
-    }
-  }
-
-  function handleNotMineGoBack() {
-    setShowFoundPopup(false);
-    setRevealUrl(null);
-    setScore(null);
-    setStudentDescription("");
-    setPin("");
-    setError(null);
-    onClose();
-  }
+  const [error, setError] = useState<string | null>(null);
 
   async function submitClaim() {
     setError(null);
     setSubmitBusy(true);
     try {
-      const name = studentName.trim();
-      const studentId = studentIdNumber.trim();
-      if (!name || !studentId) { setError("Please enter your name and student ID."); return; }
       const res = await fetch("/api/claims/submit", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           itemId: item.id,
-          studentDescription: item.value_tier === "low_value" ? item.name : studentDescription,
-          studentName: name,
-          studentIdNumber: studentId,
-          pin: item.requires_pin ? pin : undefined,
+          studentDescription: studentDescription || undefined,
+          studentName: studentName || undefined,
+          studentEmail: email || undefined,
+          phoneNumber: phoneNumber || undefined,
         }),
       });
       const data = (await res.json().catch(() => ({}))) as { error?: string };
       if (!res.ok) { setError(data.error ?? "Submit failed"); return; }
-      setShowFoundPopup(false);
-      setShowClaimForm(false);
       setClaimSubmitted(true);
     } finally {
       setSubmitBusy(false);
@@ -461,9 +415,18 @@ function ClaimModal({ item, onClose, departmentName }: { item: PublicItem; onClo
     fontFamily: FONT,
   };
 
+  const steps = [
+    { n: 1, title: "Submit a claim", sub: "Tell us what the item looks like" },
+    { n: 2, title: `Head to ${departmentName}`, sub: "Bring your ID" },
+    { n: 3, title: "Describe it to staff", sub: "They\u2019ll hand it over if it matches" },
+  ];
+
   return (
-    <div className="anim-fade-in" style={{ position: "fixed", inset: 0, zIndex: 50, display: "flex", alignItems: "flex-end", justifyContent: "center", backgroundColor: "rgba(0,0,0,0.5)", padding: 16, backdropFilter: "blur(4px)" }}
-      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+    <div
+      className="anim-fade-in"
+      style={{ position: "fixed", inset: 0, zIndex: 50, display: "flex", alignItems: "flex-end", justifyContent: "center", backgroundColor: "rgba(0,0,0,0.5)", padding: 16, backdropFilter: "blur(4px)" }}
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+    >
       <div
         role="dialog"
         aria-modal="true"
@@ -471,13 +434,13 @@ function ClaimModal({ item, onClose, departmentName }: { item: PublicItem; onClo
         className="anim-pop-in sm:items-center"
         style={{ maxHeight: "92vh", width: "100%", maxWidth: 512, overflowY: "auto", backgroundColor: "#FFFFFF", border: "1px solid #E5E5E5", borderRadius: 8, boxShadow: "0 20px 60px rgba(0,0,0,0.2)", fontFamily: FONT }}
       >
-        {/* Modal header */}
+        {/* Header */}
         <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, borderBottom: "1px solid #E5E5E5", padding: "16px 20px" }}>
           <div>
             <h2 id="claim-title" style={{ fontSize: 17, fontWeight: 600, color: "#1a1a1a", margin: 0 }}>
-              {claimSubmitted ? "Claim submitted" : "Claim item"}
+              {claimSubmitted ? "You\u2019re all set \u2713" : "Claim item"}
             </h2>
-            {!claimSubmitted ? <p style={{ marginTop: 2, fontSize: 13, color: "#666666" }}>{item.name}</p> : null}
+            {!claimSubmitted ? <p style={{ marginTop: 2, fontSize: 13, color: "#555555" }}>{item.name}</p> : null}
           </div>
           <button
             type="button"
@@ -491,143 +454,116 @@ function ClaimModal({ item, onClose, departmentName }: { item: PublicItem; onClo
         {/* Body */}
         {claimSubmitted ? (
           <div style={{ padding: "40px 20px", textAlign: "center" }}>
-            <p style={{ fontSize: 28, marginBottom: 12 }}>✓</p>
-            <p style={{ fontSize: 15, color: "#333333", lineHeight: 1.6, marginBottom: 24 }}>
-              Your claim has been submitted. Head to <strong>{departmentName}</strong> with your student ID to pick up your item.
+            <p style={{ fontSize: 16, fontWeight: 600, color: "#1a1a1a", lineHeight: 1.6, marginBottom: 8 }}>
+              Head to <strong>{departmentName}</strong> when you&apos;re ready.
+            </p>
+            <p style={{ fontSize: 14, color: "#555555", lineHeight: 1.6, marginBottom: 8 }}>
+              Staff will ask you to describe the item before handing it over.
+            </p>
+            <p style={{ fontSize: 13, color: "#767676", lineHeight: 1.6, marginBottom: 28 }}>
+              If you left your email, we&apos;ll reach out if we need anything else.
             </p>
             <button type="button" onClick={onClose} style={{ ...primaryBtn, width: "auto", minWidth: 140, padding: "10px 24px" }}>
-              Done
+              Got it
             </button>
           </div>
-
-        ) : item.value_tier === "low_value" ? (
-          <div style={{ padding: "20px" }}>
-            <div style={{ position: "relative", width: "100%", aspectRatio: "4/3", backgroundColor: "#F5F5F5", borderRadius: 6, overflow: "hidden", marginBottom: 16, border: "1px solid #E5E5E5" }}>
-              <Image src={`/api/items/${item.id}/blur`} alt={item.name} fill className="object-cover" sizes="512px" unoptimized />
-            </div>
-
-            <p style={{ backgroundColor: "#F5F5F5", border: "1px solid #E5E5E5", borderRadius: 6, padding: "10px 14px", fontSize: 14, color: "#333333", marginBottom: 16 }}>
-              <span aria-hidden="true">📍 </span>Pick up at: <strong>{departmentName}</strong>
-            </p>
-
-            {showClaimForm ? (
-              <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                <label style={{ display: "block" }}>
-                  <span style={{ display: "block", fontSize: 13, fontWeight: 500, color: "#333333", marginBottom: 6 }}>Your name</span>
-                  <input value={studentName} onChange={(e) => setStudentName(e.target.value)} style={inputStyle} autoComplete="name"
-                    onFocus={(e) => { e.currentTarget.style.borderColor = "#CC0000"; e.currentTarget.style.boxShadow = "0 0 0 3px rgba(204,0,0,0.12)"; }}
-                    onBlur={(e) => { e.currentTarget.style.borderColor = "#E5E5E5"; e.currentTarget.style.boxShadow = "none"; }} />
-                </label>
-                <label style={{ display: "block" }}>
-                  <span style={{ display: "block", fontSize: 13, fontWeight: 500, color: "#333333", marginBottom: 6 }}>Student ID</span>
-                  <input value={studentIdNumber} onChange={(e) => setStudentIdNumber(e.target.value)} style={inputStyle}
-                    onFocus={(e) => { e.currentTarget.style.borderColor = "#CC0000"; e.currentTarget.style.boxShadow = "0 0 0 3px rgba(204,0,0,0.12)"; }}
-                    onBlur={(e) => { e.currentTarget.style.borderColor = "#E5E5E5"; e.currentTarget.style.boxShadow = "none"; }} />
-                </label>
-                {item.requires_pin ? (
-                  <label style={{ display: "block" }}>
-                    <span style={{ display: "block", fontSize: 13, fontWeight: 500, color: "#333333", marginBottom: 6 }}>Item PIN</span>
-                    <input type="password" value={pin} onChange={(e) => setPin(e.target.value)} placeholder="Provided when the item was logged" style={inputStyle}
-                      onFocus={(e) => { e.currentTarget.style.borderColor = "#CC0000"; e.currentTarget.style.boxShadow = "0 0 0 3px rgba(204,0,0,0.12)"; }}
-                      onBlur={(e) => { e.currentTarget.style.borderColor = "#E5E5E5"; e.currentTarget.style.boxShadow = "none"; }} />
-                  </label>
-                ) : null}
-                <button type="button" onClick={() => void submitClaim()} disabled={submitBusy} style={{ ...primaryBtn, opacity: submitBusy ? 0.6 : 1 }}>
-                  {submitBusy ? <><Spinner className="h-4 w-4" style={{ color: "#fff" }} /> Submitting…</> : "Submit claim"}
-                </button>
-              </div>
-            ) : (
-              <button type="button" onClick={() => setShowClaimForm(true)} style={primaryBtn}>
-                This is mine →
-              </button>
-            )}
-
-            {error ? <p style={{ marginTop: 10, fontSize: 13, color: "#CC0000" }}>{error}</p> : null}
-          </div>
-
         ) : (
           <div style={{ padding: "20px", display: "flex", flexDirection: "column", gap: 16 }}>
-            {score !== null ? (
-              <p style={{ fontSize: 14, color: "#555555" }}>
-                Match score: <strong style={{ color: "#1a1a1a" }}>{score}</strong>
-                {score > 60
-                  ? <span style={{ color: "#16a34a" }}> — strong match</span>
-                  : <span style={{ color: "#d97706" }}> — need a stronger match to unlock (&gt; 60)</span>}
-              </p>
-            ) : null}
 
+            {/* 3-step explainer */}
+            <div style={{ backgroundColor: "#F5F5F5", borderRadius: 8, padding: "14px 12px", display: "flex", alignItems: "flex-start", gap: 6 }}>
+              {steps.map((step, i) => (
+                <div key={step.n} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center" }}>
+                  {i > 0 ? null : null}
+                  <div style={{ width: 22, height: 22, borderRadius: "50%", backgroundColor: "#CC0000", color: "#FFFFFF", fontSize: 11, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 6, flexShrink: 0 }}>
+                    {step.n}
+                  </div>
+                  <p style={{ fontSize: 11, fontWeight: 600, color: "#1a1a1a", margin: "0 0 2px", lineHeight: 1.3 }}>{step.title}</p>
+                  <p style={{ fontSize: 10, color: "#767676", margin: 0, lineHeight: 1.3 }}>{step.sub}</p>
+                </div>
+              ))}
+            </div>
+
+            {/* Name */}
             <label style={{ display: "block" }}>
               <span style={{ display: "block", fontSize: 13, fontWeight: 500, color: "#333333", marginBottom: 6 }}>
-                Describe your item so we can verify it&apos;s yours
+                Full name <span style={{ fontWeight: 400, color: "#767676" }}>(optional)</span>
               </span>
+              <input
+                value={studentName}
+                onChange={(e) => setStudentName(e.target.value)}
+                style={inputStyle}
+                autoComplete="name"
+                onFocus={(e) => { e.currentTarget.style.borderColor = "#CC0000"; e.currentTarget.style.boxShadow = "0 0 0 3px rgba(204,0,0,0.12)"; }}
+                onBlur={(e) => { e.currentTarget.style.borderColor = "#E5E5E5"; e.currentTarget.style.boxShadow = "none"; }}
+              />
+            </label>
+
+            {/* Email */}
+            <label style={{ display: "block" }}>
+              <span style={{ display: "block", fontSize: 13, fontWeight: 500, color: "#333333", marginBottom: 6 }}>
+                Email address <span style={{ fontWeight: 400, color: "#767676" }}>(optional)</span>
+              </span>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="So we can reach you if needed"
+                style={inputStyle}
+                autoComplete="email"
+                onFocus={(e) => { e.currentTarget.style.borderColor = "#CC0000"; e.currentTarget.style.boxShadow = "0 0 0 3px rgba(204,0,0,0.12)"; }}
+                onBlur={(e) => { e.currentTarget.style.borderColor = "#E5E5E5"; e.currentTarget.style.boxShadow = "none"; }}
+              />
+            </label>
+
+            {/* Phone */}
+            <label style={{ display: "block" }}>
+              <span style={{ display: "block", fontSize: 13, fontWeight: 500, color: "#333333", marginBottom: 6 }}>
+                Phone number <span style={{ fontWeight: 400, color: "#767676" }}>(optional)</span>
+              </span>
+              <input
+                type="tel"
+                value={phoneNumber}
+                onChange={(e) => setPhoneNumber(e.target.value)}
+                style={inputStyle}
+                autoComplete="tel"
+                onFocus={(e) => { e.currentTarget.style.borderColor = "#CC0000"; e.currentTarget.style.boxShadow = "0 0 0 3px rgba(204,0,0,0.12)"; }}
+                onBlur={(e) => { e.currentTarget.style.borderColor = "#E5E5E5"; e.currentTarget.style.boxShadow = "none"; }}
+              />
+            </label>
+
+            {/* Description */}
+            <label style={{ display: "block" }}>
+              <span style={{ display: "block", fontSize: 13, fontWeight: 500, color: "#333333", marginBottom: 4 }}>
+                Describe your item <span style={{ fontWeight: 400, color: "#767676" }}>(optional)</span>
+              </span>
+              <p style={{ fontSize: 12, color: "#767676", margin: "0 0 8px" }}>
+                Color, brand, any damage, what&apos;s inside — anything that proves it&apos;s yours
+              </p>
               <textarea
                 value={studentDescription}
                 onChange={(e) => setStudentDescription(e.target.value)}
                 rows={4}
-                placeholder="Color, brand, distinguishing features…"
+                placeholder="e.g. Dark green Hydro Flask, dent on the side, black lid, 'Emma' written in marker on the bottom"
                 style={{ ...inputStyle, resize: "vertical" }}
                 onFocus={(e) => { e.currentTarget.style.borderColor = "#CC0000"; e.currentTarget.style.boxShadow = "0 0 0 3px rgba(204,0,0,0.12)"; }}
                 onBlur={(e) => { e.currentTarget.style.borderColor = "#E5E5E5"; e.currentTarget.style.boxShadow = "none"; }}
               />
             </label>
 
-            {item.requires_pin ? (
-              <label style={{ display: "block" }}>
-                <span style={{ display: "block", fontSize: 13, fontWeight: 500, color: "#333333", marginBottom: 6 }}>Item PIN</span>
-                <input type="password" value={pin} onChange={(e) => setPin(e.target.value)} placeholder="Provided when the item was logged" style={inputStyle}
-                  onFocus={(e) => { e.currentTarget.style.borderColor = "#CC0000"; e.currentTarget.style.boxShadow = "0 0 0 3px rgba(204,0,0,0.12)"; }}
-                  onBlur={(e) => { e.currentTarget.style.borderColor = "#E5E5E5"; e.currentTarget.style.boxShadow = "none"; }} />
-              </label>
-            ) : null}
-
-            <button type="button" onClick={() => void checkMatch()} disabled={matchBusy || !studentDescription.trim()} style={{ ...primaryBtn, opacity: matchBusy || !studentDescription.trim() ? 0.5 : 1 }}>
-              {matchBusy ? <><Spinner className="h-4 w-4" style={{ color: "#fff" }} /> Checking…</> : "Verify description"}
+            <button
+              type="button"
+              onClick={() => void submitClaim()}
+              disabled={submitBusy}
+              style={{ ...primaryBtn, opacity: submitBusy ? 0.6 : 1 }}
+            >
+              {submitBusy ? <><Spinner className="h-4 w-4" style={{ color: "#fff" }} /> Submitting…</> : "Submit my claim"}
             </button>
 
-            {error ? <p style={{ fontSize: 13, color: "#CC0000" }}>{error}</p> : null}
+            {error ? <p style={{ fontSize: 13, color: "#CC0000", margin: 0 }}>{error}</p> : null}
           </div>
         )}
       </div>
-
-      {/* Found popup */}
-      {showFoundPopup && revealUrl ? (
-        <div className="anim-fade-in" style={{ position: "fixed", inset: 0, zIndex: 60, display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: "rgba(0,0,0,0.65)", padding: 16 }}>
-          <div
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="found-popup-title"
-            className="anim-pop-in"
-            style={{ width: "100%", maxWidth: 448, backgroundColor: "#FFFFFF", border: "1px solid #E5E5E5", borderRadius: 8, boxShadow: "0 20px 60px rgba(0,0,0,0.25)", overflow: "hidden", fontFamily: FONT }}
-          >
-            <div style={{ display: "flex", justifyContent: "flex-end", padding: "12px 16px 0" }}>
-              <button type="button" onClick={() => setShowFoundPopup(false)} aria-label="Close"
-                style={{ minHeight: 36, padding: "6px 14px", backgroundColor: "#FFFFFF", border: "1px solid #E5E5E5", borderRadius: 4, fontSize: 13, color: "#555555", cursor: "pointer", fontFamily: FONT }}>
-                ✕
-              </button>
-            </div>
-            <div style={{ padding: "0 20px 20px" }}>
-              <div style={{ position: "relative", width: "100%", aspectRatio: "4/3", backgroundColor: "#F5F5F5", borderRadius: 6, overflow: "hidden", marginBottom: 16, border: "1px solid #E5E5E5" }}>
-                <Image src={revealUrl} alt={item.name} fill className="object-cover" sizes="448px" unoptimized />
-              </div>
-              <p id="found-popup-title" style={{ textAlign: "center", fontSize: 22, fontWeight: 700, color: "#16a34a", marginBottom: 4 }}>✓ Item Found!</p>
-              <p style={{ textAlign: "center", fontSize: 16, fontWeight: 600, color: "#1a1a1a", marginBottom: 16 }}>{item.name}</p>
-              <p style={{ backgroundColor: "#F5F5F5", border: "1px solid #E5E5E5", borderRadius: 6, padding: "10px 14px", fontSize: 14, color: "#333333", marginBottom: 16 }}>
-                <span aria-hidden="true">📍 </span>Pick up at: <strong>{departmentName}</strong>
-              </p>
-              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                <button type="button" onClick={() => { setShowFoundPopup(false); setShowClaimForm(true); }} disabled={submitBusy}
-                  style={{ ...primaryBtn, opacity: submitBusy ? 0.6 : 1 }}>
-                  This is mine →
-                </button>
-                <button type="button" onClick={handleNotMineGoBack} disabled={submitBusy}
-                  style={{ display: "inline-flex", width: "100%", alignItems: "center", justifyContent: "center", minHeight: 44, backgroundColor: "#FFFFFF", color: "#333333", fontSize: 14, fontWeight: 600, border: "1px solid #E5E5E5", borderRadius: 4, cursor: "pointer", opacity: submitBusy ? 0.5 : 1, fontFamily: FONT }}>
-                  Not mine — go back
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      ) : null}
     </div>
   );
 }
