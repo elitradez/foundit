@@ -353,14 +353,38 @@ function ItemCard({ item, onClick }: { item: PublicItem; onClick: () => void }) 
   );
 }
 
+type ModalStep = 1 | 2 | 3 | 4;
+
 function ClaimModal({ item, onClose, departmentName }: { item: PublicItem; onClose: () => void; departmentName: string }) {
+  const [step, setStep] = useState<ModalStep>(1);
+  const [studentDescription, setStudentDescription] = useState("");
+  const [matchBusy, setMatchBusy] = useState(false);
+  const [matchScore, setMatchScore] = useState<number | null>(null);
+  const [revealUrl, setRevealUrl] = useState<string | null>(null);
   const [studentName, setStudentName] = useState("");
   const [email, setEmail] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
-  const [studentDescription, setStudentDescription] = useState("");
   const [submitBusy, setSubmitBusy] = useState(false);
-  const [claimSubmitted, setClaimSubmitted] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  async function checkMatch() {
+    setError(null);
+    setMatchBusy(true);
+    try {
+      const res = await fetch("/api/claims/match", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ itemId: item.id, studentDescription }),
+      });
+      const data = (await res.json().catch(() => ({}))) as { score?: number; revealUrl?: string | null; error?: string };
+      if (!res.ok) { setError(data.error ?? "Check failed"); return; }
+      setMatchScore(data.score ?? 0);
+      setRevealUrl(data.revealUrl ?? null);
+      setStep(2);
+    } finally {
+      setMatchBusy(false);
+    }
+  }
 
   async function submitClaim() {
     setError(null);
@@ -379,7 +403,7 @@ function ClaimModal({ item, onClose, departmentName }: { item: PublicItem; onClo
       });
       const data = (await res.json().catch(() => ({}))) as { error?: string };
       if (!res.ok) { setError(data.error ?? "Submit failed"); return; }
-      setClaimSubmitted(true);
+      setStep(4);
     } finally {
       setSubmitBusy(false);
     }
@@ -415,11 +439,30 @@ function ClaimModal({ item, onClose, departmentName }: { item: PublicItem; onClo
     fontFamily: FONT,
   };
 
-  const steps = [
+  const secondaryBtn: React.CSSProperties = {
+    display: "inline-flex",
+    width: "100%",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    minHeight: 44,
+    backgroundColor: "#FFFFFF",
+    color: "#333333",
+    fontSize: 14,
+    fontWeight: 500,
+    border: "1px solid #E5E5E5",
+    borderRadius: 4,
+    cursor: "pointer",
+    fontFamily: FONT,
+  };
+
+  const explainerSteps = [
     { n: 1, title: "Submit a claim", sub: "Tell us what the item looks like" },
     { n: 2, title: `Head to ${departmentName}`, sub: "Bring your ID" },
     { n: 3, title: "Describe it to staff", sub: "They\u2019ll hand it over if it matches" },
   ];
+
+  const isMatch = matchScore !== null && matchScore > 60;
 
   return (
     <div
@@ -438,9 +481,9 @@ function ClaimModal({ item, onClose, departmentName }: { item: PublicItem; onClo
         <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, borderBottom: "1px solid #E5E5E5", padding: "16px 20px" }}>
           <div>
             <h2 id="claim-title" style={{ fontSize: 17, fontWeight: 600, color: "#1a1a1a", margin: 0 }}>
-              {claimSubmitted ? "You\u2019re all set \u2713" : "Claim item"}
+              {step === 4 ? "You\u2019re all set \u2713" : "Claim item"}
             </h2>
-            {!claimSubmitted ? <p style={{ marginTop: 2, fontSize: 13, color: "#555555" }}>{item.name}</p> : null}
+            {step !== 4 ? <p style={{ marginTop: 2, fontSize: 13, color: "#555555" }}>{item.name}</p> : null}
           </div>
           <button
             type="button"
@@ -451,38 +494,107 @@ function ClaimModal({ item, onClose, departmentName }: { item: PublicItem; onClo
           </button>
         </div>
 
-        {/* Body */}
-        {claimSubmitted ? (
-          <div style={{ padding: "40px 20px", textAlign: "center" }}>
-            <p style={{ fontSize: 16, fontWeight: 600, color: "#1a1a1a", lineHeight: 1.6, marginBottom: 8 }}>
-              Head to <strong>{departmentName}</strong> when you&apos;re ready.
-            </p>
-            <p style={{ fontSize: 14, color: "#555555", lineHeight: 1.6, marginBottom: 8 }}>
-              Staff will ask you to describe the item before handing it over.
-            </p>
-            <p style={{ fontSize: 13, color: "#767676", lineHeight: 1.6, marginBottom: 28 }}>
-              If you left your email, we&apos;ll reach out if we need anything else.
-            </p>
-            <button type="button" onClick={onClose} style={{ ...primaryBtn, width: "auto", minWidth: 140, padding: "10px 24px" }}>
-              Got it
-            </button>
-          </div>
-        ) : (
+        {/* ── Step 1: Describe your item ── */}
+        {step === 1 ? (
           <div style={{ padding: "20px", display: "flex", flexDirection: "column", gap: 16 }}>
-
             {/* 3-step explainer */}
             <div style={{ backgroundColor: "#F5F5F5", borderRadius: 8, padding: "14px 12px", display: "flex", alignItems: "flex-start", gap: 6 }}>
-              {steps.map((step, i) => (
-                <div key={step.n} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center" }}>
-                  {i > 0 ? null : null}
+              {explainerSteps.map((s) => (
+                <div key={s.n} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center" }}>
                   <div style={{ width: 22, height: 22, borderRadius: "50%", backgroundColor: "#CC0000", color: "#FFFFFF", fontSize: 11, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 6, flexShrink: 0 }}>
-                    {step.n}
+                    {s.n}
                   </div>
-                  <p style={{ fontSize: 11, fontWeight: 600, color: "#1a1a1a", margin: "0 0 2px", lineHeight: 1.3 }}>{step.title}</p>
-                  <p style={{ fontSize: 10, color: "#767676", margin: 0, lineHeight: 1.3 }}>{step.sub}</p>
+                  <p style={{ fontSize: 11, fontWeight: 600, color: "#1a1a1a", margin: "0 0 2px", lineHeight: 1.3 }}>{s.title}</p>
+                  <p style={{ fontSize: 10, color: "#767676", margin: 0, lineHeight: 1.3 }}>{s.sub}</p>
                 </div>
               ))}
             </div>
+
+            {/* Description textarea */}
+            <label style={{ display: "block" }}>
+              <span style={{ display: "block", fontSize: 13, fontWeight: 500, color: "#333333", marginBottom: 4 }}>
+                Describe your item
+              </span>
+              <p style={{ fontSize: 12, color: "#767676", margin: "0 0 8px" }}>
+                Color, brand, any damage, what&apos;s inside — anything that proves it&apos;s yours
+              </p>
+              <textarea
+                value={studentDescription}
+                onChange={(e) => setStudentDescription(e.target.value)}
+                rows={4}
+                placeholder="e.g. Dark green Hydro Flask, dent on the side, black lid, 'Emma' written in marker on the bottom"
+                style={{ ...inputStyle, resize: "vertical" }}
+                onFocus={(e) => { e.currentTarget.style.borderColor = "#CC0000"; e.currentTarget.style.boxShadow = "0 0 0 3px rgba(204,0,0,0.12)"; }}
+                onBlur={(e) => { e.currentTarget.style.borderColor = "#E5E5E5"; e.currentTarget.style.boxShadow = "none"; }}
+              />
+            </label>
+
+            <button
+              type="button"
+              onClick={() => void checkMatch()}
+              disabled={matchBusy || studentDescription.trim().length < 20}
+              style={{ ...primaryBtn, opacity: (matchBusy || studentDescription.trim().length < 20) ? 0.5 : 1, cursor: (matchBusy || studentDescription.trim().length < 20) ? "not-allowed" : "pointer" }}
+            >
+              {matchBusy ? <><Spinner className="h-4 w-4" style={{ color: "#fff" }} /> Checking your description…</> : "Check if it\u2019s mine \u2192"}
+            </button>
+
+            {error ? <p style={{ fontSize: 13, color: "#CC0000", margin: 0 }}>{error}</p> : null}
+          </div>
+        ) : null}
+
+        {/* ── Step 2: Match result ── */}
+        {step === 2 ? (
+          <div style={{ padding: "20px", display: "flex", flexDirection: "column", gap: 16 }}>
+            {/* Revealed / blurred image */}
+            <div style={{ position: "relative", width: "100%", aspectRatio: "4/3", backgroundColor: "#F5F5F5", borderRadius: 8, overflow: "hidden" }}>
+              <Image
+                src={isMatch && revealUrl ? revealUrl : `/api/items/${item.id}/blur`}
+                alt=""
+                fill
+                className={isMatch && revealUrl ? "object-cover" : "object-cover blur-xl"}
+                sizes="512px"
+                unoptimized
+              />
+            </div>
+
+            {isMatch ? (
+              <>
+                <p style={{ fontSize: 15, fontWeight: 600, color: "#1a1a1a", margin: 0 }}>
+                  Looks like a match — is this your item?
+                </p>
+                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                  <button type="button" onClick={() => setStep(3)} style={primaryBtn}>
+                    Yes, this is mine
+                  </button>
+                  <button type="button" onClick={onClose} style={secondaryBtn}>
+                    Not mine
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                <p style={{ fontSize: 14, color: "#555555", lineHeight: 1.6, margin: 0 }}>
+                  We couldn&apos;t verify from your description alone. You can add more detail and try again, or submit a claim and staff will verify in person when you come to pick it up.
+                </p>
+                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                  <button type="button" onClick={() => setStep(1)} style={secondaryBtn}>
+                    Try again
+                  </button>
+                  <button type="button" onClick={() => setStep(3)} style={primaryBtn}>
+                    Submit anyway
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        ) : null}
+
+        {/* ── Step 3: Contact details ── */}
+        {step === 3 ? (
+          <div style={{ padding: "20px", display: "flex", flexDirection: "column", gap: 16 }}>
+            <p style={{ fontSize: 13, color: "#555555", margin: 0, padding: "10px 12px", backgroundColor: "#F5F5F5", borderRadius: 6 }}>
+              Staff will verify your description when you come to pick it up.
+            </p>
 
             {/* Name */}
             <label style={{ display: "block" }}>
@@ -532,25 +644,6 @@ function ClaimModal({ item, onClose, departmentName }: { item: PublicItem; onClo
               />
             </label>
 
-            {/* Description */}
-            <label style={{ display: "block" }}>
-              <span style={{ display: "block", fontSize: 13, fontWeight: 500, color: "#333333", marginBottom: 4 }}>
-                Describe your item <span style={{ fontWeight: 400, color: "#767676" }}>(optional)</span>
-              </span>
-              <p style={{ fontSize: 12, color: "#767676", margin: "0 0 8px" }}>
-                Color, brand, any damage, what&apos;s inside — anything that proves it&apos;s yours
-              </p>
-              <textarea
-                value={studentDescription}
-                onChange={(e) => setStudentDescription(e.target.value)}
-                rows={4}
-                placeholder="e.g. Dark green Hydro Flask, dent on the side, black lid, 'Emma' written in marker on the bottom"
-                style={{ ...inputStyle, resize: "vertical" }}
-                onFocus={(e) => { e.currentTarget.style.borderColor = "#CC0000"; e.currentTarget.style.boxShadow = "0 0 0 3px rgba(204,0,0,0.12)"; }}
-                onBlur={(e) => { e.currentTarget.style.borderColor = "#E5E5E5"; e.currentTarget.style.boxShadow = "none"; }}
-              />
-            </label>
-
             <button
               type="button"
               onClick={() => void submitClaim()}
@@ -562,7 +655,25 @@ function ClaimModal({ item, onClose, departmentName }: { item: PublicItem; onClo
 
             {error ? <p style={{ fontSize: 13, color: "#CC0000", margin: 0 }}>{error}</p> : null}
           </div>
-        )}
+        ) : null}
+
+        {/* ── Step 4: Confirmation ── */}
+        {step === 4 ? (
+          <div style={{ padding: "40px 20px", textAlign: "center" }}>
+            <p style={{ fontSize: 16, fontWeight: 600, color: "#1a1a1a", lineHeight: 1.6, marginBottom: 8 }}>
+              Head to <strong>{departmentName}</strong> when you&apos;re ready.
+            </p>
+            <p style={{ fontSize: 14, color: "#555555", lineHeight: 1.6, marginBottom: 8 }}>
+              Staff will ask you to describe the item before handing it over.
+            </p>
+            <p style={{ fontSize: 13, color: "#767676", lineHeight: 1.6, marginBottom: 28 }}>
+              If you left your email, we&apos;ll reach out if we need anything else.
+            </p>
+            <button type="button" onClick={onClose} style={{ ...primaryBtn, width: "auto", minWidth: 140, padding: "10px 24px" }}>
+              Got it
+            </button>
+          </div>
+        ) : null}
       </div>
     </div>
   );

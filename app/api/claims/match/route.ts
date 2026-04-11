@@ -33,13 +33,6 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Item no longer available" }, { status: 410 });
     }
 
-    if (item.value_tier === "low_value") {
-      return NextResponse.json({
-        score: 100,
-        revealUrl: `/api/items/${item.id}/blur`,
-      });
-    }
-
     const client = getAnthropicClient();
     const prompt = `You compare a student's description of their lost item to the official logged description.
 
