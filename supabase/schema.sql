@@ -45,6 +45,11 @@ create index if not exists claims_status_created_at_idx on public.claims (status
 create index if not exists claims_status_updated_at_idx on public.claims (status, updated_at desc);
 create index if not exists claims_item_id_idx on public.claims (item_id);
 
+-- Staff password hashing (replaces plain-text staff_password column).
+-- Run app/api/admin/hash-staff-passwords after applying this to migrate existing rows.
+alter table public.departments add column if not exists staff_password_hash text;
+alter table public.departments add column if not exists staff_password_salt text;
+
 -- Multi-department columns (added via migration; ensure they exist for fresh installs).
 alter table public.items add column if not exists department_id uuid;
 alter table public.items add column if not exists university_id text;
