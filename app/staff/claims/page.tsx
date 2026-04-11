@@ -74,15 +74,17 @@ async function markAsClaimedAction(formData: FormData) {
     .eq("id", claimId)
     .maybeSingle();
 
-  if (claimRow) {
-    const { data: itemRow } = await supabase
-      .from("items")
-      .select("id")
-      .eq("id", claimRow.item_id)
-      .eq("department_id", session.department_id)
-      .maybeSingle();
-    if (!itemRow) throw new Error("Item not found");
-  }
+  if (!claimRow) throw new Error("Claim not found");
+
+  const { data: itemRow } = await supabase
+    .from("items")
+    .select("id")
+    .eq("id", claimRow.item_id)
+    .eq("department_id", session.department_id)
+    .maybeSingle();
+  if (!itemRow) throw new Error("Item not found");
+
+  const now = new Date().toISOString();
 
   const { error: statusErr } = await supabase
     .from("claims")
@@ -91,13 +93,18 @@ async function markAsClaimedAction(formData: FormData) {
       student_name: studentName || null,
       student_id_number: studentIdNumber || null,
       student_email: studentEmail || null,
-      updated_at: new Date().toISOString(),
+      updated_at: now,
     })
     .eq("id", claimId);
 
-  if (statusErr) {
-    throw statusErr;
-  }
+  if (statusErr) throw statusErr;
+
+  const { error: itemErr } = await supabase
+    .from("items")
+    .update({ returned_at: now })
+    .eq("id", claimRow.item_id);
+
+  if (itemErr) throw itemErr;
 
   if (notes) {
     const { error: notesErr } = await supabase.from("claims").update({ staff_notes: notes }).eq("id", claimId);

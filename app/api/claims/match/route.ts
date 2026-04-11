@@ -1,3 +1,4 @@
+import { createHash } from "crypto";
 import { NextResponse } from "next/server";
 import { createAdminSupabaseClient } from "@/lib/supabase-admin";
 import {
@@ -6,6 +7,14 @@ import {
   getAnthropicModel,
   parseJsonFromModel,
 } from "@/lib/anthropic";
+
+const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+type CacheEntry = { score: number; revealUrl: string | null; ts: number };
+const matchCache = new Map<string, CacheEntry>();
+
+function getCacheKey(itemId: string, description: string): string {
+  return createHash("sha256").update(`${itemId}:${description}`).digest("hex");
+}
 
 export async function POST(req: Request) {
   try {
@@ -31,6 +40,12 @@ export async function POST(req: Request) {
     }
     if (item.returned_at) {
       return NextResponse.json({ error: "Item no longer available" }, { status: 410 });
+    }
+
+    const cacheKey = getCacheKey(itemId, studentDescription);
+    const cached = matchCache.get(cacheKey);
+    if (cached && Date.now() - cached.ts < CACHE_TTL_MS) {
+      return NextResponse.json({ score: cached.score, revealUrl: cached.revealUrl });
     }
 
     const client = getAnthropicClient();
@@ -78,6 +93,7 @@ Return ONLY valid JSON: {"score": <number>} where score is an integer from 0 to 
       }
     }
 
+    matchCache.set(cacheKey, { score: clamped, revealUrl, ts: Date.now() });
     return NextResponse.json({ score: clamped, revealUrl });
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Match failed";
