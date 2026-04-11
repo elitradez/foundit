@@ -38,8 +38,12 @@ export default function PrivacyPage() {
 
         <Section title="What data we collect">
           <p>When an item is logged by staff, we collect: a photo of the item, a brief description, the location where it was found, and the date found.</p>
-          <p>When you submit a claim, we may collect: your name, email address, phone number, and a description of the item you believe is yours. All claim fields are optional.</p>
+          <p>When a student submits a claim, we may collect their description of the item, and optionally their name, email address, and phone number. All contact fields are optional.</p>
           <p>We do not collect login credentials, payment information, or any data beyond what is needed to reunite lost items with their owners.</p>
+        </Section>
+
+        <Section title="How ownership verification works">
+          <p>All item photos are blurred by default on the student-facing site. To view an item&apos;s photo, students must first describe the item from memory — color, brand, identifying marks, or contents. This description is compared against the staff-logged item description. If the descriptions match closely, the photo is revealed so the student can confirm it is theirs before submitting a claim. Final verification happens in person: staff ask the student to describe the item before releasing it. No item is released without in-person identity confirmation.</p>
         </Section>
 
         <Section title="How we use your data">
