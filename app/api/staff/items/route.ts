@@ -108,5 +108,26 @@ export async function POST(req: Request) {
     console.error("[processNewItemAlerts]", msg);
   });
 
+  void (async () => {
+    try {
+      const input = `${name}. ${description}`.trim();
+      const embRes = await fetch("https://api.openai.com/v1/embeddings", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${process.env.OPENAI_API_KEY}`,
+        },
+        body: JSON.stringify({ model: "text-embedding-3-small", input }),
+      });
+      const embData = await embRes.json();
+      const embedding = embData?.data?.[0]?.embedding;
+      if (Array.isArray(embedding)) {
+        await supabase.from("items").update({ embedding }).eq("id", data.id);
+      }
+    } catch (e) {
+      console.error("[embedding] failed:", e);
+    }
+  })();
+
   return NextResponse.json({ id: data.id });
 }
