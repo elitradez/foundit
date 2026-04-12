@@ -142,7 +142,7 @@ export function HomeExplorer({ initialItems, loadError, universityName = "Univer
             Find a lost item
           </h1>
           <p style={{ color: "#666666", fontSize: 14, margin: "0 0 16px 0" }}>
-            Search for lost items found across campus. Higher-value items require ownership verification before pickup.
+            Search for lost items found across campus. Photos are blurred to protect against theft — describe your item from memory and we'll unblur it if it matches. Staff verify ownership in person at pickup.
           </p>
           <div style={{ position: "relative" }}>
             {query.trim() && searchBusy ? (
