@@ -16,6 +16,7 @@ type Props = {
 };
 
 const FONT = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+const PAGE_SIZE = 24;
 
 export function HomeExplorer({ initialItems, loadError, universityName = "University of Utah", departments = [] }: Props) {
   const [allItems, setAllItems] = useState<PublicItem[]>(initialItems);
@@ -26,6 +27,7 @@ export function HomeExplorer({ initialItems, loadError, universityName = "Univer
   const [searchBusy, setSearchBusy] = useState(false);
   const [aiItemIds, setAiItemIds] = useState<string[] | null>(null);
   const [selectedDept, setSelectedDept] = useState<string | null>(null);
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const searchCacheRef = useRef<Map<string, string[]>>(new Map());
 
   async function loadMore() {
@@ -99,6 +101,10 @@ export function HomeExplorer({ initialItems, loadError, universityName = "Univer
     };
   }, [query]);
 
+  useEffect(() => {
+    setVisibleCount(PAGE_SIZE);
+  }, [query, selectedDept]);
+
   const filtered = useMemo(() => {
     const base = selectedDept
       ? allItems.filter((i) => i.department_id === selectedDept)
@@ -109,6 +115,8 @@ export function HomeExplorer({ initialItems, loadError, universityName = "Univer
     const idSet = new Set(aiItemIds);
     return base.filter((i) => idSet.has(i.id));
   }, [aiItemIds, allItems, query, selectedDept]);
+
+  const visibleItems = filtered.slice(0, visibleCount);
 
   return (
     <div style={{ minHeight: "100vh", backgroundColor: "#FFFFFF", fontFamily: FONT, color: "#333333" }}>
@@ -230,13 +238,33 @@ export function HomeExplorer({ initialItems, loadError, universityName = "Univer
         ) : (
           <>
             <ul style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 20, listStyle: "none", padding: 0, margin: 0 }}>
-              {filtered.map((item) => (
+              {visibleItems.map((item) => (
                 <li key={item.id}>
                   <ItemCard item={item} onClick={() => setOpenItem(item)} />
                 </li>
               ))}
             </ul>
-            {hasMore && !query.trim() ? (
+            {visibleCount < filtered.length ? (
+              <div style={{ textAlign: "center", marginTop: 32 }}>
+                <button
+                  type="button"
+                  onClick={() => setVisibleCount((c) => c + PAGE_SIZE)}
+                  style={{
+                    backgroundColor: "#FFFFFF",
+                    border: "1px solid #E5E5E5",
+                    borderRadius: 6,
+                    padding: "10px 28px",
+                    fontSize: 14,
+                    fontWeight: 500,
+                    color: "#333333",
+                    cursor: "pointer",
+                  }}
+                >
+                  Load more
+                </button>
+              </div>
+            ) : null}
+            {hasMore && !query.trim() && visibleCount >= filtered.length ? (
               loadingMore ? (
                 <ul style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 20, listStyle: "none", padding: 0, margin: "20px 0 0" }}>
                   {Array.from({ length: 6 }).map((_, i) => (
