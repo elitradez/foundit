@@ -239,7 +239,7 @@ export function LogItemForm({ onClose, onSaved }: Props) {
             {aiStatus === "loading" ? (
               <p className="inline-flex items-center gap-2 text-xs text-[#F5F5F0]/55">
                 <Spinner className="h-3.5 w-3.5 text-brand" />
-                Generating description...
+                Generating description…
               </p>
             ) : aiStatus === "failed" ? (
               <p className="text-xs text-amber-400/80">AI unavailable — please describe the item manually</p>
@@ -312,7 +312,7 @@ export function LogItemForm({ onClose, onSaved }: Props) {
               {saveBusy ? (
                 <>
                   <Spinner className="h-4 w-4 text-white" />
-                  Saving...
+                  Saving…
                 </>
               ) : (
                 "Save item"

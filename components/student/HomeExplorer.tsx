@@ -702,7 +702,7 @@ function ClaimModal({ item, onClose, departmentName }: { item: PublicItem; onClo
         {step === 4 ? (
           <div style={{ padding: "40px 20px", textAlign: "center" }}>
             <p style={{ fontSize: 16, fontWeight: 600, color: "#1a1a1a", lineHeight: 1.6, marginBottom: 8 }}>
-              Head to <strong>{departmentName}</strong> when you&apos;re ready.
+              Head to <strong>{departmentName}</strong>{" "}when you&apos;re ready.
             </p>
             <p style={{ fontSize: 14, color: "#555555", lineHeight: 1.6, marginBottom: 8 }}>
               Staff will ask you to describe the item before handing it over.

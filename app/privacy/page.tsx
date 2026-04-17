@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { Metadata } from "next";
+import { getUniversityConfig } from "@/lib/university-config";
 
 export const metadata: Metadata = {
   title: "Privacy Policy — Lost & Found",
@@ -8,6 +9,7 @@ export const metadata: Metadata = {
 const FONT = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
 
 export default function PrivacyPage() {
+  const { name: universityName } = getUniversityConfig();
   return (
     <div style={{ minHeight: "100vh", backgroundColor: "#FFFFFF", fontFamily: FONT, color: "#333333" }}>
 
@@ -16,7 +18,7 @@ export default function PrivacyPage() {
         <div style={{ maxWidth: 1152, margin: "0 auto", padding: "12px 16px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <Link href="/" style={{ textDecoration: "none" }}>
             <p style={{ color: "#CC0000", fontSize: 11, fontWeight: 600, letterSpacing: "0.12em", textTransform: "uppercase", lineHeight: 1.3, margin: 0 }}>
-              University of Utah
+              {universityName}
             </p>
             <p style={{ color: "#1a1a1a", fontSize: 18, fontWeight: 600, lineHeight: 1.2, margin: 0 }}>
               Lost &amp; Found
@@ -38,7 +40,7 @@ export default function PrivacyPage() {
 
         <Section title="What data we collect">
           <p>When an item is logged by staff, we collect: a photo of the item, a brief description, the location where it was found, and the date found.</p>
-          <p>When a student submits a claim, we may collect their description of the item, and optionally their name, email address, and phone number. All contact fields are optional.</p>
+          <p>When a student submits a claim, we collect their name and at least one contact method (email address or phone number). We may also collect a description of the item to assist with ownership verification.</p>
           <p>We do not collect login credentials, payment information, or any data beyond what is needed to reunite lost items with their owners.</p>
         </Section>
 
@@ -52,7 +54,7 @@ export default function PrivacyPage() {
         </Section>
 
         <Section title="Who can access your data">
-          <p>Only authorized department staff at the University of Utah can view claims and item records. Staff access is limited to items and claims belonging to their own department — they cannot view records from other departments.</p>
+          <p>Only authorized department staff at {universityName} can view claims and item records. Staff access is limited to items and claims belonging to their own department — they cannot view records from other departments.</p>
           <p>No third parties have access to your personal information. We do not sell, share, or license your data to any outside organization.</p>
         </Section>
 
@@ -82,7 +84,7 @@ export default function PrivacyPage() {
       {/* Footer */}
       <footer style={{ borderTop: "1px solid #E5E5E5", backgroundColor: "#FFFFFF", padding: "24px 16px", textAlign: "center" }}>
         <p style={{ fontSize: 13, color: "#767676", margin: 0 }}>
-          University of Utah Lost &amp; Found &nbsp;·&nbsp;{" "}
+          {universityName} Lost &amp; Found &nbsp;·&nbsp;{" "}
           <Link href="/privacy" style={{ color: "#CC0000", textDecoration: "none" }}>
             Privacy
           </Link>
