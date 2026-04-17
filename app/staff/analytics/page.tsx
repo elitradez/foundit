@@ -13,6 +13,8 @@ type ItemRow = {
   location: string;
 };
 
+type UniItemRow = ItemRow & { department_id: string | null };
+
 // The status column is not reliably updated by return/surplus routes —
 // derive the real status from the timestamp columns instead.
 function deriveStatus(item: ItemRow): "active" | "returned" | "surplus" {
@@ -72,6 +74,29 @@ function getTopLocations(items: ItemRow[], limit = 8): { location: string; count
     .sort((a, b) => b[1] - a[1])
     .slice(0, limit)
     .map(([location, count]) => ({ location, count }));
+}
+
+function getDeptBreakdown(
+  items: UniItemRow[],
+  deptNames: Map<string, string>,
+  limit = 8,
+): { name: string; total: number; returned: number }[] {
+  const map = new Map<string, { total: number; returned: number }>();
+  for (const item of items) {
+    const key = item.department_id ?? "__unknown__";
+    const entry = map.get(key) ?? { total: 0, returned: 0 };
+    entry.total++;
+    if (deriveStatus(item) === "returned") entry.returned++;
+    map.set(key, entry);
+  }
+  return Array.from(map.entries())
+    .sort((a, b) => b[1].total - a[1].total)
+    .slice(0, limit)
+    .map(([id, { total, returned }]) => ({
+      name: deptNames.get(id) ?? "Unknown dept",
+      total,
+      returned,
+    }));
 }
 
 // ── Chart ─────────────────────────────────────────────────────────────────────
@@ -154,37 +179,78 @@ export default async function StaffAnalyticsPage() {
 
   const supabase = createAdminSupabaseClient();
 
-  const { data: itemsData, error: itemsErr } = await supabase
-    .from("items")
-    .select("id, created_at, returned_at, sent_to_surplus_at, location")
-    .eq("department_id", session.department_id);
+  // Fetch department items, university items, and department names in parallel
+  const [deptItemsRes, uniItemsRes, deptsRes] = await Promise.all([
+    supabase
+      .from("items")
+      .select("id, created_at, returned_at, sent_to_surplus_at, location")
+      .eq("department_id", session.department_id),
+    session.university_id
+      ? supabase
+          .from("items")
+          .select("id, created_at, returned_at, sent_to_surplus_at, location, department_id")
+          .eq("university_id", session.university_id)
+      : Promise.resolve({ data: [], error: null }),
+    session.university_id
+      ? supabase
+          .from("departments")
+          .select("id, name")
+          .eq("university_id", session.university_id)
+      : Promise.resolve({ data: [], error: null }),
+  ]);
 
-  if (itemsErr) {
+  if (deptItemsRes.error) {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
-        <p className="text-red-600 text-sm">{itemsErr.message}</p>
+        <p className="text-red-600 text-sm">{deptItemsRes.error.message}</p>
       </div>
     );
   }
 
-  const items = (itemsData ?? []) as ItemRow[];
+  // ── Department metrics ────────────────────────────────────────────────────
+
+  const items = (deptItemsRes.data ?? []) as ItemRow[];
   const itemIds = items.map((i) => i.id);
 
   const claimsRes = itemIds.length > 0
     ? await supabase.from("claims").select("id", { count: "exact", head: true }).in("item_id", itemIds)
     : { count: 0, error: null };
 
-  const claimsTotal = claimsRes.count ?? 0;
+  const claimsTotal    = claimsRes.count ?? 0;
+  const totalItems     = items.length;
+  const activeItems    = items.filter((i) => deriveStatus(i) === "active").length;
+  const returnedItems  = items.filter((i) => deriveStatus(i) === "returned").length;
+  const surplusItems   = items.filter((i) => deriveStatus(i) === "surplus").length;
+  const returnRate     = totalItems > 0 ? ((returnedItems / totalItems) * 100).toFixed(1) : "—";
+  const avgHours       = avgHoursToReturn(items);
+  const weeklyTrend    = getWeeklyTrend(items);
+  const topLocations   = getTopLocations(items);
+  const topMax         = topLocations[0]?.count ?? 1;
 
-  const totalItems  = items.length;
-  const activeItems  = items.filter((i) => deriveStatus(i) === "active").length;
-  const returnedItems = items.filter((i) => deriveStatus(i) === "returned").length;
-  const surplusItems  = items.filter((i) => deriveStatus(i) === "surplus").length;
-  const returnRate  = totalItems > 0 ? ((returnedItems / totalItems) * 100).toFixed(1) : "—";
-  const avgHours    = avgHoursToReturn(items);
-  const weeklyTrend  = getWeeklyTrend(items);
-  const topLocations = getTopLocations(items);
-  const topMax      = topLocations[0]?.count ?? 1;
+  // ── Campus-wide metrics ────────────────────────────────────────────────────
+
+  const uniItems = (uniItemsRes.data ?? []) as UniItemRow[];
+  const showCampus = session.university_id && uniItems.length > 0;
+
+  const deptNames = new Map<string, string>(
+    ((deptsRes.data ?? []) as { id: string; name: string }[]).map((d) => [d.id, d.name]),
+  );
+
+  const uniItemIds = uniItems.map((i) => i.id);
+  const uniClaimsRes = uniItemIds.length > 0
+    ? await supabase.from("claims").select("id", { count: "exact", head: true }).in("item_id", uniItemIds)
+    : { count: 0, error: null };
+
+  const uniClaimsTotal   = uniClaimsRes.count ?? 0;
+  const uniTotal         = uniItems.length;
+  const uniReturned      = uniItems.filter((i) => deriveStatus(i) === "returned").length;
+  const uniReturnRate    = uniTotal > 0 ? ((uniReturned / uniTotal) * 100).toFixed(1) : "—";
+  const uniAvgHours      = avgHoursToReturn(uniItems);
+  const uniWeeklyTrend   = getWeeklyTrend(uniItems);
+  const uniTopLocations  = getTopLocations(uniItems);
+  const uniTopMax        = uniTopLocations[0]?.count ?? 1;
+  const deptBreakdown    = getDeptBreakdown(uniItems, deptNames);
+  const deptBreakdownMax = deptBreakdown[0]?.total ?? 1;
 
   const generated = new Date().toLocaleString("en-US", {
     month: "short", day: "numeric", year: "numeric",
@@ -217,13 +283,25 @@ export default async function StaffAnalyticsPage() {
 
       <main id="main-content" className="mx-auto max-w-6xl px-6 py-8">
 
-        {/* ── KPI row ── */}
+        {/* ════════════════════════════════════════════════════════════════
+            DEPARTMENT SECTION
+        ════════════════════════════════════════════════════════════════ */}
+
+        <div className="mb-2 flex items-center gap-3">
+          <span className="text-[10px] font-semibold uppercase tracking-[0.15em] text-[#9CA3AF]">
+            Your Department
+          </span>
+          <span className="flex-1 border-t border-[#F3F4F6]" />
+          <span className="text-[10px] text-[#9CA3AF]">{session.department_name}</span>
+        </div>
+
+        {/* KPI row */}
         <div className="grid grid-cols-2 divide-x divide-y divide-[#E5E7EB] border border-[#E5E7EB] sm:grid-cols-4 sm:divide-y-0">
           {[
-            { label: "Items Logged",       value: String(totalItems),                         sub: "all time"                              },
-            { label: "Claims Submitted",   value: String(claimsTotal),                        sub: "across all items"                      },
-            { label: "Return Rate",        value: returnRate === "—" ? "—" : `${returnRate}%`, sub: `${returnedItems} of ${totalItems} returned` },
-            { label: "Avg. Time to Return",value: avgHours !== null ? fmtHours(avgHours) : "—", sub: avgHours !== null ? "logged → returned" : "no returns yet" },
+            { label: "Items Logged",        value: String(totalItems),                          sub: "all time"                              },
+            { label: "Claims Submitted",    value: String(claimsTotal),                         sub: "across all items"                      },
+            { label: "Return Rate",         value: returnRate === "—" ? "—" : `${returnRate}%`, sub: `${returnedItems} of ${totalItems} returned` },
+            { label: "Avg. Time to Return", value: avgHours !== null ? fmtHours(avgHours) : "—", sub: avgHours !== null ? "logged → returned" : "no returns yet" },
           ].map(({ label, value, sub }) => (
             <div key={label} className="px-5 py-5">
               <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[#9CA3AF]">{label}</p>
@@ -233,7 +311,7 @@ export default async function StaffAnalyticsPage() {
           ))}
         </div>
 
-        {/* ── Two-column: chart + status ── */}
+        {/* Two-column: chart + status */}
         <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-[1fr_280px]">
 
           {/* Weekly chart */}
@@ -262,9 +340,9 @@ export default async function StaffAnalyticsPage() {
             </div>
             <div className="divide-y divide-[#F3F4F6]">
               {[
-                { label: "Active",           count: activeItems,  color: "#2563EB" },
+                { label: "Active",            count: activeItems,   color: "#2563EB" },
                 { label: "Returned to owner", count: returnedItems, color: "#059669" },
-                { label: "Sent to surplus",  count: surplusItems, color: "#D97706" },
+                { label: "Sent to surplus",   count: surplusItems,  color: "#D97706" },
               ].map(({ label, count, color }) => (
                 <div key={label} className="flex items-center gap-3 px-5 py-3.5">
                   <span className="h-2 w-2 flex-shrink-0 rounded-full" style={{ backgroundColor: color }} />
@@ -295,7 +373,7 @@ export default async function StaffAnalyticsPage() {
           </div>
         </div>
 
-        {/* ── Top locations ── */}
+        {/* Top locations */}
         <div className="mt-6 border border-[#E5E7EB]">
           <div className="border-b border-[#E5E7EB] px-5 py-3">
             <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[#9CA3AF]">
@@ -314,10 +392,7 @@ export default async function StaffAnalyticsPage() {
                   </span>
                   <span className="min-w-0 flex-1 truncate text-sm text-[#374151]">{location}</span>
                   <div className="hidden w-40 overflow-hidden bg-[#F3F4F6] sm:block" style={{ height: 3 }}>
-                    <div
-                      className="h-full bg-[#1E293B]"
-                      style={{ width: `${(count / topMax) * 100}%` }}
-                    />
+                    <div className="h-full bg-[#1E293B]" style={{ width: `${(count / topMax) * 100}%` }} />
                   </div>
                   <span className="w-7 flex-shrink-0 text-right text-sm font-semibold tabular-nums text-[#111827]">
                     {count}
@@ -328,7 +403,125 @@ export default async function StaffAnalyticsPage() {
           )}
         </div>
 
-        {/* ── Footer ── */}
+        {/* ════════════════════════════════════════════════════════════════
+            CAMPUS-WIDE SECTION
+        ════════════════════════════════════════════════════════════════ */}
+
+        {showCampus && (
+          <>
+            <div className="mb-2 mt-12 flex items-center gap-3">
+              <span className="text-[10px] font-semibold uppercase tracking-[0.15em] text-[#9CA3AF]">
+                Campus Wide
+              </span>
+              <span className="flex-1 border-t border-[#F3F4F6]" />
+              <span className="text-[10px] text-[#9CA3AF]">All departments combined</span>
+            </div>
+
+            {/* Campus KPI row */}
+            <div className="grid grid-cols-2 divide-x divide-y divide-[#E5E7EB] border border-[#E5E7EB] sm:grid-cols-4 sm:divide-y-0">
+              {[
+                { label: "Items Logged",        value: String(uniTotal),                              sub: "all time"                                 },
+                { label: "Claims Submitted",    value: String(uniClaimsTotal),                        sub: "across all items"                         },
+                { label: "Return Rate",         value: uniReturnRate === "—" ? "—" : `${uniReturnRate}%`, sub: `${uniReturned} of ${uniTotal} returned` },
+                { label: "Avg. Time to Return", value: uniAvgHours !== null ? fmtHours(uniAvgHours) : "—", sub: uniAvgHours !== null ? "logged → returned" : "no returns yet" },
+              ].map(({ label, value, sub }) => (
+                <div key={label} className="px-5 py-5">
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[#9CA3AF]">{label}</p>
+                  <p className="mt-2 text-[2rem] font-semibold leading-none tracking-tight text-[#111827]">{value}</p>
+                  <p className="mt-1.5 text-[11px] text-[#9CA3AF]">{sub}</p>
+                </div>
+              ))}
+            </div>
+
+            {/* Two-column: campus chart + department breakdown */}
+            <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-[1fr_280px]">
+
+              {/* Campus weekly chart */}
+              <div className="border border-[#E5E7EB]">
+                <div className="flex items-center justify-between border-b border-[#E5E7EB] px-5 py-3">
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[#9CA3AF]">
+                    Weekly Activity
+                  </p>
+                  <p className="text-[10px] text-[#9CA3AF]">Last 8 weeks · current week in red</p>
+                </div>
+                <div className="px-4 py-5">
+                  {uniWeeklyTrend.every((w) => w.count === 0) ? (
+                    <p className="py-10 text-center text-sm text-[#9CA3AF]">No items logged in the last 8 weeks.</p>
+                  ) : (
+                    <WeeklyBarChart weeks={uniWeeklyTrend} />
+                  )}
+                </div>
+              </div>
+
+              {/* Department breakdown */}
+              <div className="border border-[#E5E7EB]">
+                <div className="border-b border-[#E5E7EB] px-5 py-3">
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[#9CA3AF]">
+                    By Department
+                  </p>
+                </div>
+                <div className="divide-y divide-[#F3F4F6]">
+                  {deptBreakdown.map(({ name, total, returned }) => (
+                    <div key={name} className="flex items-center gap-3 px-5 py-3">
+                      <span className="min-w-0 flex-1 truncate text-sm text-[#374151]">{name}</span>
+                      <div className="flex items-center gap-2">
+                        <div className="w-16 overflow-hidden rounded-none bg-[#F3F4F6]" style={{ height: 3 }}>
+                          <div
+                            style={{
+                              width: `${(total / deptBreakdownMax) * 100}%`,
+                              height: "100%",
+                              backgroundColor: "#1E293B",
+                            }}
+                          />
+                        </div>
+                        <span className="w-6 text-right text-sm font-semibold tabular-nums text-[#111827]">
+                          {total}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <div className="border-t border-[#F3F4F6] px-5 py-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] text-[#9CA3AF]">Total</span>
+                    <span className="text-sm font-semibold tabular-nums text-[#111827]">{uniTotal}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Campus top locations */}
+            <div className="mt-6 border border-[#E5E7EB]">
+              <div className="border-b border-[#E5E7EB] px-5 py-3">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[#9CA3AF]">
+                  Top Locations
+                </p>
+              </div>
+              {uniTopLocations.length === 0 ? (
+                <p className="px-5 py-10 text-center text-sm text-[#9CA3AF]">No location data yet.</p>
+              ) : (
+                <div className="divide-y divide-[#F3F4F6]">
+                  {uniTopLocations.map(({ location, count }, idx) => (
+                    <div key={location} className="flex items-center gap-4 px-5 py-3">
+                      <span className="w-5 flex-shrink-0 text-[11px] tabular-nums text-[#9CA3AF]">
+                        {idx + 1}
+                      </span>
+                      <span className="min-w-0 flex-1 truncate text-sm text-[#374151]">{location}</span>
+                      <div className="hidden w-40 overflow-hidden bg-[#F3F4F6] sm:block" style={{ height: 3 }}>
+                        <div className="h-full bg-[#1E293B]" style={{ width: `${(count / uniTopMax) * 100}%` }} />
+                      </div>
+                      <span className="w-7 flex-shrink-0 text-right text-sm font-semibold tabular-nums text-[#111827]">
+                        {count}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </>
+        )}
+
+        {/* Footer */}
         <p className="mt-6 text-right text-[10px] text-[#9CA3AF]">
           Generated {generated}
         </p>
