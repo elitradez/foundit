@@ -394,6 +394,12 @@ function ClaimModal({ item, onClose, departmentName }: { item: PublicItem; onClo
   const [phoneNumber, setPhoneNumber] = useState("");
   const [submitBusy, setSubmitBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [nameTouched, setNameTouched] = useState(false);
+  const [contactTouched, setContactTouched] = useState(false);
+
+  const nameError = nameTouched && !studentName.trim();
+  const contactError = contactTouched && !email.trim() && !phoneNumber.trim();
+  const canSubmit = studentName.trim().length > 0 && (email.trim().length > 0 || phoneNumber.trim().length > 0);
 
   async function checkMatch() {
     setError(null);
@@ -627,56 +633,63 @@ function ClaimModal({ item, onClose, departmentName }: { item: PublicItem; onClo
             {/* Name */}
             <label style={{ display: "block" }}>
               <span style={{ display: "block", fontSize: 13, fontWeight: 500, color: "#333333", marginBottom: 6 }}>
-                Full name <span style={{ fontWeight: 400, color: "#767676" }}>(optional)</span>
+                Full name <span style={{ color: "#CC0000" }}>*</span>
               </span>
               <input
                 value={studentName}
                 onChange={(e) => setStudentName(e.target.value)}
-                style={inputStyle}
+                style={{ ...inputStyle, borderColor: nameError ? "#CC0000" : "#E5E5E5" }}
                 autoComplete="name"
                 onFocus={(e) => { e.currentTarget.style.borderColor = "#CC0000"; e.currentTarget.style.boxShadow = "0 0 0 3px rgba(204,0,0,0.12)"; }}
-                onBlur={(e) => { e.currentTarget.style.borderColor = "#E5E5E5"; e.currentTarget.style.boxShadow = "none"; }}
+                onBlur={(e) => { setNameTouched(true); e.currentTarget.style.borderColor = nameError ? "#CC0000" : "#E5E5E5"; e.currentTarget.style.boxShadow = "none"; }}
               />
+              {nameError ? <p style={{ fontSize: 12, color: "#CC0000", margin: "4px 0 0" }}>Name is required</p> : null}
             </label>
 
-            {/* Email */}
-            <label style={{ display: "block" }}>
-              <span style={{ display: "block", fontSize: 13, fontWeight: 500, color: "#333333", marginBottom: 6 }}>
-                Email address <span style={{ fontWeight: 400, color: "#767676" }}>(optional)</span>
-              </span>
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="So we can reach you if needed"
-                style={inputStyle}
-                autoComplete="email"
-                onFocus={(e) => { e.currentTarget.style.borderColor = "#CC0000"; e.currentTarget.style.boxShadow = "0 0 0 3px rgba(204,0,0,0.12)"; }}
-                onBlur={(e) => { e.currentTarget.style.borderColor = "#E5E5E5"; e.currentTarget.style.boxShadow = "none"; }}
-              />
-            </label>
-
-            {/* Phone */}
-            <label style={{ display: "block" }}>
-              <span style={{ display: "block", fontSize: 13, fontWeight: 500, color: "#333333", marginBottom: 6 }}>
-                Phone number <span style={{ fontWeight: 400, color: "#767676" }}>(optional)</span>
-              </span>
-              <input
-                type="tel"
-                value={phoneNumber}
-                onChange={(e) => setPhoneNumber(e.target.value)}
-                style={inputStyle}
-                autoComplete="tel"
-                onFocus={(e) => { e.currentTarget.style.borderColor = "#CC0000"; e.currentTarget.style.boxShadow = "0 0 0 3px rgba(204,0,0,0.12)"; }}
-                onBlur={(e) => { e.currentTarget.style.borderColor = "#E5E5E5"; e.currentTarget.style.boxShadow = "none"; }}
-              />
-            </label>
+            {/* Email + Phone — at least one required */}
+            <div>
+              <p style={{ fontSize: 12, color: "#767676", margin: "0 0 10px" }}>
+                Provide at least one way to reach you <span style={{ color: "#CC0000" }}>*</span>
+              </p>
+              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                <label style={{ display: "block" }}>
+                  <span style={{ display: "block", fontSize: 13, fontWeight: 500, color: "#333333", marginBottom: 6 }}>
+                    Email address
+                  </span>
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="you@university.edu"
+                    style={{ ...inputStyle, borderColor: contactError ? "#CC0000" : "#E5E5E5" }}
+                    autoComplete="email"
+                    onFocus={(e) => { e.currentTarget.style.borderColor = "#CC0000"; e.currentTarget.style.boxShadow = "0 0 0 3px rgba(204,0,0,0.12)"; }}
+                    onBlur={(e) => { setContactTouched(true); e.currentTarget.style.borderColor = contactError ? "#CC0000" : "#E5E5E5"; e.currentTarget.style.boxShadow = "none"; }}
+                  />
+                </label>
+                <label style={{ display: "block" }}>
+                  <span style={{ display: "block", fontSize: 13, fontWeight: 500, color: "#333333", marginBottom: 6 }}>
+                    Phone number
+                  </span>
+                  <input
+                    type="tel"
+                    value={phoneNumber}
+                    onChange={(e) => setPhoneNumber(e.target.value)}
+                    style={{ ...inputStyle, borderColor: contactError ? "#CC0000" : "#E5E5E5" }}
+                    autoComplete="tel"
+                    onFocus={(e) => { e.currentTarget.style.borderColor = "#CC0000"; e.currentTarget.style.boxShadow = "0 0 0 3px rgba(204,0,0,0.12)"; }}
+                    onBlur={(e) => { setContactTouched(true); e.currentTarget.style.borderColor = contactError ? "#CC0000" : "#E5E5E5"; e.currentTarget.style.boxShadow = "none"; }}
+                  />
+                </label>
+              </div>
+              {contactError ? <p style={{ fontSize: 12, color: "#CC0000", margin: "4px 0 0" }}>Please provide an email or phone number</p> : null}
+            </div>
 
             <button
               type="button"
               onClick={() => void submitClaim()}
-              disabled={submitBusy}
-              style={{ ...primaryBtn, opacity: submitBusy ? 0.6 : 1 }}
+              disabled={submitBusy || !canSubmit}
+              style={{ ...primaryBtn, opacity: (submitBusy || !canSubmit) ? 0.5 : 1, cursor: (submitBusy || !canSubmit) ? "not-allowed" : "pointer" }}
             >
               {submitBusy ? <><Spinner className="h-4 w-4" style={{ color: "#fff" }} /> Submitting…</> : "Submit my claim"}
             </button>

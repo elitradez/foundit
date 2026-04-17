@@ -21,6 +21,15 @@ export async function POST(req: Request) {
     const studentEmail = body.studentEmail?.trim() || null;
     const phoneNumber = body.phoneNumber?.trim() || null;
 
+    if (!studentName) {
+      return NextResponse.json({ error: "Name is required" }, { status: 400 });
+    }
+    if (!studentEmail && !phoneNumber) {
+      return NextResponse.json({ error: "Email or phone number is required" }, { status: 400 });
+    }
+    if (studentEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(studentEmail)) {
+      return NextResponse.json({ error: "Invalid email address" }, { status: 400 });
+    }
     if (studentDescription && studentDescription.length > 4000) {
       return NextResponse.json({ error: "Description too long" }, { status: 400 });
     }
