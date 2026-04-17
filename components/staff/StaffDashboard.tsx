@@ -614,6 +614,12 @@ export function StaffDashboard({
             <TabButton id="log" label="Student Log" />
             <TabButton id="surplus" label="Surplus" />
             <div className="h-5 w-px bg-white/20" />
+            <a
+              href="/staff/analytics"
+              className="inline-flex min-h-9 items-center rounded border border-white/20 px-3 py-1.5 text-sm text-white/70 hover:bg-white/10 hover:text-white transition"
+            >
+              Analytics
+            </a>
             <button
               type="button"
               onClick={async () => {
