@@ -4,7 +4,7 @@ import { createAdminSupabaseClient } from "@/lib/supabase-admin";
 export async function POST(req: Request) {
   const secret = req.headers.get("x-admin-secret");
   if (secret !== process.env.ADMIN_SECRET) {
-    return NextResponse.json({ error: "Unauthorized", got: secret, expected: process.env.ADMIN_SECRET ? "set" : "not set" }, { status: 401 });
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const supabase = createAdminSupabaseClient();

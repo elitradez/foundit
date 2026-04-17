@@ -1,5 +1,5 @@
 import { randomUUID } from "crypto";
-import { NextResponse } from "next/server";
+import { after, NextResponse } from "next/server";
 import { processNewItemAlerts } from "@/lib/alert-matching";
 import { getStaffSession } from "@/lib/staff-api";
 import { createAdminSupabaseClient } from "@/lib/supabase-admin";
@@ -106,9 +106,13 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  void processNewItemAlerts(supabase, description, location, session.university_id).catch((e) => {
-    const msg = e instanceof Error ? e.message : String(e);
-    console.error("[processNewItemAlerts]", msg);
+  after(async () => {
+    try {
+      await processNewItemAlerts(supabase, description, location, session.university_id);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      console.error("[processNewItemAlerts]", msg);
+    }
   });
 
   void (async () => {

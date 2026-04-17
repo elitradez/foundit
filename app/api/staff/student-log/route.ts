@@ -32,6 +32,25 @@ export async function GET() {
 
   const supabase = createAdminSupabaseClient();
 
+  // Fetch all item IDs for this department upfront so claims queries are scoped to this department only.
+  const { data: deptItemRows, error: deptItemErr } = await supabase
+    .from("items")
+    .select("id")
+    .eq("department_id", session.department_id);
+  if (deptItemErr) {
+    return NextResponse.json({ error: deptItemErr.message }, { status: 500 });
+  }
+  const deptItemIdList = (deptItemRows ?? []).map((r) => r.id);
+
+  const claimsQuery = deptItemIdList.length > 0
+    ? supabase
+        .from("claims")
+        .select("id, item_id, student_name, student_id_number, phone_number, status, created_at, updated_at")
+        .in("status", ["claimed", "returned"])
+        .in("item_id", deptItemIdList)
+        .order("updated_at", { ascending: false })
+    : null;
+
   const [returnedRes, first] = await Promise.all([
     supabase
       .from("items")
@@ -40,11 +59,7 @@ export async function GET() {
       .is("sent_to_surplus_at", null)
       .eq("department_id", session.department_id)
       .order("returned_at", { ascending: false }),
-    supabase
-      .from("claims")
-      .select("id, item_id, student_name, student_id_number, phone_number, status, created_at, updated_at")
-      .in("status", ["claimed", "returned"])
-      .order("updated_at", { ascending: false }),
+    claimsQuery ?? Promise.resolve({ data: [], error: null }),
   ]);
 
   if (returnedRes.error) {
@@ -58,11 +73,14 @@ export async function GET() {
   } else {
     const msg = first.error.message || "";
     if (msg.toLowerCase().includes("phone_number") && msg.toLowerCase().includes("does not exist")) {
-      const fallback = await supabase
-        .from("claims")
-        .select("id, item_id, student_name, student_id_number, status, created_at, updated_at")
-        .in("status", ["claimed", "returned"])
-        .order("updated_at", { ascending: false });
+      const fallback = deptItemIdList.length > 0
+        ? await supabase
+            .from("claims")
+            .select("id, item_id, student_name, student_id_number, status, created_at, updated_at")
+            .in("status", ["claimed", "returned"])
+            .in("item_id", deptItemIdList)
+            .order("updated_at", { ascending: false })
+        : { data: [], error: null };
       if (fallback.error) return NextResponse.json({ error: fallback.error.message }, { status: 500 });
       claimedData = (fallback.data ?? []).map((r) => ({ ...(r as ClaimedRow), phone_number: null }));
     } else {

@@ -89,3 +89,27 @@ create table if not exists public.alerts (
 create index if not exists alerts_notified_created_idx on public.alerts (notified, created_at desc);
 
 alter table public.alerts enable row level security;
+
+-- Vector similarity search used by /api/items/search.
+-- Requires the pgvector extension: CREATE EXTENSION IF NOT EXISTS vector;
+create or replace function search_items(
+  query_embedding vector,
+  match_threshold float,
+  match_count int,
+  p_university_id text
+)
+returns table (id uuid, similarity float)
+language sql
+as $$
+  select
+    id,
+    1 - (embedding <=> query_embedding) as similarity
+  from public.items
+  where
+    returned_at is null
+    and embedding is not null
+    and (p_university_id is null or university_id = p_university_id)
+    and 1 - (embedding <=> query_embedding) >= match_threshold
+  order by similarity desc
+  limit match_count;
+$$;
