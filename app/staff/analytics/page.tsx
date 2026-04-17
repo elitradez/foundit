@@ -7,16 +7,24 @@ export const dynamic = "force-dynamic";
 
 type ItemRow = {
   id: string;
-  status: string;
   created_at: string;
   returned_at: string | null;
+  sent_to_surplus_at: string | null;
   location: string;
 };
+
+// The status column is not reliably updated by return/surplus routes —
+// derive the real status from the timestamp columns instead.
+function deriveStatus(item: ItemRow): "active" | "returned" | "surplus" {
+  if (item.sent_to_surplus_at) return "surplus";
+  if (item.returned_at) return "returned";
+  return "active";
+}
 
 // ── Data helpers ─────────────────────────────────────────────────────────────
 
 function avgHoursToReturn(items: ItemRow[]): number | null {
-  const returned = items.filter((i) => i.status === "returned" && i.returned_at);
+  const returned = items.filter((i) => deriveStatus(i) === "returned" && i.returned_at);
   if (returned.length === 0) return null;
   const totalMs = returned.reduce((sum, i) => {
     return sum + (new Date(i.returned_at!).getTime() - new Date(i.created_at).getTime());
@@ -170,7 +178,7 @@ export default async function StaffAnalyticsPage() {
   // Fetch all items for this department
   const { data: itemsData, error: itemsErr } = await supabase
     .from("items")
-    .select("id, status, created_at, returned_at, location")
+    .select("id, created_at, returned_at, sent_to_surplus_at, location")
     .eq("department_id", session.department_id);
 
   if (itemsErr) {
@@ -197,9 +205,9 @@ export default async function StaffAnalyticsPage() {
 
   // Compute metrics
   const totalItems = items.length;
-  const activeItems = items.filter((i) => i.status === "active").length;
-  const returnedItems = items.filter((i) => i.status === "returned").length;
-  const surplusItems = items.filter((i) => i.status === "surplus").length;
+  const activeItems = items.filter((i) => deriveStatus(i) === "active").length;
+  const returnedItems = items.filter((i) => deriveStatus(i) === "returned").length;
+  const surplusItems = items.filter((i) => deriveStatus(i) === "surplus").length;
   const returnRate = totalItems > 0 ? Math.round((returnedItems / totalItems) * 100) : 0;
   const avgHours = avgHoursToReturn(items);
   const weeklyTrend = getWeeklyTrend(items);
