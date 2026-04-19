@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { revalidatePath } from "next/cache";
 import Image from "next/image";
+import { RelistModalButton } from "@/components/staff/RelistModalButton";
 
 export const dynamic = "force-dynamic";
 
@@ -175,22 +176,24 @@ export default async function StaffClaimedPage() {
 
   const supabase = createAdminSupabaseClient();
 
-  const { data: returnedData, error: returnedErr } = await supabase
-    .from("items")
-    .select("id, name, returned_at, sent_to_surplus_at")
-    .not("returned_at", "is", null)
-    .is("sent_to_surplus_at", null)
-    .eq("department_id", session.department_id)
-    .order("returned_at", { ascending: false });
+  let returnedRows: ReturnedItemRow[] = [];
+  let claimedRows: ClaimedItemRow[] = [];
+  let loadError: string | null = null;
 
-  if (returnedErr) throw returnedErr;
+  try {
+    const { data: returnedData, error: returnedErr } = await supabase
+      .from("items")
+      .select("id, name, returned_at, sent_to_surplus_at")
+      .not("returned_at", "is", null)
+      .is("sent_to_surplus_at", null)
+      .eq("department_id", session.department_id)
+      .order("returned_at", { ascending: false });
 
-  // Get department item IDs to scope the claims query.
-  const deptItemIds = (returnedData ?? []).map((r: { id: string }) => r.id);
+    if (returnedErr) throw returnedErr;
 
-  let claimedData: ClaimedItemRow[] = [];
-  if (deptItemIds.length > 0) {
-    // Also fetch all department item IDs (not just returned ones) for claimed claims.
+    returnedRows = (returnedData ?? []) as ReturnedItemRow[];
+
+    // Fetch all department item IDs to scope the claims query.
     const { data: allItemData } = await supabase
       .from("items")
       .select("id")
@@ -206,31 +209,11 @@ export default async function StaffClaimedPage() {
         .order("updated_at", { ascending: false });
 
       if (claimedErr) throw claimedErr;
-      claimedData = (data ?? []) as ClaimedItemRow[];
+      claimedRows = (data ?? []) as ClaimedItemRow[];
     }
-  } else {
-    // No returned items, but still check for claimed ones.
-    const { data: allItemData } = await supabase
-      .from("items")
-      .select("id")
-      .eq("department_id", session.department_id);
-    const allDeptItemIds = (allItemData ?? []).map((r: { id: string }) => r.id);
-
-    if (allDeptItemIds.length > 0) {
-      const { data, error: claimedErr } = await supabase
-        .from("claims")
-        .select("id, item_id, student_name, student_id_number, student_email, created_at, updated_at, items(name, photo_path)")
-        .eq("status", "claimed")
-        .in("item_id", allDeptItemIds)
-        .order("updated_at", { ascending: false });
-
-      if (claimedErr) throw claimedErr;
-      claimedData = (data ?? []) as ClaimedItemRow[];
-    }
+  } catch (e) {
+    loadError = e instanceof Error ? e.message : "Could not load data";
   }
-
-  const returnedRows = (returnedData ?? []) as ReturnedItemRow[];
-  const claimedRows = claimedData;
 
   const rows: StudentLogRow[] = [
     ...returnedRows.map((r) => ({
@@ -274,6 +257,12 @@ export default async function StaffClaimedPage() {
       </header>
 
       <main id="main-content" className="mx-auto max-w-6xl px-4 py-8">
+        {loadError ? (
+          <p className="mb-6 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-200">
+            {loadError}
+          </p>
+        ) : null}
+
         <div className="overflow-x-auto rounded-2xl border border-white/10">
           <table className="w-full min-w-[1000px] text-left text-sm">
             <thead className="border-b border-white/10 bg-white/[0.04] text-[#F5F5F0]/70">
@@ -317,41 +306,12 @@ export default async function StaffClaimedPage() {
                   <td className="px-4 py-4 text-[#F5F5F0]/80">{row.date}</td>
                   <td className="px-4 py-4">{row.kind === "returned" ? "Returned" : "Claimed"}</td>
                   <td className="px-4 py-4">
-                    <details className="relative">
-                      <summary className="cursor-pointer list-none inline-flex min-h-11 items-center rounded-xl bg-zinc-700 px-4 py-2 text-sm font-semibold text-white hover:bg-zinc-600">
-                        Relist
-                      </summary>
-                      <div className="fixed inset-0 z-[85] flex items-center justify-center bg-black/75 p-4">
-                        <div role="dialog" aria-modal="true" aria-labelledby={`relist-title-${row.itemId}`} className="anim-pop-in w-full max-w-md rounded-2xl border border-white/10 bg-[#141414] p-5 shadow-2xl">
-                          <h3 id={`relist-title-${row.itemId}`} className="text-lg font-semibold text-[#F5F5F0]">
-                            Are you sure? This will put the item back in the active list.
-                          </h3>
-                          <form
-                            action={relistAction}
-                            className="mt-5"
-                          >
-                            <input type="hidden" name="kind" value={row.kind} />
-                            <input type="hidden" name="itemId" value={row.itemId} />
-                            {row.kind === "claimed" ? <input type="hidden" name="claimId" value={row.claimId} /> : null}
-                            <div className="mt-5 flex justify-end gap-2">
-                              <button
-                                type="button"
-                                onClick={(e) => (e.currentTarget.closest("details") as HTMLDetailsElement | null)?.removeAttribute("open")}
-                                className="inline-flex min-h-11 items-center rounded-xl border border-white/15 px-4 py-2 text-sm text-[#F5F5F0]/85 hover:bg-white/5"
-                              >
-                                Cancel
-                              </button>
-                              <button
-                                type="submit"
-                                className="inline-flex min-h-11 items-center rounded-xl bg-brand px-5 py-2 text-sm font-semibold text-white hover:bg-brand-hover"
-                              >
-                                Confirm
-                              </button>
-                            </div>
-                          </form>
-                        </div>
-                      </div>
-                    </details>
+                    <RelistModalButton
+                      itemId={row.itemId}
+                      kind={row.kind}
+                      claimId={row.kind === "claimed" ? row.claimId : undefined}
+                      action={relistAction}
+                    />
                   </td>
                   <td className="px-4 py-4">
                     <details className="relative">
