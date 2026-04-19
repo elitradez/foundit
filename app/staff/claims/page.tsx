@@ -1,5 +1,6 @@
 import { createAdminSupabaseClient } from "@/lib/supabase-admin";
 import { getStaffSession } from "@/lib/staff-api";
+import { ClaimModalButton } from "@/components/staff/ClaimModalButton";
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
@@ -9,9 +10,9 @@ type PendingClaimRow = {
   id: string;
   student_name: string | null;
   student_id_number: string | null;
-  student_email: string | null;
-  created_at: string;
-  items?: { name: string | null } | Array<{ name: string | null }> | null;
+  student_email?: string | null;
+  created_at: string | null;
+  items?: { name: string | null; department_id?: string | null } | Array<{ name: string | null; department_id?: string | null }> | null;
 };
 
 function isPendingStaffEntry(value: string | null): boolean {
@@ -26,7 +27,7 @@ async function getPendingClaims(departmentId: string): Promise<PendingClaimRow[]
 
   const { data, error } = await supabase
     .from("claims")
-    .select("id, student_name, student_id_number, student_email, created_at, items!inner(name)")
+    .select("id, student_name, student_id_number, student_email, created_at, items!inner(name, department_id)")
     .eq("status", "pending")
     .eq("items.department_id", departmentId)
     .order("created_at", { ascending: false });
@@ -193,89 +194,15 @@ export default async function StaffClaimsInboxPage() {
                         )}
                       </td>
                       <td className="px-4 py-4 text-[#F5F5F0]/80">{itemName}</td>
-                      <td className="px-4 py-4 text-[#F5F5F0]/80">{claim.created_at.slice(0, 10)}</td>
+                      <td className="px-4 py-4 text-[#F5F5F0]/80">{claim.created_at?.slice(0, 10) ?? "—"}</td>
                       <td className="px-4 py-4">
-                        <details className="claim-modal">
-                          <summary className="cursor-pointer list-none inline-flex min-h-11 items-center rounded-xl bg-brand px-4 py-2 text-sm font-semibold text-white hover:bg-brand-hover">
-                            Mark as Claimed
-                          </summary>
-
-                          <div className="claim-modal__overlay fixed inset-0 z-[80] flex items-center justify-center bg-black/75 p-4">
-                            <div role="dialog" aria-modal="true" aria-labelledby={`claim-modal-title-${claim.id}`} className="anim-pop-in w-full max-w-md rounded-2xl border border-white/10 bg-[#141414] p-5 shadow-2xl">
-                            <form action={markAsClaimedAction}>
-                              <input type="hidden" name="claimId" value={claim.id} />
-
-                              <h2 id={`claim-modal-title-${claim.id}`} className="text-lg font-semibold">Mark as Claimed</h2>
-                              <p className="mt-2 text-sm text-[#F5F5F0]/75">
-                                Update student info and confirm.
-                              </p>
-
-                              <div className="mt-4 space-y-3">
-                                <label className="block space-y-1">
-                                  <span className="text-sm text-[#F5F5F0]/70">Student name</span>
-                                  <input
-                                    name="studentName"
-                                    defaultValue={isPendingStaffEntry(claim.student_name) ? "" : claim.student_name ?? ""}
-                                    required
-                                    className="w-full rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-base outline-none focus:border-brand/45 focus:ring-2 focus:ring-brand/25"
-                                  />
-                                </label>
-
-                                <label className="block space-y-1">
-                                  <span className="text-sm text-[#F5F5F0]/70">Student ID</span>
-                                  <input
-                                    name="studentIdNumber"
-                                    defaultValue={isPendingStaffEntry(claim.student_id_number) ? "" : claim.student_id_number ?? ""}
-                                    required
-                                    className="w-full rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-base outline-none focus:border-brand/45 focus:ring-2 focus:ring-brand/25"
-                                  />
-                                </label>
-
-                                <label className="block space-y-1">
-                                  <span className="text-sm text-[#F5F5F0]/70">
-                                    Student email <span className="text-[#F5F5F0]/60">(optional)</span>
-                                  </span>
-                                  <input
-                                    type="email"
-                                    name="studentEmail"
-                                    defaultValue={claim.student_email ?? ""}
-                                    className="w-full rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-base outline-none focus:border-brand/45 focus:ring-2 focus:ring-brand/25"
-                                  />
-                                </label>
-
-                                <label className="block space-y-1">
-                                  <span className="text-sm text-[#F5F5F0]/70">
-                                    Notes <span className="text-[#F5F5F0]/60">(optional)</span>
-                                  </span>
-                                  <textarea
-                                    name="notes"
-                                    defaultValue=""
-                                    rows={3}
-                                    className="w-full rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-base outline-none focus:border-brand/45 focus:ring-2 focus:ring-brand/25"
-                                  />
-                                </label>
-                              </div>
-
-                              <div className="mt-5 flex justify-end gap-2">
-                                <button
-                                  type="button"
-                                  // eslint-disable-next-line react/no-unknown-property
-                                  onClick={(e) => (e.currentTarget.closest("details") as HTMLDetailsElement | null)?.removeAttribute("open")}
-                                  className="inline-flex min-h-11 items-center rounded-xl border border-white/15 px-4 py-2 text-sm text-[#F5F5F0]/85 hover:bg-white/5"
-                                >
-                                  Cancel
-                                </button>
-                                <button
-                                  type="submit"
-                                  className="inline-flex min-h-11 items-center rounded-xl bg-brand px-5 py-2 text-sm font-semibold text-white hover:bg-brand-hover"
-                                >
-                                  Confirm
-                                </button>
-                              </div>
-                            </form>
-                            </div>
-                          </div>
-                        </details>
+                        <ClaimModalButton
+                          claimId={claim.id}
+                          studentName={claim.student_name}
+                          studentIdNumber={claim.student_id_number}
+                          studentEmail={claim.student_email ?? null}
+                          action={markAsClaimedAction}
+                        />
                       </td>
                     </tr>
                   );
