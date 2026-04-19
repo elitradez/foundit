@@ -37,7 +37,7 @@ export async function POST(req: Request) {
     const supabase = createAdminSupabaseClient();
     const { data: item, error: fetchErr } = await supabase
       .from("items")
-      .select("id, returned_at")
+      .select("id, returned_at, university_id")
       .eq("id", itemId)
       .maybeSingle();
 
@@ -55,6 +55,7 @@ export async function POST(req: Request) {
       student_id_number: null,
       claim_description: studentDescription,
       phone_number: phoneNumber,
+      university_id: item.university_id,
       status: "pending",
     });
 

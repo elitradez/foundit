@@ -115,10 +115,12 @@ export async function POST(req: Request) {
     }
   });
 
-  void (async () => {
-    try {
-      const input = `${name}. ${description}`.trim();
-      const embRes = await fetch("https://api.openai.com/v1/embeddings", {
+  after(async () => {
+    const input = `${name}. ${description}`.trim();
+    const itemId = data.id;
+
+    async function fetchEmbedding(): Promise<number[] | null> {
+      const res = await fetch("https://api.openai.com/v1/embeddings", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -126,15 +128,40 @@ export async function POST(req: Request) {
         },
         body: JSON.stringify({ model: "text-embedding-3-small", input }),
       });
-      const embData = await embRes.json();
-      const embedding = embData?.data?.[0]?.embedding;
-      if (Array.isArray(embedding)) {
-        await supabase.from("items").update({ embedding }).eq("id", data.id);
+      const json = await res.json();
+      const embedding = json?.data?.[0]?.embedding;
+      return Array.isArray(embedding) ? embedding : null;
+    }
+
+    try {
+      let embedding = await fetchEmbedding();
+      if (!embedding) {
+        await new Promise((r) => setTimeout(r, 2000));
+        embedding = await fetchEmbedding();
+      }
+      if (embedding) {
+        await supabase.from("items").update({ embedding }).eq("id", itemId);
+      } else {
+        console.error("[embedding] both attempts returned no vector for item:", itemId);
       }
     } catch (e) {
-      console.error("[embedding] failed:", e);
+      const msg = e instanceof Error ? e.message : String(e);
+      console.error("[embedding] failed for item:", itemId, msg);
+      // Retry once after 2s
+      await new Promise((r) => setTimeout(r, 2000));
+      try {
+        const embedding = await fetchEmbedding();
+        if (embedding) {
+          await supabase.from("items").update({ embedding }).eq("id", itemId);
+        } else {
+          console.error("[embedding] retry also returned no vector for item:", itemId);
+        }
+      } catch (retryErr) {
+        const retryMsg = retryErr instanceof Error ? retryErr.message : String(retryErr);
+        console.error("[embedding] retry failed for item:", itemId, retryMsg);
+      }
     }
-  })();
+  });
 
   return NextResponse.json({ id: data.id });
 }
