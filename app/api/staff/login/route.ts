@@ -9,7 +9,6 @@ type DepartmentRow = {
   university_id: string;
   name: string;
   location: string | null;
-  staff_password: string | null;
   staff_password_hash: string | null;
   staff_password_salt: string | null;
 };
@@ -27,7 +26,7 @@ export async function POST(req: Request) {
 
     let deptQuery = supabase
       .from("departments")
-      .select("id, university_id, name, location, staff_password, staff_password_hash, staff_password_salt");
+      .select("id, university_id, name, location, staff_password_hash, staff_password_salt");
     if (universityId) deptQuery = deptQuery.eq("university_id", universityId);
     const { data: departments, error } = await deptQuery;
 
@@ -41,14 +40,7 @@ export async function POST(req: Request) {
 
     for (const dept of rows) {
       if (dept.staff_password_hash && dept.staff_password_salt) {
-        // Hashed comparison (post-migration)
         if (verifyPin(password, dept.staff_password_hash, dept.staff_password_salt)) {
-          data = dept;
-          break;
-        }
-      } else if (dept.staff_password) {
-        // Plain-text fallback (pre-migration — remove once hash-staff-passwords has been run)
-        if (dept.staff_password === password) {
           data = dept;
           break;
         }
