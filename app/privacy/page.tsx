@@ -59,8 +59,9 @@ export default function PrivacyPage() {
         </Section>
 
         <Section title="Data retention">
-          <p>Item records remain active until the item is returned to its owner or transferred to surplus. Claim records are retained for audit and accountability purposes after resolution.</p>
-          <p>If you would like your claim or contact information deleted, email us at <a href="mailto:ebunting07@gmail.com" style={{ color: "#CC0000" }}>ebunting07@gmail.com</a> and we will remove it promptly.</p>
+          <p>Item records remain active until the item is returned to its owner or transferred to surplus.</p>
+          <p>Claim records containing personal information are automatically deleted 90 days after submission. Alerts are deleted 90 days after creation. We maintain an internal log of when deletions occur for audit purposes.</p>
+          <p>Students may request earlier deletion by emailing <a href="mailto:ebunting07@gmail.com" style={{ color: "#CC0000" }}>ebunting07@gmail.com</a>.</p>
         </Section>
 
         <Section title="FERPA compliance">
