@@ -1,6 +1,10 @@
 const encoder = new TextEncoder();
 
+// TODO(phase-3): move MAX_SESSION_MS and exp duration to departments.session_duration_hours for per-department override. Front-desk departments (Student Union, Marriott circulation) should default to shorter durations than back-office departments.
+const MAX_SESSION_MS = 8 * 60 * 60 * 1000; // 8 hours
+
 export type DepartmentClaims = {
+  iat: number;
   exp: number;
   department_id: string;
   university_id: string;
@@ -26,11 +30,13 @@ async function importHmacKey(secret: string): Promise<CryptoKey> {
   );
 }
 
-export async function createStaffSessionToken(claims: Omit<DepartmentClaims, "exp">): Promise<string> {
+export async function createStaffSessionToken(claims: Omit<DepartmentClaims, "iat" | "exp">): Promise<string> {
   const secret = getSigningSecret();
+  const now = Date.now();
   const payload: DepartmentClaims = {
     ...claims,
-    exp: Date.now() + 7 * 24 * 60 * 60 * 1000,
+    iat: now,
+    exp: now + 12 * 60 * 60 * 1000, // 12-hour absolute backstop
   };
   const payloadB64 = Buffer.from(JSON.stringify(payload), "utf8").toString("base64url");
   const key = await importHmacKey(secret);
@@ -57,6 +63,8 @@ export async function verifyStaffSessionToken(
       Buffer.from(payloadB64, "base64url").toString("utf8"),
     ) as DepartmentClaims;
     if (typeof payload.exp !== "number" || payload.exp <= Date.now()) return null;
+    if (typeof payload.iat !== "number") return null; // missing iat (pre-deploy sessions) → reject
+    if (Date.now() - payload.iat > MAX_SESSION_MS) return null;
     if (!payload.department_id || !payload.university_id) return null;
     return payload;
   } catch {
