@@ -8,14 +8,12 @@ export type DepartmentClaims = {
   pickup_location: string | null;
 };
 
-function getSigningSecret(): string | null {
-  return process.env.STAFF_SESSION_SECRET ?? process.env.STAFF_PASSWORD ?? null;
-}
-
-function requireSigningSecret(): string {
-  const s = getSigningSecret();
-  if (!s) throw new Error("STAFF_SESSION_SECRET (or STAFF_PASSWORD) must be set");
-  return s;
+function getSigningSecret(): string {
+  const secret = process.env.STAFF_SESSION_SECRET;
+  if (!secret || secret.length < 32) {
+    throw new Error("STAFF_SESSION_SECRET must be set to a 32+ character value");
+  }
+  return secret;
 }
 
 async function importHmacKey(secret: string): Promise<CryptoKey> {
@@ -29,7 +27,7 @@ async function importHmacKey(secret: string): Promise<CryptoKey> {
 }
 
 export async function createStaffSessionToken(claims: Omit<DepartmentClaims, "exp">): Promise<string> {
-  const secret = requireSigningSecret();
+  const secret = getSigningSecret();
   const payload: DepartmentClaims = {
     ...claims,
     exp: Date.now() + 7 * 24 * 60 * 60 * 1000,
@@ -51,7 +49,6 @@ export async function verifyStaffSessionToken(
   if (!payloadB64 || !sigB64) return null;
   try {
     const secret = getSigningSecret();
-    if (!secret) return null;
     const key = await importHmacKey(secret);
     const sig = Buffer.from(sigB64, "base64url");
     const ok = await crypto.subtle.verify("HMAC", key, sig, encoder.encode(payloadB64));
