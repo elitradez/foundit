@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { createAdminSupabaseClient } from "@/lib/supabase-admin";
 import { createStaffSessionToken } from "@/lib/staff-token";
 import { verifyPin } from "@/lib/pin";
+import { getUniversityId } from "@/lib/university-config";
 
 type DepartmentRow = {
   id: string;
@@ -21,14 +22,13 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Password required" }, { status: 400 });
     }
 
+    const universityId = getUniversityId();
     const supabase = createAdminSupabaseClient();
-    const universityId = process.env.NEXT_PUBLIC_UNIVERSITY_ID?.trim();
 
-    let deptQuery = supabase
+    const { data: departments, error } = await supabase
       .from("departments")
-      .select("id, university_id, name, location, staff_password_hash, staff_password_salt");
-    if (universityId) deptQuery = deptQuery.eq("university_id", universityId);
-    const { data: departments, error } = await deptQuery;
+      .select("id, university_id, name, location, staff_password_hash, staff_password_salt")
+      .eq("university_id", universityId);
 
     if (error) {
       console.error("[login] department lookup:", error.message);

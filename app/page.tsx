@@ -30,14 +30,14 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function Home() {
   let items: PublicItem[] = [];
   let loadError: string | null = null;
-  const { name: universityName, universityId } = getUniversityConfig();
+  const { name: universityName } = getUniversityConfig();
   try {
-    items = await fetchActiveItemsForPublic(universityId);
+    items = await fetchActiveItemsForPublic();
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Unknown error";
     loadError = `Could not load items (${msg}). Set NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY, and apply supabase/schema.sql.`;
   }
-  const departments = await fetchDepartmentsForPublic(universityId);
+  const departments = await fetchDepartmentsForPublic();
   return (
     <HomeExplorer
       initialItems={items}
