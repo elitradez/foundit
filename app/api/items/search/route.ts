@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createAdminSupabaseClient } from "@/lib/supabase-admin";
+import { getUniversityId } from "@/lib/university-config";
 
 type SearchBody = { query?: string };
 
@@ -43,19 +44,18 @@ export async function POST(req: Request) {
     if (!query) return NextResponse.json({ itemIds: [] });
 
     const supabase = createAdminSupabaseClient();
-    const universityId = process.env.NEXT_PUBLIC_UNIVERSITY_ID?.trim() || null;
+    const universityId = getUniversityId();
     const matchedIds = new Set<string>();
 
     // 1. Date matching — preserve existing behavior
     const parsedDate = extractDate(query);
     if (parsedDate) {
-      let dateQuery = supabase
+      const { data } = await supabase
         .from("items")
         .select("id")
         .eq("date_found", parsedDate)
+        .eq("university_id", universityId)
         .is("returned_at", null);
-      if (universityId) dateQuery = dateQuery.eq("university_id", universityId);
-      const { data } = await dateQuery;
       for (const row of data ?? []) matchedIds.add(row.id);
     }
 
@@ -86,12 +86,8 @@ export async function POST(req: Request) {
     // 3. Fallback: if no vector results (items not yet embedded), use SQL ILIKE
     if (matchedIds.size === 0) {
       const pattern = `%${query.replace(/[%_]/g, "\\$&")}%`;
-      let nameQ = supabase.from("items").select("id").ilike("name", pattern).is("returned_at", null);
-      let descQ = supabase.from("items").select("id").ilike("description", pattern).is("returned_at", null);
-      if (universityId) {
-        nameQ = nameQ.eq("university_id", universityId);
-        descQ = descQ.eq("university_id", universityId);
-      }
+      const nameQ = supabase.from("items").select("id").ilike("name", pattern).eq("university_id", universityId).is("returned_at", null);
+      const descQ = supabase.from("items").select("id").ilike("description", pattern).eq("university_id", universityId).is("returned_at", null);
       const [{ data: nameData }, { data: descData }] = await Promise.all([nameQ, descQ]);
       for (const row of [...(nameData ?? []), ...(descData ?? [])]) matchedIds.add(row.id);
     }

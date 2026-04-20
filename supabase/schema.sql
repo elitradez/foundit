@@ -108,7 +108,7 @@ as $$
   where
     returned_at is null
     and embedding is not null
-    and (p_university_id is null or university_id = p_university_id)
+    and (p_university_id is null or university_id = p_university_id) -- TODO: remove null-bypass once app-layer UUID guard has baked for 2 weeks (app now guarantees non-null)
     and 1 - (embedding <=> query_embedding) >= match_threshold
   order by similarity desc
   limit match_count;
