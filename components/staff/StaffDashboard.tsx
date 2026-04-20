@@ -630,6 +630,17 @@ export function StaffDashboard({
             >
               Switch Department
             </button>
+            <button
+              type="button"
+              aria-label="Sign out"
+              onClick={async () => {
+                await fetch("/api/staff/logout", { method: "POST" });
+                window.location.href = "/staff/login";
+              }}
+              className="inline-flex min-h-9 items-center rounded border border-red-500/40 px-3 py-1.5 text-sm text-red-400 hover:bg-red-500/10 hover:text-red-300 transition"
+            >
+              Sign out
+            </button>
           </div>
         </div>
       </header>
