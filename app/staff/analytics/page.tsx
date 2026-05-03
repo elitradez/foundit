@@ -143,13 +143,13 @@ function WeeklyBarChart({ weeks }: { weeks: { label: string; count: number }[] }
             {barH > 0 && (
               <rect
                 x={x} y={y} width={barW} height={barH}
-                fill={isCurrent ? "#CC0000" : "#CBD5E1"}
+                fill={isCurrent ? "var(--color-brand)" : "#CBD5E1"}
               />
             )}
             {week.count > 0 && (
               <text
                 x={x + barW / 2} y={y - 4}
-                textAnchor="middle" fontSize={7.5} fill={isCurrent ? "#CC0000" : "#64748B"}
+                textAnchor="middle" fontSize={7.5} fill={isCurrent ? "var(--color-brand)" : "#64748B"}
                 fontFamily="system-ui,sans-serif" fontWeight={isCurrent ? "600" : "400"}
               >
                 {week.count}

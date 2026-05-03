@@ -17,7 +17,7 @@ export default function PrivacyPage() {
       <header style={{ backgroundColor: "#FFFFFF", borderBottom: "1px solid #E5E5E5" }}>
         <div style={{ maxWidth: 1152, margin: "0 auto", padding: "12px 16px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <Link href="/" style={{ textDecoration: "none" }}>
-            <p style={{ color: "#CC0000", fontSize: 11, fontWeight: 600, letterSpacing: "0.12em", textTransform: "uppercase", lineHeight: 1.3, margin: 0 }}>
+            <p style={{ color: "var(--color-brand)", fontSize: 11, fontWeight: 600, letterSpacing: "0.12em", textTransform: "uppercase", lineHeight: 1.3, margin: 0 }}>
               {universityName}
             </p>
             <p style={{ color: "#1a1a1a", fontSize: 18, fontWeight: 600, lineHeight: 1.2, margin: 0 }}>
@@ -26,7 +26,7 @@ export default function PrivacyPage() {
           </Link>
           <Link
             href="/staff/login"
-            style={{ color: "#CC0000", fontSize: 14, fontWeight: 500, textDecoration: "none" }}
+            style={{ color: "var(--color-brand)", fontSize: 14, fontWeight: 500, textDecoration: "none" }}
           >
             Staff sign in
           </Link>
@@ -61,7 +61,7 @@ export default function PrivacyPage() {
         <Section title="Data retention">
           <p>Item records remain active until the item is returned to its owner or transferred to surplus.</p>
           <p>Claim records containing personal information are automatically deleted 90 days after submission. Alerts are deleted 90 days after creation. We maintain an internal log of when deletions occur for audit purposes.</p>
-          <p>Students may request earlier deletion by emailing <a href="mailto:ebunting07@gmail.com" style={{ color: "#CC0000" }}>ebunting07@gmail.com</a>.</p>
+          <p>Students may request earlier deletion by emailing <a href="mailto:ebunting07@gmail.com" style={{ color: "var(--color-brand)" }}>ebunting07@gmail.com</a>.</p>
         </Section>
 
         <Section title="FERPA compliance">
@@ -74,11 +74,11 @@ export default function PrivacyPage() {
 
         <Section title="Your rights">
           <p>You have the right to request access to, correction of, or deletion of any personal information you have submitted. To exercise these rights, contact us at:</p>
-          <p><a href="mailto:ebunting07@gmail.com" style={{ color: "#CC0000", fontWeight: 500 }}>ebunting07@gmail.com</a></p>
+          <p><a href="mailto:ebunting07@gmail.com" style={{ color: "var(--color-brand)", fontWeight: 500 }}>ebunting07@gmail.com</a></p>
         </Section>
 
         <Section title="Contact">
-          <p>Questions about this policy? Email <a href="mailto:ebunting07@gmail.com" style={{ color: "#CC0000" }}>ebunting07@gmail.com</a>.</p>
+          <p>Questions about this policy? Email <a href="mailto:ebunting07@gmail.com" style={{ color: "var(--color-brand)" }}>ebunting07@gmail.com</a>.</p>
         </Section>
       </main>
 
@@ -86,7 +86,7 @@ export default function PrivacyPage() {
       <footer style={{ borderTop: "1px solid #E5E5E5", backgroundColor: "#FFFFFF", padding: "24px 16px", textAlign: "center" }}>
         <p style={{ fontSize: 13, color: "#767676", margin: 0 }}>
           {universityName} Lost &amp; Found &nbsp;·&nbsp;{" "}
-          <Link href="/privacy" style={{ color: "#CC0000", textDecoration: "none" }}>
+          <Link href="/privacy" style={{ color: "var(--color-brand)", textDecoration: "none" }}>
             Privacy
           </Link>
         </p>

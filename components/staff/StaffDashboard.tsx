@@ -130,14 +130,14 @@ async function compressImageForUpload(file: File): Promise<File> {
 
 // ── Shared modal styles ──────────────────────────────────────────────────────
 const MODAL_INPUT =
-  "w-full rounded-lg border border-[#E5E5E5] bg-white px-3 py-2 text-base text-[#1a1a1a] outline-none focus:border-[#CC0000] focus:ring-2 focus:ring-[#CC0000]/20";
+  "w-full rounded-lg border border-[#E5E5E5] bg-white px-3 py-2 text-base text-[#1a1a1a] outline-none focus:border-brand focus:ring-2 focus:ring-brand/20";
 const MODAL_LABEL = "text-sm font-medium text-[#555555]";
 const MODAL_BTN_CANCEL =
   "inline-flex min-h-11 items-center rounded-lg border border-[#E5E5E5] bg-white px-4 py-2 text-sm text-[#555555] hover:bg-[#F5F5F5]";
 const MODAL_BTN_PRIMARY =
-  "inline-flex min-h-11 items-center rounded-lg bg-[#CC0000] px-5 py-2 text-sm font-semibold text-white hover:bg-[#A80000] disabled:opacity-50";
+  "inline-flex min-h-11 items-center rounded-lg bg-brand px-5 py-2 text-sm font-semibold text-white hover:bg-brand-hover disabled:opacity-50";
 const MODAL_BTN_DANGER =
-  "inline-flex min-h-11 items-center rounded-lg bg-[#CC0000] px-4 py-2 text-sm font-semibold text-white hover:bg-[#A80000] disabled:opacity-50";
+  "inline-flex min-h-11 items-center rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-white hover:bg-brand-hover disabled:opacity-50";
 
 export function StaffDashboard({
   departmentName = "Lost & Found",
@@ -535,7 +535,7 @@ export function StaffDashboard({
         aria-current={active ? "true" : undefined}
         className={`inline-flex min-h-9 items-center rounded px-3 py-1.5 text-sm font-medium transition ${
           active
-            ? "bg-[#CC0000] text-white"
+            ? "bg-brand text-white"
             : "text-white/75 hover:bg-white/10 hover:text-white"
         }`}
       >
@@ -604,7 +604,7 @@ export function StaffDashboard({
             <button
               type="button"
               onClick={() => setShowForm(true)}
-              className="inline-flex min-h-9 items-center rounded bg-[#CC0000] px-4 py-1.5 text-sm font-semibold text-white hover:bg-[#A80000] transition"
+              className="inline-flex min-h-9 items-center rounded bg-brand px-4 py-1.5 text-sm font-semibold text-white hover:bg-brand-hover transition"
             >
               Log new item
             </button>
@@ -650,7 +650,7 @@ export function StaffDashboard({
         <div className="mx-auto max-w-6xl">
           <a
             href="/"
-            className="text-xs font-medium text-[#CC0000] hover:underline"
+            className="text-xs font-medium text-brand hover:underline"
           >
             ← Return to student view
           </a>
@@ -717,7 +717,7 @@ export function StaffDashboard({
                             type="button"
                             onClick={() => setDeleteConfirmItem(item)}
                             aria-label={`Delete ${item.name}`}
-                            className="inline-flex min-h-8 items-center rounded px-2 py-1 text-xs font-medium text-[#CC0000] hover:underline"
+                            className="inline-flex min-h-8 items-center rounded px-2 py-1 text-xs font-medium text-brand hover:underline"
                           >
                             Delete
                           </button>
@@ -792,7 +792,7 @@ export function StaffDashboard({
                                 disabled={busyId === c.id}
                                 onClick={() => openReturnClaimModal(c)}
                                 aria-label={`Mark ${c.item_name} as returned`}
-                                className="inline-flex min-h-9 items-center rounded bg-[#CC0000] px-3 py-1.5 text-xs font-semibold text-white hover:bg-[#A80000] disabled:opacity-50 transition"
+                                className="inline-flex min-h-9 items-center rounded bg-brand px-3 py-1.5 text-xs font-semibold text-white hover:bg-brand-hover disabled:opacity-50 transition"
                               >
                                 Mark as Returned
                               </button>
@@ -953,7 +953,7 @@ export function StaffDashboard({
                               disabled={busyId === r.item_id}
                               onClick={() => setDeleteLogRow(r)}
                               aria-label={`Delete log entry for ${r.item_name}`}
-                              className="inline-flex min-h-8 items-center rounded px-2 py-1 text-xs font-medium text-[#CC0000] hover:underline disabled:opacity-50"
+                              className="inline-flex min-h-8 items-center rounded px-2 py-1 text-xs font-medium text-brand hover:underline disabled:opacity-50"
                             >
                               Delete
                             </button>

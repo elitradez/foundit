@@ -30,7 +30,7 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function Home() {
   let items: PublicItem[] = [];
   let loadError: string | null = null;
-  const { name: universityName } = getUniversityConfig();
+  const { name: universityName, logoPath, welcomeCopy } = getUniversityConfig();
   try {
     items = await fetchActiveItemsForPublic();
   } catch (e) {
@@ -44,6 +44,8 @@ export default async function Home() {
       loadError={loadError}
       universityName={universityName}
       departments={departments}
+      logoPath={logoPath}
+      welcomeCopy={welcomeCopy}
     />
   );
 }

@@ -57,11 +57,11 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const { brandColor, brandColorHover } = getUniversityConfig();
-  const cssVars = `--color-brand:${brandColor};--color-brand-hover:${brandColorHover};`;
+  const { brandColor, brandColorHover, brandRing } = getUniversityConfig();
+  const cssVars = `--color-brand:${brandColor};--color-brand-hover:${brandColorHover};--color-brand-ring:${brandRing};`;
   return (
     <html lang="en" className="h-full antialiased">
-      <body style={{ ["--color-brand" as string]: brandColor, ["--color-brand-hover" as string]: brandColorHover }} className="min-h-full flex flex-col bg-white text-[#333333]">
+      <body style={{ ["--color-brand" as string]: brandColor, ["--color-brand-hover" as string]: brandColorHover, ["--color-brand-ring" as string]: brandRing }} className="min-h-full flex flex-col bg-white text-[#333333]">
         <style>{`:root{${cssVars}}`}</style>
         <a href="#main-content" className="skip-nav">
           Skip to main content

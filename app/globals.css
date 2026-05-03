@@ -7,6 +7,7 @@
   /* Brand color defaults — overridden at runtime by the layout's inline style */
   --color-brand: #CC0000;
   --color-brand-hover: #a80000;
+  --color-brand-ring: rgba(204,0,0,0.12);
 }
 
 @theme inline {

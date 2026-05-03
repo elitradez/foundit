@@ -13,12 +13,14 @@ type Props = {
   loadError?: string | null;
   universityName?: string;
   departments?: Department[];
+  logoPath?: string;
+  welcomeCopy?: string;
 };
 
 const FONT = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
 const PAGE_SIZE = 24;
 
-export function HomeExplorer({ initialItems, loadError, universityName = "University of Utah", departments = [] }: Props) {
+export function HomeExplorer({ initialItems, loadError, universityName = "University of Utah", departments = [], logoPath, welcomeCopy }: Props) {
   const [allItems, setAllItems] = useState<PublicItem[]>(initialItems);
   const [hasMore, setHasMore] = useState(initialItems.length === 500);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -125,16 +127,20 @@ export function HomeExplorer({ initialItems, loadError, universityName = "Univer
       <header style={{ backgroundColor: "#FFFFFF", borderBottom: "1px solid #E5E5E5" }}>
         <div style={{ maxWidth: 1152, margin: "0 auto", padding: "12px 16px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <div>
-            <p style={{ color: "#CC0000", fontSize: 11, fontWeight: 600, letterSpacing: "0.12em", textTransform: "uppercase", lineHeight: 1.3, margin: 0 }}>
-              {universityName}
-            </p>
+            {logoPath ? (
+              <Image src={logoPath} alt={universityName} width={120} height={32} style={{ display: "block", marginBottom: 2 }} unoptimized />
+            ) : (
+              <p style={{ color: "var(--color-brand)", fontSize: 11, fontWeight: 600, letterSpacing: "0.12em", textTransform: "uppercase", lineHeight: 1.3, margin: 0 }}>
+                {universityName}
+              </p>
+            )}
             <p style={{ color: "#1a1a1a", fontSize: 18, fontWeight: 600, lineHeight: 1.2, margin: 0 }}>
               Lost &amp; Found
             </p>
           </div>
           <Link
             href="/staff/login"
-            style={{ color: "#CC0000", fontSize: 14, fontWeight: 500, textDecoration: "none" }}
+            style={{ color: "var(--color-brand)", fontSize: 14, fontWeight: 500, textDecoration: "none" }}
             onMouseEnter={(e) => (e.currentTarget.style.textDecoration = "underline")}
             onMouseLeave={(e) => (e.currentTarget.style.textDecoration = "none")}
           >
@@ -150,7 +156,7 @@ export function HomeExplorer({ initialItems, loadError, universityName = "Univer
             Find a lost item
           </h1>
           <p style={{ color: "#666666", fontSize: 14, margin: "0 0 16px 0" }}>
-            Search for lost items found across campus. Photos are blurred to protect against theft — describe your item from memory and we'll unblur it if it matches. Staff verify ownership in person at pickup.
+            {welcomeCopy ?? "Search for lost items found across campus. Photos are blurred to protect against theft — describe your item from memory and we'll unblur it if it matches. Staff verify ownership in person at pickup."}
           </p>
           <div style={{ position: "relative" }}>
             {query.trim() && searchBusy ? (
@@ -167,7 +173,7 @@ export function HomeExplorer({ initialItems, loadError, universityName = "Univer
               placeholder="Search by name, location, or date…"
               aria-label="Search items"
               style={{ width: "100%", boxSizing: "border-box", backgroundColor: "#FFFFFF", border: "1px solid #CCCCCC", borderRadius: 8, padding: "10px 16px", fontSize: 14, color: "#333333", outline: "none" }}
-              onFocus={(e) => { e.currentTarget.style.borderColor = "#CC0000"; e.currentTarget.style.boxShadow = "0 0 0 3px rgba(204,0,0,0.12)"; }}
+              onFocus={(e) => { e.currentTarget.style.borderColor = "var(--color-brand)"; e.currentTarget.style.boxShadow = "0 0 0 3px var(--color-brand-ring)"; }}
               onBlur={(e) => { e.currentTarget.style.borderColor = "#CCCCCC"; e.currentTarget.style.boxShadow = "none"; }}
             />
           </div>
@@ -199,10 +205,10 @@ export function HomeExplorer({ initialItems, loadError, universityName = "Univer
                     padding: "12px 16px",
                     fontSize: 14,
                     fontWeight: active ? 600 : 400,
-                    color: active ? "#CC0000" : "#666666",
+                    color: active ? "var(--color-brand)" : "#666666",
                     background: "none",
                     border: "none",
-                    borderBottom: active ? "2px solid #CC0000" : "2px solid transparent",
+                    borderBottom: active ? "2px solid var(--color-brand)" : "2px solid transparent",
                     marginBottom: -1,
                     cursor: "pointer",
                     whiteSpace: "nowrap",
@@ -210,7 +216,7 @@ export function HomeExplorer({ initialItems, loadError, universityName = "Univer
                   }}
                 >
                   {tab.name}{" "}
-                  <span style={{ color: active ? "#CC0000" : "#767676", fontWeight: 400 }}>({tab.count})</span>
+                  <span style={{ color: active ? "var(--color-brand)" : "#767676", fontWeight: 400 }}>({tab.count})</span>
                 </button>
               );
             })}
@@ -304,13 +310,16 @@ export function HomeExplorer({ initialItems, loadError, universityName = "Univer
           {universityName} Lost &amp; Found &nbsp;·&nbsp;{" "}
           <Link
             href="/privacy"
-            style={{ color: "#CC0000", textDecoration: "none" }}
+            style={{ color: "var(--color-brand)", textDecoration: "none" }}
             onMouseEnter={(e) => (e.currentTarget.style.textDecoration = "underline")}
             onMouseLeave={(e) => (e.currentTarget.style.textDecoration = "none")}
           >
             Privacy
           </Link>
         </p>
+        {logoPath ? (
+          <p style={{ fontSize: 11, color: "#AAAAAA", margin: "6px 0 0" }}>Powered by Laika</p>
+        ) : null}
       </footer>
     </div>
   );
@@ -355,7 +364,7 @@ function ItemCard({ item, onClick }: { item: PublicItem; onClick: () => void }) 
       {/* Content */}
       <div style={{ display: "flex", flexDirection: "column", flex: 1, padding: "14px 16px 16px" }}>
         <p style={{ fontSize: 15, fontWeight: 600, color: "#1a1a1a", margin: "0 0 4px 0" }}>{item.name}</p>
-        <p style={{ fontSize: 12, color: "#CC0000", margin: "0 0 4px 0" }}>
+        <p style={{ fontSize: 12, color: "var(--color-brand)", margin: "0 0 4px 0" }}>
           {item.department_name ?? "Lost & Found"}
         </p>
         <p style={{ fontSize: 12, color: "#767676", margin: "0 0 14px 0" }}>Found {item.date_found}</p>
@@ -364,7 +373,7 @@ function ItemCard({ item, onClick }: { item: PublicItem; onClick: () => void }) 
         <div
           style={{
             marginTop: "auto",
-            backgroundColor: hovered ? "#A80000" : "#CC0000",
+            backgroundColor: hovered ? "var(--color-brand-hover)" : "var(--color-brand)",
             color: "#FFFFFF",
             fontSize: 13,
             fontWeight: 600,
@@ -463,7 +472,7 @@ function ClaimModal({ item, onClose, departmentName }: { item: PublicItem; onClo
     justifyContent: "center",
     gap: 8,
     minHeight: 44,
-    backgroundColor: "#CC0000",
+    backgroundColor: "var(--color-brand)",
     color: "#FFFFFF",
     fontSize: 14,
     fontWeight: 600,
@@ -535,7 +544,7 @@ function ClaimModal({ item, onClose, departmentName }: { item: PublicItem; onClo
             <div style={{ backgroundColor: "#F5F5F5", borderRadius: 8, padding: "14px 12px", display: "flex", alignItems: "flex-start", gap: 6 }}>
               {explainerSteps.map((s) => (
                 <div key={s.n} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center" }}>
-                  <div style={{ width: 22, height: 22, borderRadius: "50%", backgroundColor: "#CC0000", color: "#FFFFFF", fontSize: 11, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 6, flexShrink: 0 }}>
+                  <div style={{ width: 22, height: 22, borderRadius: "50%", backgroundColor: "var(--color-brand)", color: "#FFFFFF", fontSize: 11, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 6, flexShrink: 0 }}>
                     {s.n}
                   </div>
                   <p style={{ fontSize: 11, fontWeight: 600, color: "#1a1a1a", margin: "0 0 2px", lineHeight: 1.3 }}>{s.title}</p>
@@ -558,7 +567,7 @@ function ClaimModal({ item, onClose, departmentName }: { item: PublicItem; onClo
                 rows={4}
                 placeholder="e.g. Dark green Hydro Flask, dent on the side, black lid, 'Emma' written in marker on the bottom"
                 style={{ ...inputStyle, resize: "vertical" }}
-                onFocus={(e) => { e.currentTarget.style.borderColor = "#CC0000"; e.currentTarget.style.boxShadow = "0 0 0 3px rgba(204,0,0,0.12)"; }}
+                onFocus={(e) => { e.currentTarget.style.borderColor = "var(--color-brand)"; e.currentTarget.style.boxShadow = "0 0 0 3px var(--color-brand-ring)"; }}
                 onBlur={(e) => { e.currentTarget.style.borderColor = "#E5E5E5"; e.currentTarget.style.boxShadow = "none"; }}
               />
             </label>
@@ -572,7 +581,7 @@ function ClaimModal({ item, onClose, departmentName }: { item: PublicItem; onClo
               {matchBusy ? <><Spinner className="h-4 w-4" style={{ color: "#fff" }} /> Checking your description…</> : "Check if it\u2019s mine \u2192"}
             </button>
 
-            {error ? <p style={{ fontSize: 13, color: "#CC0000", margin: 0 }}>{error}</p> : null}
+            {error ? <p style={{ fontSize: 13, color: "var(--color-brand)", margin: 0 }}>{error}</p> : null}
           </div>
         ) : null}
 
@@ -633,23 +642,23 @@ function ClaimModal({ item, onClose, departmentName }: { item: PublicItem; onClo
             {/* Name */}
             <label style={{ display: "block" }}>
               <span style={{ display: "block", fontSize: 13, fontWeight: 500, color: "#333333", marginBottom: 6 }}>
-                Full name <span style={{ color: "#CC0000" }}>*</span>
+                Full name <span style={{ color: "var(--color-brand)" }}>*</span>
               </span>
               <input
                 value={studentName}
                 onChange={(e) => setStudentName(e.target.value)}
-                style={{ ...inputStyle, borderColor: nameError ? "#CC0000" : "#E5E5E5" }}
+                style={{ ...inputStyle, borderColor: nameError ? "var(--color-brand)" : "#E5E5E5" }}
                 autoComplete="name"
-                onFocus={(e) => { e.currentTarget.style.borderColor = "#CC0000"; e.currentTarget.style.boxShadow = "0 0 0 3px rgba(204,0,0,0.12)"; }}
-                onBlur={(e) => { setNameTouched(true); e.currentTarget.style.borderColor = nameError ? "#CC0000" : "#E5E5E5"; e.currentTarget.style.boxShadow = "none"; }}
+                onFocus={(e) => { e.currentTarget.style.borderColor = "var(--color-brand)"; e.currentTarget.style.boxShadow = "0 0 0 3px var(--color-brand-ring)"; }}
+                onBlur={(e) => { setNameTouched(true); e.currentTarget.style.borderColor = nameError ? "var(--color-brand)" : "#E5E5E5"; e.currentTarget.style.boxShadow = "none"; }}
               />
-              {nameError ? <p style={{ fontSize: 12, color: "#CC0000", margin: "4px 0 0" }}>Name is required</p> : null}
+              {nameError ? <p style={{ fontSize: 12, color: "var(--color-brand)", margin: "4px 0 0" }}>Name is required</p> : null}
             </label>
 
             {/* Email + Phone — at least one required */}
             <div>
               <p style={{ fontSize: 12, color: "#767676", margin: "0 0 10px" }}>
-                Provide at least one way to reach you <span style={{ color: "#CC0000" }}>*</span>
+                Provide at least one way to reach you <span style={{ color: "var(--color-brand)" }}>*</span>
               </p>
               <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                 <label style={{ display: "block" }}>
@@ -661,10 +670,10 @@ function ClaimModal({ item, onClose, departmentName }: { item: PublicItem; onClo
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="you@university.edu"
-                    style={{ ...inputStyle, borderColor: contactError ? "#CC0000" : "#E5E5E5" }}
+                    style={{ ...inputStyle, borderColor: contactError ? "var(--color-brand)" : "#E5E5E5" }}
                     autoComplete="email"
-                    onFocus={(e) => { e.currentTarget.style.borderColor = "#CC0000"; e.currentTarget.style.boxShadow = "0 0 0 3px rgba(204,0,0,0.12)"; }}
-                    onBlur={(e) => { setContactTouched(true); e.currentTarget.style.borderColor = contactError ? "#CC0000" : "#E5E5E5"; e.currentTarget.style.boxShadow = "none"; }}
+                    onFocus={(e) => { e.currentTarget.style.borderColor = "var(--color-brand)"; e.currentTarget.style.boxShadow = "0 0 0 3px var(--color-brand-ring)"; }}
+                    onBlur={(e) => { setContactTouched(true); e.currentTarget.style.borderColor = contactError ? "var(--color-brand)" : "#E5E5E5"; e.currentTarget.style.boxShadow = "none"; }}
                   />
                 </label>
                 <label style={{ display: "block" }}>
@@ -675,14 +684,14 @@ function ClaimModal({ item, onClose, departmentName }: { item: PublicItem; onClo
                     type="tel"
                     value={phoneNumber}
                     onChange={(e) => setPhoneNumber(e.target.value)}
-                    style={{ ...inputStyle, borderColor: contactError ? "#CC0000" : "#E5E5E5" }}
+                    style={{ ...inputStyle, borderColor: contactError ? "var(--color-brand)" : "#E5E5E5" }}
                     autoComplete="tel"
-                    onFocus={(e) => { e.currentTarget.style.borderColor = "#CC0000"; e.currentTarget.style.boxShadow = "0 0 0 3px rgba(204,0,0,0.12)"; }}
-                    onBlur={(e) => { setContactTouched(true); e.currentTarget.style.borderColor = contactError ? "#CC0000" : "#E5E5E5"; e.currentTarget.style.boxShadow = "none"; }}
+                    onFocus={(e) => { e.currentTarget.style.borderColor = "var(--color-brand)"; e.currentTarget.style.boxShadow = "0 0 0 3px var(--color-brand-ring)"; }}
+                    onBlur={(e) => { setContactTouched(true); e.currentTarget.style.borderColor = contactError ? "var(--color-brand)" : "#E5E5E5"; e.currentTarget.style.boxShadow = "none"; }}
                   />
                 </label>
               </div>
-              {contactError ? <p style={{ fontSize: 12, color: "#CC0000", margin: "4px 0 0" }}>Please provide an email or phone number</p> : null}
+              {contactError ? <p style={{ fontSize: 12, color: "var(--color-brand)", margin: "4px 0 0" }}>Please provide an email or phone number</p> : null}
             </div>
 
             <button
@@ -694,7 +703,7 @@ function ClaimModal({ item, onClose, departmentName }: { item: PublicItem; onClo
               {submitBusy ? <><Spinner className="h-4 w-4" style={{ color: "#fff" }} /> Submitting…</> : "Submit my claim"}
             </button>
 
-            {error ? <p style={{ fontSize: 13, color: "#CC0000", margin: 0 }}>{error}</p> : null}
+            {error ? <p style={{ fontSize: 13, color: "var(--color-brand)", margin: 0 }}>{error}</p> : null}
           </div>
         ) : null}
 
