@@ -2,7 +2,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import type { Message } from "@anthropic-ai/sdk/resources/messages/messages";
 
 export function getAnthropicModel(): string {
-  return process.env.ANTHROPIC_MODEL ?? "claude-opus-4-5";
+  return process.env.ANTHROPIC_MODEL ?? "claude-sonnet-4-6";
 }
 
 export function getAnthropicClient(): Anthropic {
