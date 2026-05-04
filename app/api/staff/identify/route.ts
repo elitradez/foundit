@@ -1,3 +1,4 @@
+import * as Sentry from "@sentry/nextjs";
 import { NextResponse } from "next/server";
 import { getStaffSession } from "@/lib/staff-api";
 import {
@@ -84,7 +85,12 @@ async function callAnthropicWithRetry(base64: string, mediaType: MediaType) {
   } catch (err) {
     console.error("[identify] Anthropic call failed, retrying in 2s:", err);
     await new Promise((r) => setTimeout(r, 2000));
-    return await callAnthropic(base64, mediaType);
+    try {
+      return await callAnthropic(base64, mediaType);
+    } catch (retryErr) {
+      Sentry.captureException(retryErr, { tags: { route: "identify", phase: "retry" } });
+      throw retryErr;
+    }
   }
 }
 
@@ -136,6 +142,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ name, description, color, value_tier });
   } catch (err) {
     console.error("[identify] Anthropic call failed after retry:", err);
+    Sentry.captureException(err, { tags: { route: "identify" } });
     return NextResponse.json({ description: "" });
   }
 }
