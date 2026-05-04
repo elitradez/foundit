@@ -61,7 +61,7 @@ export default function PrivacyPage() {
         <Section title="Data retention">
           <p>Item records remain active until the item is returned to its owner or transferred to surplus.</p>
           <p>Claim records containing personal information are automatically deleted 90 days after submission. Alerts are deleted 90 days after creation. We maintain an internal log of when deletions occur for audit purposes.</p>
-          <p>Students may request earlier deletion by emailing <a href="mailto:ebunting07@gmail.com" style={{ color: "#CC0000" }}>ebunting07@gmail.com</a>.</p>
+          <p>Students may request earlier deletion by emailing <a href="mailto:eli@laikacampus.com" style={{ color: "#CC0000" }}>eli@laikacampus.com</a>.</p>
         </Section>
 
         <Section title="FERPA compliance">
@@ -74,11 +74,11 @@ export default function PrivacyPage() {
 
         <Section title="Your rights">
           <p>You have the right to request access to, correction of, or deletion of any personal information you have submitted. To exercise these rights, contact us at:</p>
-          <p><a href="mailto:ebunting07@gmail.com" style={{ color: "#CC0000", fontWeight: 500 }}>ebunting07@gmail.com</a></p>
+          <p><a href="mailto:eli@laikacampus.com" style={{ color: "#CC0000", fontWeight: 500 }}>eli@laikacampus.com</a></p>
         </Section>
 
         <Section title="Contact">
-          <p>Questions about this policy? Email <a href="mailto:ebunting07@gmail.com" style={{ color: "#CC0000" }}>ebunting07@gmail.com</a>.</p>
+          <p>Questions about this policy? Email <a href="mailto:eli@laikacampus.com" style={{ color: "#CC0000" }}>eli@laikacampus.com</a>.</p>
         </Section>
       </main>
 
