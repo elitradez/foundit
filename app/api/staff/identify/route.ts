@@ -79,15 +79,26 @@ async function callAnthropic(base64: string, mediaType: MediaType) {
   });
 }
 
+function logAnthropicError(label: string, err: unknown) {
+  const e = err as Record<string, unknown>;
+  console.error(`[identify] ${label}:`, JSON.stringify({
+    message: e?.message,
+    status: e?.status,
+    error: e?.error,
+    type: e?.type,
+  }));
+}
+
 async function callAnthropicWithRetry(base64: string, mediaType: MediaType) {
   try {
     return await callAnthropic(base64, mediaType);
   } catch (err) {
-    console.error("[identify] Anthropic call failed, retrying in 2s:", err);
+    logAnthropicError("call failed, retrying in 2s", err);
     await new Promise((r) => setTimeout(r, 2000));
     try {
       return await callAnthropic(base64, mediaType);
     } catch (retryErr) {
+      logAnthropicError("call failed after retry", retryErr);
       Sentry.captureException(retryErr, { tags: { route: "identify", phase: "retry" } });
       throw retryErr;
     }
