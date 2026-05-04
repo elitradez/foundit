@@ -7,52 +7,15 @@ import {
   getAnthropicModel,
   parseJsonFromModel,
 } from "@/lib/anthropic";
-import { parseValueTier } from "@/lib/value-tier";
-
 export const maxDuration = 30;
 
 const SYSTEM_PROMPT = `You analyze photos for a university lost-and-found desk. Respond with ONLY valid JSON (no markdown fences) in exactly this shape:
-{"name":"...","description":"...","color":"...","value_tier":"low_value" or "high_value"}
+{"name":"...","description":"...","color":"..."}
 
 FIELD RULES:
+- "name": Short generic name for the item (e.g. "Laptop", "Water bottle", "Hoodie"). Never include brand or model.
 - "description": Brief description with color and distinguishing features (wear, stickers, text, material).
 - "color": Primary color as a short phrase (e.g. "black", "navy blue").
-
-VALUE TIER — classify every item as "low_value" or "high_value". If uncertain, use "high_value".
-
-HIGH_VALUE (expensive, sensitive, or easily resold — student-facing listing will hide photo detail):
-- Laptops, tablets, iPads
-- Phones, smartphones
-- Cameras, lenses
-- Wallets, purses
-- AirPods, headphones, earbuds
-- Jewelry, watches
-- Passports, IDs
-- Graphing calculators
-- External hard drives, USB drives
-- Designer-looking sunglasses
-
-For HIGH_VALUE items, "name" MUST be maximally generic (no brand/model in the name). Examples:
-- "Laptop" not "MacBook Pro"
-- "Headphones" not "AirPods Pro"
-- "Phone" not "iPhone 14"
-- "Wallet" not "Brown leather bifold wallet"
-- "Watch" not "Apple Watch Series 8"
-
-LOW_VALUE (common left-behinds — photo can be shown clearly):
-- Water bottles, mugs, cups
-- Umbrellas
-- Jackets, hoodies, sweaters
-- Keys without expensive fobs
-- Notebooks, textbooks, folders
-- Hats, caps, beanies
-- Chargers, cables
-- Scarves, gloves
-- Reusable bags, plain totes
-- Shoes
-
-For LOW_VALUE items, "name" may be slightly descriptive (still short):
-- "Blue water bottle", "Black umbrella", "Gray hoodie", "House keys"`;
 
 type MediaType = "image/jpeg" | "image/png" | "image/gif" | "image/webp";
 
@@ -142,13 +105,12 @@ export async function POST(req: Request) {
     const name = typeof o.name === "string" ? o.name.trim() : "";
     const description = typeof o.description === "string" ? o.description.trim() : "";
     const color = typeof o.color === "string" ? o.color.trim() : "";
-    const value_tier = parseValueTier(o.value_tier);
 
-    if (!name || !description || !color || !value_tier) {
+    if (!name || !description || !color) {
       return NextResponse.json({ description: "" });
     }
 
-    return NextResponse.json({ name, description, color, value_tier });
+    return NextResponse.json({ name, description, color });
   } catch (err) {
     console.error("[identify] Anthropic call failed after retry:", err);
     Sentry.captureException(err, { tags: { route: "identify" } });
