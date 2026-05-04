@@ -81,12 +81,10 @@ async function callAnthropic(base64: string, mediaType: MediaType) {
 
 function logAnthropicError(label: string, err: unknown) {
   const e = err as Record<string, unknown>;
-  console.error(`[identify] ${label}:`, JSON.stringify({
-    message: e?.message,
-    status: e?.status,
-    error: e?.error,
-    type: e?.type,
-  }));
+  console.error(`[identify] ${label} status=${e?.status}`);
+  console.error(`[identify] ${label} message=${e?.message}`);
+  console.error(`[identify] ${label} type=${e?.type}`);
+  console.error(`[identify] ${label} error=${JSON.stringify(e?.error)}`);
 }
 
 async function callAnthropicWithRetry(base64: string, mediaType: MediaType) {
