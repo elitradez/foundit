@@ -7,6 +7,7 @@ import {
   getAnthropicModel,
   parseJsonFromModel,
 } from "@/lib/anthropic";
+
 export const maxDuration = 30;
 
 const SYSTEM_PROMPT = `You analyze photos for a university lost-and-found desk. Respond with ONLY valid JSON (no markdown fences) in exactly this shape:
@@ -15,7 +16,7 @@ const SYSTEM_PROMPT = `You analyze photos for a university lost-and-found desk. 
 FIELD RULES:
 - "name": Short generic name for the item (e.g. "Laptop", "Water bottle", "Hoodie"). Never include brand or model.
 - "description": Brief description with color and distinguishing features (wear, stickers, text, material).
-- "color": Primary color as a short phrase (e.g. "black", "navy blue").
+- "color": Primary color as a short phrase (e.g. "black", "navy blue").`;
 
 type MediaType = "image/jpeg" | "image/png" | "image/gif" | "image/webp";
 
@@ -27,7 +28,7 @@ function toMediaType(mime: string): MediaType {
 async function callAnthropic(base64: string, mediaType: MediaType) {
   const client = getAnthropicClient();
   return client.messages.create({
-    model: getAnthropicModel(),
+    model: getAnthropicModel("PHOTO_ANALYSIS"),
     max_tokens: 1024,
     system: SYSTEM_PROMPT,
     messages: [
@@ -35,31 +36,22 @@ async function callAnthropic(base64: string, mediaType: MediaType) {
         role: "user",
         content: [
           { type: "image", source: { type: "base64", media_type: mediaType, data: base64 } },
-          { type: "text", text: "Analyze this lost item photo. Output only the JSON object with name, description, color, and value_tier." },
+          { type: "text", text: "Analyze this lost item photo. Output only the JSON object with name, description, and color." },
         ],
       },
     ],
   });
 }
 
-function logAnthropicError(label: string, err: unknown) {
-  const e = err as Record<string, unknown>;
-  console.error(`[identify] ${label} status=${e?.status}`);
-  console.error(`[identify] ${label} message=${e?.message}`);
-  console.error(`[identify] ${label} type=${e?.type}`);
-  console.error(`[identify] ${label} error=${JSON.stringify(e?.error)}`);
-}
-
 async function callAnthropicWithRetry(base64: string, mediaType: MediaType) {
   try {
     return await callAnthropic(base64, mediaType);
   } catch (err) {
-    logAnthropicError("call failed, retrying in 2s", err);
+    console.error("[identify] call failed, retrying in 2s:", (err as { message?: string })?.message);
     await new Promise((r) => setTimeout(r, 2000));
     try {
       return await callAnthropic(base64, mediaType);
     } catch (retryErr) {
-      logAnthropicError("call failed after retry", retryErr);
       Sentry.captureException(retryErr, { tags: { route: "identify", phase: "retry" } });
       throw retryErr;
     }
@@ -112,7 +104,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ name, description, color });
   } catch (err) {
-    console.error("[identify] Anthropic call failed after retry:", err);
+    console.error("[identify] call failed after retry:", (err as { message?: string })?.message);
     Sentry.captureException(err, { tags: { route: "identify" } });
     return NextResponse.json({ description: "" });
   }
