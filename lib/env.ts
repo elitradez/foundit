@@ -49,12 +49,12 @@ function validateEnv(): ValidationResult {
     errors.push("SUPABASE_SERVICE_ROLE_KEY is missing");
   }
 
-  // TWILIO — optional in dev, required in prod
+  // TWILIO — TWILIO_AUTH_TOKEN is required for webhook signature verification
   if (!process.env.TWILIO_ACCOUNT_SID?.trim()) {
     errors.push("TWILIO_ACCOUNT_SID is missing");
   }
   if (!process.env.TWILIO_AUTH_TOKEN?.trim()) {
-    errors.push("TWILIO_AUTH_TOKEN is missing");
+    errors.push("TWILIO_AUTH_TOKEN is missing (required for Twilio webhook signature verification)");
   }
 
   return { ok: errors.length === 0, errors };
