@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import twilio from "twilio";
 import { createAdminSupabaseClient } from "@/lib/supabase-admin";
 import { getUniversityConfig } from "@/lib/university-config";
+import { validateTwilioSignature, shouldSkipTwilioValidation } from "@/lib/twilio-auth";
 
 function getAutoReply(): string {
   const { pickupLocation, siteUrl } = getUniversityConfig();
@@ -11,15 +12,27 @@ function getAutoReply(): string {
 export const runtime = "nodejs";
 
 export async function POST(req: Request) {
-  let form: FormData;
+  // Parse body first — the stream can only be read once, and signature
+  // validation needs the same params the route handler uses.
+  let params: Record<string, string>;
   try {
-    form = await req.formData();
+    const form = await req.formData();
+    params = {};
+    form.forEach((value, key) => {
+      params[key] = String(value);
+    });
   } catch {
-    return NextResponse.json({ error: "Invalid body" }, { status: 400 });
+    return NextResponse.json({ error: "invalid signature" }, { status: 403 });
   }
 
-  const body = String(form.get("Body") ?? "").trim();
-  const from = String(form.get("From") ?? "").trim();
+  // Verify the request came from Twilio unless we're in local dev with
+  // the skip flag explicitly set.
+  if (!shouldSkipTwilioValidation() && !validateTwilioSignature(req, params)) {
+    return NextResponse.json({ error: "invalid signature" }, { status: 403 });
+  }
+
+  const body = (params.Body ?? "").trim();
+  const from = (params.From ?? "").trim();
 
   const twiml = new twilio.twiml.MessagingResponse();
 
