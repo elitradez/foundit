@@ -9,6 +9,7 @@ Fulfills DRPV-07 (HECVAT) and DPA Section 12 (right-to-erasure).
 | `claims` | PII columns set to NULL (`student_name`, `student_email`, `phone_number`, `student_id_number`, `claim_description`, `description`, `staff_notes`). Row preserved for referential integrity. |
 | `student_info` | Rows hard-deleted (all PII columns are NOT NULL). |
 | `claimed_items` | Rows hard-deleted (all PII columns are NOT NULL). |
+| `alerts` | PII columns set to NULL (`phone`, `email`, `description`). Row preserved for operational audit chain. Matched by phone/email directly, independent of claims. |
 | Storage (`items` bucket) | Proof-of-ownership photos deleted by path stored in `claimed_items.photo_path`. |
 
 Tables **not touched**: `items`, `universities`, `departments`, `security_log`, `retention_log`.
@@ -42,7 +43,8 @@ Response:
   "dry_run": true,
   "claims_affected": 2,
   "student_info_rows": 1,
-  "claimed_items_rows": 1
+  "claimed_items_rows": 1,
+  "alerts_affected": 3
 }
 ```
 
@@ -68,7 +70,8 @@ Response:
   "success": true,
   "claims_affected": 2,
   "photos_deleted": 1,
-  "photos_failed": 0
+  "photos_failed": 0,
+  "alerts_affected": 3
 }
 ```
 
@@ -77,6 +80,8 @@ Response:
 An audit row is written automatically to `security_log` with `event_type = 'erasure_admin'`. Note the timestamp for your records. No PII is captured in the log row.
 
 If `photos_failed > 0`, check `retention_log` for the `erasure_orphan_photo` entries and manually delete those storage objects via the Supabase dashboard.
+
+Note: `alerts_affected` counts SMS-alert rows that were cleared. A student may have alerts but no claims (e.g. they texted the number but never submitted a claim form). Both are erased in the same request.
 
 ### 6. Reply to the student
 
