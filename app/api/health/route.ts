@@ -27,7 +27,12 @@ export async function GET() {
     }
 
     return NextResponse.json(
-      { status: "ok", model, latency_ms: Date.now() - start },
+      {
+        status: "ok",
+        model,
+        latency_ms: Date.now() - start,
+        admin_secret_configured: !!process.env.ADMIN_API_SECRET?.trim(),
+      },
       { status: 200 }
     );
   } catch (err) {

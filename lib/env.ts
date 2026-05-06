@@ -57,6 +57,14 @@ function validateEnv(): ValidationResult {
     errors.push("TWILIO_AUTH_TOKEN is missing");
   }
 
+  // ADMIN_API_SECRET — required in prod, warn in dev
+  const adminSecret = process.env.ADMIN_API_SECRET?.trim() ?? "";
+  if (!adminSecret) {
+    errors.push("ADMIN_API_SECRET is missing");
+  } else if (adminSecret.length < 32) {
+    errors.push("ADMIN_API_SECRET must be at least 32 characters");
+  }
+
   return { ok: errors.length === 0, errors };
 }
 
