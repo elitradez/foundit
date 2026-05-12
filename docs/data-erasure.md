@@ -20,7 +20,7 @@ Storage failures are logged to `retention_log` with `notes = 'erasure_orphan_pho
 
 ### 1. Receive the request
 
-Student emails ebunting07@gmail.com requesting deletion of their data.
+Student emails privacy@laikacampus.com requesting deletion of their data.
 
 ### 2. Verify identity
 
