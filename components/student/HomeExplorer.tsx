@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useFocusTrap } from "@/lib/useFocusTrap";
 import { Spinner } from "@/components/ui/Spinner";
 import type { PublicItem } from "@/lib/types";
 
@@ -144,7 +145,7 @@ export function HomeExplorer({ initialItems, loadError, universityName = "Univer
       </header>
 
       {/* ── Search / hero ── */}
-      <div style={{ backgroundColor: "#F5F5F5", borderBottom: "1px solid #E5E5E5" }}>
+      <section aria-label="Search lost items" style={{ backgroundColor: "#F5F5F5", borderBottom: "1px solid #E5E5E5" }}>
         <div style={{ maxWidth: 1152, margin: "0 auto", padding: "24px 16px" }}>
           <h1 style={{ color: "#1a1a1a", fontSize: 28, fontWeight: 600, margin: "0 0 4px 0" }}>
             Find a lost item
@@ -172,7 +173,7 @@ export function HomeExplorer({ initialItems, loadError, universityName = "Univer
             />
           </div>
         </div>
-      </div>
+      </section>
 
       {/* ── Main ── */}
       <main id="main-content" style={{ maxWidth: 1152, margin: "0 auto", padding: "0 16px 48px" }}>
@@ -186,12 +187,14 @@ export function HomeExplorer({ initialItems, loadError, universityName = "Univer
 
         {/* Department tabs */}
         {departments.length > 0 ? (
-          <div style={{ overflowX: "auto", whiteSpace: "nowrap", borderBottom: "1px solid #E5E5E5", marginBottom: 24 }}>
+          <div role="tablist" aria-label="Filter by location" style={{ overflowX: "auto", whiteSpace: "nowrap", borderBottom: "1px solid #E5E5E5", marginBottom: 24 }}>
             {[{ id: null, name: "All", count: allItems.length }, ...departments.map((d) => ({ id: d.id, name: d.name, count: deptCounts.get(d.id) ?? 0 }))].map((tab) => {
               const active = selectedDept === tab.id;
               return (
                 <button
                   key={tab.id ?? "__all"}
+                  role="tab"
+                  aria-selected={active}
                   type="button"
                   onClick={() => setSelectedDept(tab.id)}
                   style={{
@@ -210,7 +213,7 @@ export function HomeExplorer({ initialItems, loadError, universityName = "Univer
                   }}
                 >
                   {tab.name}{" "}
-                  <span style={{ color: active ? "#CC0000" : "#767676", fontWeight: 400 }}>({tab.count})</span>
+                  <span style={{ color: active ? "#CC0000" : "#666666", fontWeight: 400 }}>({tab.count})</span>
                 </button>
               );
             })}
@@ -227,7 +230,7 @@ export function HomeExplorer({ initialItems, loadError, universityName = "Univer
         {filtered.length === 0 && !loadError ? (
           <div style={{ textAlign: "center", padding: "64px 24px" }}>
             <p style={{ fontSize: 36, marginBottom: 12 }}>📭</p>
-            <p style={{ fontSize: 14, color: "#767676" }}>
+            <p style={{ fontSize: 14, color: "#666666" }}>
               {selectedDept && !query.trim()
                 ? "No items found at this location."
                 : allItems.length === 0
@@ -300,13 +303,11 @@ export function HomeExplorer({ initialItems, loadError, universityName = "Univer
 
       {/* ── Footer ── */}
       <footer style={{ borderTop: "1px solid #E5E5E5", backgroundColor: "#FFFFFF", padding: "24px 16px", textAlign: "center" }}>
-        <p style={{ fontSize: 13, color: "#767676", margin: 0 }}>
+        <p style={{ fontSize: 13, color: "#666666", margin: 0 }}>
           {universityName} Lost &amp; Found &nbsp;·&nbsp;{" "}
           <Link
             href="/privacy"
-            style={{ color: "#CC0000", textDecoration: "none" }}
-            onMouseEnter={(e) => (e.currentTarget.style.textDecoration = "underline")}
-            onMouseLeave={(e) => (e.currentTarget.style.textDecoration = "none")}
+            style={{ color: "#CC0000", textDecoration: "underline" }}
           >
             Privacy
           </Link>
@@ -322,7 +323,7 @@ function ItemCard({ item, onClick }: { item: PublicItem; onClick: () => void }) 
     <button
       type="button"
       onClick={onClick}
-      aria-label={`Claim ${item.name}`}
+      aria-label={`Claim this item – ${item.name}`}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       style={{
@@ -358,7 +359,7 @@ function ItemCard({ item, onClick }: { item: PublicItem; onClick: () => void }) 
         <p style={{ fontSize: 12, color: "#CC0000", margin: "0 0 4px 0" }}>
           {item.department_name ?? "Lost & Found"}
         </p>
-        <p style={{ fontSize: 12, color: "#767676", margin: "0 0 14px 0" }}>Found {item.date_found}</p>
+        <p style={{ fontSize: 12, color: "#666666", margin: "0 0 14px 0" }}>Found {item.date_found}</p>
 
         {/* CTA */}
         <div
@@ -384,6 +385,7 @@ function ItemCard({ item, onClick }: { item: PublicItem; onClick: () => void }) 
 type ModalStep = 1 | 2 | 3 | 4;
 
 function ClaimModal({ item, onClose, departmentName }: { item: PublicItem; onClose: () => void; departmentName: string }) {
+  const dialogRef = useFocusTrap<HTMLDivElement>(true, onClose);
   const [step, setStep] = useState<ModalStep>(1);
   const [studentDescription, setStudentDescription] = useState("");
   const [matchBusy, setMatchBusy] = useState(false);
@@ -505,6 +507,7 @@ function ClaimModal({ item, onClose, departmentName }: { item: PublicItem; onClo
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
       <div
+        ref={dialogRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby="claim-title"
@@ -539,7 +542,7 @@ function ClaimModal({ item, onClose, departmentName }: { item: PublicItem; onClo
                     {s.n}
                   </div>
                   <p style={{ fontSize: 11, fontWeight: 600, color: "#1a1a1a", margin: "0 0 2px", lineHeight: 1.3 }}>{s.title}</p>
-                  <p style={{ fontSize: 10, color: "#767676", margin: 0, lineHeight: 1.3 }}>{s.sub}</p>
+                  <p style={{ fontSize: 10, color: "#666666", margin: 0, lineHeight: 1.3 }}>{s.sub}</p>
                 </div>
               ))}
             </div>
@@ -549,7 +552,7 @@ function ClaimModal({ item, onClose, departmentName }: { item: PublicItem; onClo
               <span style={{ display: "block", fontSize: 13, fontWeight: 500, color: "#333333", marginBottom: 4 }}>
                 Describe your item
               </span>
-              <p style={{ fontSize: 12, color: "#767676", margin: "0 0 8px" }}>
+              <p style={{ fontSize: 12, color: "#666666", margin: "0 0 8px" }}>
                 Color, brand, any damage, what&apos;s inside — anything that proves it&apos;s yours
               </p>
               <textarea
@@ -648,7 +651,7 @@ function ClaimModal({ item, onClose, departmentName }: { item: PublicItem; onClo
 
             {/* Email + Phone — at least one required */}
             <div>
-              <p style={{ fontSize: 12, color: "#767676", margin: "0 0 10px" }}>
+              <p style={{ fontSize: 12, color: "#666666", margin: "0 0 10px" }}>
                 Provide at least one way to reach you <span style={{ color: "#CC0000" }}>*</span>
               </p>
               <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
@@ -707,7 +710,7 @@ function ClaimModal({ item, onClose, departmentName }: { item: PublicItem; onClo
             <p style={{ fontSize: 14, color: "#555555", lineHeight: 1.6, marginBottom: 8 }}>
               Staff will ask you to describe the item before handing it over.
             </p>
-            <p style={{ fontSize: 13, color: "#767676", lineHeight: 1.6, marginBottom: 28 }}>
+            <p style={{ fontSize: 13, color: "#666666", lineHeight: 1.6, marginBottom: 28 }}>
               If you left your email, we&apos;ll reach out if we need anything else.
             </p>
             <button type="button" onClick={onClose} style={{ ...primaryBtn, width: "auto", minWidth: 140, padding: "10px 24px" }}>

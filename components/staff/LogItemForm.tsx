@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Spinner } from "@/components/ui/Spinner";
+import { useFocusTrap } from "@/lib/useFocusTrap";
 
 type Props = {
   onClose: () => void;
@@ -85,6 +86,7 @@ async function compressForIdentify(file: File): Promise<File> {
 }
 
 export function LogItemForm({ onClose, onSaved }: Props) {
+  const dialogRef = useFocusTrap<HTMLDivElement>(true, onClose);
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
@@ -163,10 +165,16 @@ export function LogItemForm({ onClose, onSaved }: Props) {
 
   return (
     <div className="anim-fade-in fixed inset-0 z-50 flex items-end justify-center bg-black/70 p-0 backdrop-blur-sm sm:items-center sm:p-4">
-      <div className="anim-pop-in max-h-[95vh] w-full overflow-y-auto rounded-none border border-white/10 bg-[#141414] p-6 shadow-xl sm:max-h-[90vh] sm:max-w-lg sm:rounded-2xl">
+      <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="log-item-title"
+        className="anim-pop-in max-h-[95vh] w-full overflow-y-auto rounded-none border border-white/10 bg-[#141414] p-6 shadow-xl sm:max-h-[90vh] sm:max-w-lg sm:rounded-2xl"
+      >
         <div className="mb-6 flex items-start justify-between gap-4">
           <div>
-            <h2 className="text-lg font-semibold text-[#F5F5F0]">Log new item</h2>
+            <h2 id="log-item-title" className="text-lg font-semibold text-[#F5F5F0]">Log new item</h2>
             <p className="mt-1 text-sm text-[#F5F5F0]/55">
               Photo is sent to Claude to suggest a name, description, and value tier. Edit before saving.
             </p>
