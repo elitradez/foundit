@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useFocusTrap } from "@/lib/useFocusTrap";
 import { LogItemForm } from "@/components/staff/LogItemForm";
 import type { ItemRow } from "@/lib/types";
 
@@ -525,14 +526,23 @@ export function StaffDashboard({
     }
   }
 
+  // ── Modal focus traps ────────────────────────────────────────────────────────
+  const deleteConfirmRef = useFocusTrap<HTMLDivElement>(!!deleteConfirmItem, () => setDeleteConfirmItem(null));
+  const surplusConfirmRef = useFocusTrap<HTMLDivElement>(!!activeSurplusConfirmItem, () => setActiveSurplusConfirmItem(null));
+  const deleteLogRef = useFocusTrap<HTMLDivElement>(!!deleteLogRow, () => setDeleteLogRow(null));
+  const editActiveRef = useFocusTrap<HTMLDivElement>(!!editActiveItem, closeEditActiveItem);
+  const editStudentRef = useFocusTrap<HTMLDivElement>(!!editReturnedItemId, () => setEditReturnedItemId(null));
+  const returnClaimRef = useFocusTrap<HTMLDivElement>(!!(returnClaimId && returnClaimItemId), closeReturnClaimModal);
+
   // ── Tab button ───────────────────────────────────────────────────────────────
   function TabButton({ id, label }: { id: Tab; label: string }) {
     const active = tab === id;
     return (
       <button
         type="button"
+        role="tab"
+        aria-selected={active}
         onClick={() => setTab(id)}
-        aria-current={active ? "true" : undefined}
         className={`inline-flex min-h-9 items-center rounded px-3 py-1.5 text-sm font-medium transition ${
           active
             ? "bg-[#CC0000] text-white"
@@ -609,10 +619,12 @@ export function StaffDashboard({
               Log new item
             </button>
             <div className="h-5 w-px bg-white/20" />
-            <TabButton id="active" label="Active Items" />
-            <TabButton id="claims" label="Claims" />
-            <TabButton id="log" label="Student Log" />
-            <TabButton id="surplus" label="Surplus" />
+            <div role="tablist" aria-label="Dashboard sections" className="flex flex-wrap items-center gap-1">
+              <TabButton id="active" label="Active Items" />
+              <TabButton id="claims" label="Claims" />
+              <TabButton id="log" label="Student Log" />
+              <TabButton id="surplus" label="Surplus" />
+            </div>
             <div className="h-5 w-px bg-white/20" />
             <a
               href="/staff/analytics"
@@ -669,7 +681,7 @@ export function StaffDashboard({
             {loading ? <ActiveItemsSkeleton /> : null}
 
             {!loading && activeItems.length === 0 ? (
-              <div className="rounded-lg border border-[#E5E5E5] px-6 py-16 text-center text-[#767676]">
+              <div className="rounded-lg border border-[#E5E5E5] px-6 py-16 text-center text-[#666666]">
                 No active items.
               </div>
             ) : null}
@@ -694,7 +706,7 @@ export function StaffDashboard({
                       <div className="min-w-0 flex-1">
                         <p className="truncate text-[15px] font-semibold text-[#1a1a1a]">{item.name}</p>
                         <p className="mt-0.5 truncate text-sm text-[#666666]">{item.description}</p>
-                        <p className="mt-0.5 text-xs text-[#767676]">{item.location}</p>
+                        <p className="mt-0.5 text-xs text-[#666666]">{item.location}</p>
                         <div className="mt-2.5 flex flex-wrap items-center gap-2">
                           <button
                             type="button"
@@ -724,7 +736,7 @@ export function StaffDashboard({
                         </div>
                       </div>
                       <div className="shrink-0 text-right space-y-1.5">
-                        <p className="text-xs text-[#767676]">Found {item.date_found}</p>
+                        <p className="text-xs text-[#666666]">Found {item.date_found}</p>
                         <SurplusBadge daysUntilEligible={daysUntilEligible} isEligible={isEligible} />
                       </div>
                     </li>
@@ -759,7 +771,7 @@ export function StaffDashboard({
                   <tbody className="divide-y divide-[#E5E5E5]">
                     {claims.length === 0 ? (
                       <tr>
-                        <td colSpan={6} className="px-4 py-10 text-center text-[#767676]">
+                        <td colSpan={6} className="px-4 py-10 text-center text-[#666666]">
                           No pending claims.
                         </td>
                       </tr>
@@ -779,10 +791,10 @@ export function StaffDashboard({
                           </td>
                           <td className="px-4 py-3 font-semibold text-[#1a1a1a]">{c.item_name}</td>
                           <td className="px-4 py-3 text-[#333333]">
-                            {c.student_name?.trim() ? c.student_name : <span className="text-[#767676]">Not provided</span>}
+                            {c.student_name?.trim() ? c.student_name : <span className="text-[#666666]">Not provided</span>}
                           </td>
                           <td className="px-4 py-3 text-[#333333]">
-                            {c.student_id_number?.trim() ? c.student_id_number : <span className="text-[#767676]">Not provided</span>}
+                            {c.student_id_number?.trim() ? c.student_id_number : <span className="text-[#666666]">Not provided</span>}
                           </td>
                           <td className="px-4 py-3 text-[#666666]">{c.created_at.slice(0, 10)}</td>
                           <td className="px-4 py-3">
@@ -839,7 +851,7 @@ export function StaffDashboard({
                   <tbody className="divide-y divide-[#E5E5E5]">
                     {surplusItems.length === 0 ? (
                       <tr>
-                        <td colSpan={5} className="px-4 py-10 text-center text-[#767676]">
+                        <td colSpan={5} className="px-4 py-10 text-center text-[#666666]">
                           No items in surplus yet.
                         </td>
                       </tr>
@@ -862,7 +874,7 @@ export function StaffDashboard({
                           <td className="px-4 py-3 text-[#666666]">
                             <span>{s.sent_to_surplus_at.slice(0, 10)}</span>
                             {daysInSurplus !== null ? (
-                              <span className="ml-2 text-xs text-[#767676]">({daysInSurplus}d in surplus)</span>
+                              <span className="ml-2 text-xs text-[#666666]">({daysInSurplus}d in surplus)</span>
                             ) : null}
                           </td>
                         </tr>
@@ -899,7 +911,7 @@ export function StaffDashboard({
                   <tbody className="divide-y divide-[#E5E5E5]">
                     {logRows.length === 0 ? (
                       <tr>
-                        <td colSpan={7} className="px-4 py-10 text-center text-[#767676]">
+                        <td colSpan={7} className="px-4 py-10 text-center text-[#666666]">
                           No returned or claimed items.
                         </td>
                       </tr>
@@ -908,13 +920,13 @@ export function StaffDashboard({
                       <tr key={`${r.kind}-${r.claim_id ?? r.item_id}`} className={idx % 2 === 1 ? "bg-[#F5F5F5]" : "bg-white"}>
                         <td className="px-4 py-3 font-semibold text-[#1a1a1a]">{r.item_name}</td>
                         <td className="px-4 py-3 text-[#333333]">
-                          {r.student_name?.trim() ? r.student_name : <span className="text-[#767676]">Not provided</span>}
+                          {r.student_name?.trim() ? r.student_name : <span className="text-[#666666]">Not provided</span>}
                         </td>
                         <td className="px-4 py-3 text-[#333333]">
-                          {r.student_id_number?.trim() ? r.student_id_number : <span className="text-[#767676]">Not provided</span>}
+                          {r.student_id_number?.trim() ? r.student_id_number : <span className="text-[#666666]">Not provided</span>}
                         </td>
                         <td className="px-4 py-3 text-[#333333]">
-                          {r.phone_number?.trim() ? r.phone_number : <span className="text-[#767676]">Not provided</span>}
+                          {r.phone_number?.trim() ? r.phone_number : <span className="text-[#666666]">Not provided</span>}
                         </td>
                         <td className="px-4 py-3 text-[#666666]">{r.date}</td>
                         <td className="px-4 py-3">
@@ -974,7 +986,7 @@ export function StaffDashboard({
       {/* ── Delete item confirm ── */}
       {deleteConfirmItem ? (
         <div className="anim-fade-in fixed inset-0 z-[88] flex items-center justify-center bg-black/60 p-4">
-          <div role="dialog" aria-modal="true" aria-labelledby="delete-item-title" className="anim-pop-in w-full max-w-sm rounded-lg border border-[#E5E5E5] bg-white p-5 shadow-2xl">
+          <div ref={deleteConfirmRef} role="dialog" aria-modal="true" aria-labelledby="delete-item-title" className="anim-pop-in w-full max-w-sm rounded-lg border border-[#E5E5E5] bg-white p-5 shadow-2xl">
             <h3 id="delete-item-title" className="text-base font-semibold text-[#1a1a1a]">Delete item?</h3>
             <p className="mt-2 text-sm text-[#555555]">
               Remove <span className="font-semibold text-[#1a1a1a]">{deleteConfirmItem.name}</span> from lost and found. This cannot be undone.
@@ -992,7 +1004,7 @@ export function StaffDashboard({
       {/* ── Send to surplus confirm ── */}
       {activeSurplusConfirmItem ? (
         <div className="anim-fade-in fixed inset-0 z-[89] flex items-center justify-center bg-black/60 p-4">
-          <div role="dialog" aria-modal="true" aria-labelledby="surplus-confirm-title" className="anim-pop-in w-full max-w-sm rounded-lg border border-[#E5E5E5] bg-white p-5 shadow-2xl">
+          <div ref={surplusConfirmRef} role="dialog" aria-modal="true" aria-labelledby="surplus-confirm-title" className="anim-pop-in w-full max-w-sm rounded-lg border border-[#E5E5E5] bg-white p-5 shadow-2xl">
             <h3 id="surplus-confirm-title" className="text-base font-semibold text-[#1a1a1a]">Send to surplus?</h3>
             <p className="mt-2 text-sm text-[#555555]">
               <span className="font-semibold text-[#1a1a1a]">{activeSurplusConfirmItem.name}</span> will be removed from the active list.
@@ -1010,7 +1022,7 @@ export function StaffDashboard({
       {/* ── Delete log row confirm ── */}
       {deleteLogRow ? (
         <div className="anim-fade-in fixed inset-0 z-[89] flex items-center justify-center bg-black/60 p-4">
-          <div role="dialog" aria-modal="true" aria-labelledby="delete-log-title" className="anim-pop-in w-full max-w-sm rounded-lg border border-[#E5E5E5] bg-white p-5 shadow-2xl">
+          <div ref={deleteLogRef} role="dialog" aria-modal="true" aria-labelledby="delete-log-title" className="anim-pop-in w-full max-w-sm rounded-lg border border-[#E5E5E5] bg-white p-5 shadow-2xl">
             <h3 id="delete-log-title" className="text-base font-semibold text-[#1a1a1a]">Delete this log entry?</h3>
             <p className="mt-2 text-sm text-[#555555]">
               This will permanently delete <span className="font-semibold text-[#1a1a1a]">{deleteLogRow.item_name}</span>.
@@ -1028,7 +1040,7 @@ export function StaffDashboard({
       {/* ── Edit active item ── */}
       {editActiveItem ? (
         <div className="anim-fade-in fixed inset-0 z-[85] flex items-end justify-center bg-black/60 p-0 sm:items-center sm:p-4">
-          <div role="dialog" aria-modal="true" aria-labelledby="edit-item-title" className="anim-pop-in max-h-[95vh] w-full overflow-y-auto rounded-none border border-[#E5E5E5] bg-white p-5 shadow-2xl sm:max-h-[90vh] sm:max-w-lg sm:rounded-lg">
+          <div ref={editActiveRef} role="dialog" aria-modal="true" aria-labelledby="edit-item-title" className="anim-pop-in max-h-[95vh] w-full overflow-y-auto rounded-none border border-[#E5E5E5] bg-white p-5 shadow-2xl sm:max-h-[90vh] sm:max-w-lg sm:rounded-lg">
             <h3 id="edit-item-title" className="text-base font-semibold text-[#1a1a1a]">Edit item</h3>
             <p className="mt-1 text-sm text-[#666666]">Update how this listing appears for staff and on the student site.</p>
 
@@ -1090,7 +1102,7 @@ export function StaffDashboard({
       {/* ── Edit student info (returned item) ── */}
       {editReturnedItemId ? (
         <div className="anim-fade-in fixed inset-0 z-[90] flex items-center justify-center bg-black/60 p-4">
-          <div role="dialog" aria-modal="true" aria-labelledby="edit-student-title" className="anim-pop-in w-full max-w-md rounded-lg border border-[#E5E5E5] bg-white p-5 shadow-2xl">
+          <div ref={editStudentRef} role="dialog" aria-modal="true" aria-labelledby="edit-student-title" className="anim-pop-in w-full max-w-md rounded-lg border border-[#E5E5E5] bg-white p-5 shadow-2xl">
             <h3 id="edit-student-title" className="text-base font-semibold text-[#1a1a1a]">Returned item student info</h3>
             <p className="mt-2 text-sm text-[#666666]">This will appear in the Student Log.</p>
 
@@ -1118,13 +1130,13 @@ export function StaffDashboard({
       {/* ── Confirm return claim ── */}
       {returnClaimId && returnClaimItemId ? (
         <div className="anim-fade-in fixed inset-0 z-[90] flex items-center justify-center bg-black/60 p-4">
-          <div role="dialog" aria-modal="true" aria-labelledby="confirm-return-title" className="anim-pop-in w-full max-w-md rounded-lg border border-[#E5E5E5] bg-white p-5 shadow-2xl">
+          <div ref={returnClaimRef} role="dialog" aria-modal="true" aria-labelledby="confirm-return-title" className="anim-pop-in w-full max-w-md rounded-lg border border-[#E5E5E5] bg-white p-5 shadow-2xl">
             <h3 id="confirm-return-title" className="text-base font-semibold text-[#1a1a1a]">Confirm return</h3>
             <p className="mt-2 text-sm text-[#666666]">This will move the item into the Student Log.</p>
 
             <div className="mt-4 space-y-3">
               <div className="rounded-lg border border-[#E5E5E5] bg-[#F5F5F5] px-3 py-2 text-sm text-[#333333]">
-                <span className="text-[#767676]">Item: </span>{returnClaimItemName}
+                <span className="text-[#666666]">Item: </span>{returnClaimItemName}
               </div>
 
               <label className="block space-y-1">
