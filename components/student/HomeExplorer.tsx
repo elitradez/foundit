@@ -586,7 +586,7 @@ function ClaimModal({ item, onClose, departmentName }: { item: PublicItem; onClo
             <div style={{ position: "relative", width: "100%", aspectRatio: "4/3", backgroundColor: "#F5F5F5", borderRadius: 8, overflow: "hidden" }}>
               <Image
                 src={isMatch && revealUrl ? revealUrl : `/api/items/${item.id}/blur`}
-                alt=""
+                alt={isMatch && revealUrl ? `Photo of ${item.name}` : ""}
                 fill
                 className={isMatch && revealUrl ? "object-cover" : "object-cover blur-xl"}
                 sizes="512px"
