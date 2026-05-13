@@ -282,7 +282,7 @@ export function LogItemForm({ onClose, onSaved }: Props) {
             <p className="text-xs text-[#F5F5F0]/60">Students must enter this PIN to submit a claim.</p>
           </label>
 
-          {error ? <p className="text-sm text-red-400">{error}</p> : null}
+          {error ? <p role="alert" className="text-sm text-red-400">{error}</p> : null}
 
           <div className="flex justify-end gap-2 pt-2">
             <button
