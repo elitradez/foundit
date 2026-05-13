@@ -575,7 +575,7 @@ function ClaimModal({ item, onClose, departmentName }: { item: PublicItem; onClo
               {matchBusy ? <><Spinner className="h-4 w-4" style={{ color: "#fff" }} /> Checking your description…</> : "Check if it\u2019s mine \u2192"}
             </button>
 
-            {error ? <p style={{ fontSize: 13, color: "#CC0000", margin: 0 }}>{error}</p> : null}
+            {error ? <p role="alert" style={{ fontSize: 13, color: "#CC0000", margin: 0 }}>{error}</p> : null}
           </div>
         ) : null}
 
@@ -639,14 +639,17 @@ function ClaimModal({ item, onClose, departmentName }: { item: PublicItem; onClo
                 Full name <span style={{ color: "#CC0000" }}>*</span>
               </span>
               <input
+                id="claim-name"
                 value={studentName}
                 onChange={(e) => setStudentName(e.target.value)}
                 style={{ ...inputStyle, borderColor: nameError ? "#CC0000" : "#E5E5E5" }}
                 autoComplete="name"
+                aria-invalid={Boolean(nameError)}
+                aria-describedby={nameError ? "claim-name-error" : undefined}
                 onFocus={(e) => { e.currentTarget.style.borderColor = "#CC0000"; e.currentTarget.style.boxShadow = "0 0 0 3px rgba(204,0,0,0.12)"; }}
                 onBlur={(e) => { setNameTouched(true); e.currentTarget.style.borderColor = nameError ? "#CC0000" : "#E5E5E5"; e.currentTarget.style.boxShadow = "none"; }}
               />
-              {nameError ? <p style={{ fontSize: 12, color: "#CC0000", margin: "4px 0 0" }}>Name is required</p> : null}
+              {nameError ? <p id="claim-name-error" role="alert" style={{ fontSize: 12, color: "#CC0000", margin: "4px 0 0" }}>Name is required</p> : null}
             </label>
 
             {/* Email + Phone — at least one required */}
@@ -660,12 +663,15 @@ function ClaimModal({ item, onClose, departmentName }: { item: PublicItem; onClo
                     Email address
                   </span>
                   <input
+                    id="claim-email"
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="you@university.edu"
                     style={{ ...inputStyle, borderColor: contactError ? "#CC0000" : "#E5E5E5" }}
                     autoComplete="email"
+                    aria-invalid={Boolean(contactError)}
+                    aria-describedby={contactError ? "claim-contact-error" : undefined}
                     onFocus={(e) => { e.currentTarget.style.borderColor = "#CC0000"; e.currentTarget.style.boxShadow = "0 0 0 3px rgba(204,0,0,0.12)"; }}
                     onBlur={(e) => { setContactTouched(true); e.currentTarget.style.borderColor = contactError ? "#CC0000" : "#E5E5E5"; e.currentTarget.style.boxShadow = "none"; }}
                   />
@@ -675,17 +681,20 @@ function ClaimModal({ item, onClose, departmentName }: { item: PublicItem; onClo
                     Phone number
                   </span>
                   <input
+                    id="claim-phone"
                     type="tel"
                     value={phoneNumber}
                     onChange={(e) => setPhoneNumber(e.target.value)}
                     style={{ ...inputStyle, borderColor: contactError ? "#CC0000" : "#E5E5E5" }}
                     autoComplete="tel"
+                    aria-invalid={Boolean(contactError)}
+                    aria-describedby={contactError ? "claim-contact-error" : undefined}
                     onFocus={(e) => { e.currentTarget.style.borderColor = "#CC0000"; e.currentTarget.style.boxShadow = "0 0 0 3px rgba(204,0,0,0.12)"; }}
                     onBlur={(e) => { setContactTouched(true); e.currentTarget.style.borderColor = contactError ? "#CC0000" : "#E5E5E5"; e.currentTarget.style.boxShadow = "none"; }}
                   />
                 </label>
               </div>
-              {contactError ? <p style={{ fontSize: 12, color: "#CC0000", margin: "4px 0 0" }}>Please provide an email or phone number</p> : null}
+              {contactError ? <p id="claim-contact-error" role="alert" style={{ fontSize: 12, color: "#CC0000", margin: "4px 0 0" }}>Please provide an email or phone number</p> : null}
             </div>
 
             <button
@@ -697,7 +706,7 @@ function ClaimModal({ item, onClose, departmentName }: { item: PublicItem; onClo
               {submitBusy ? <><Spinner className="h-4 w-4" style={{ color: "#fff" }} /> Submitting…</> : "Submit my claim"}
             </button>
 
-            {error ? <p style={{ fontSize: 13, color: "#CC0000", margin: 0 }}>{error}</p> : null}
+            {error ? <p role="alert" style={{ fontSize: 13, color: "#CC0000", margin: 0 }}>{error}</p> : null}
           </div>
         ) : null}
 
