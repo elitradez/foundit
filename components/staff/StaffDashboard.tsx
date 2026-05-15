@@ -543,7 +543,7 @@ export function StaffDashboard({
         role="tab"
         aria-selected={active}
         onClick={() => setTab(id)}
-        className={`inline-flex min-h-9 items-center rounded px-3 py-1.5 text-sm font-medium transition ${
+        className={`flex flex-1 min-h-10 items-center justify-center rounded px-3 py-2 text-sm font-medium transition ${
           active
             ? "bg-[#CC0000] text-white"
             : "text-white/75 hover:bg-white/10 hover:text-white"
@@ -602,7 +602,8 @@ export function StaffDashboard({
 
       {/* Dark header */}
       <header className="sticky top-0 z-20 bg-[#111111]" style={{ borderBottom: "1px solid #2a2a2a" }}>
-        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-3">
+        {/* Row 1: title + primary action */}
+        <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
           <div>
             <p className="text-[11px] font-semibold uppercase tracking-widest text-[#FF6666]">Staff</p>
             <h1 className="text-lg font-semibold text-white leading-tight">{departmentName}</h1>
@@ -610,25 +611,29 @@ export function StaffDashboard({
               <p className="text-xs text-white/70 mt-0.5">{universityName}</p>
             ) : null}
           </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <button
-              type="button"
-              onClick={() => setShowForm(true)}
-              className="inline-flex min-h-9 items-center rounded bg-[#CC0000] px-4 py-1.5 text-sm font-semibold text-white hover:bg-[#A80000] transition"
-            >
-              Log new item
-            </button>
-            <div className="h-5 w-px bg-white/20" />
-            <div role="tablist" aria-label="Dashboard sections" className="flex flex-wrap items-center gap-1">
-              <TabButton id="active" label="Active Items" />
-              <TabButton id="claims" label="Claims" />
-              <TabButton id="log" label="Student Log" />
-              <TabButton id="surplus" label="Surplus" />
-            </div>
-            <div className="h-5 w-px bg-white/20" />
+          <button
+            type="button"
+            onClick={() => setShowForm(true)}
+            className="inline-flex min-h-9 items-center rounded bg-[#CC0000] px-4 py-1.5 text-sm font-semibold text-white hover:bg-[#A80000] transition"
+          >
+            Log new item
+          </button>
+        </div>
+        {/* Row 2: tab bar */}
+        <div className="border-t border-white/10 px-4">
+          <div role="tablist" aria-label="Dashboard sections" className="mx-auto flex max-w-6xl">
+            <TabButton id="active" label="Active Items" />
+            <TabButton id="claims" label="Claims" />
+            <TabButton id="log" label="Student Log" />
+            <TabButton id="surplus" label="Surplus" />
+          </div>
+        </div>
+        {/* Row 3: secondary actions */}
+        <div className="border-t border-white/10 px-4 py-1.5">
+          <div className="mx-auto flex max-w-6xl items-center gap-2">
             <a
               href="/staff/analytics"
-              className="inline-flex min-h-9 items-center rounded border border-white/20 px-3 py-1.5 text-sm text-white/70 hover:bg-white/10 hover:text-white transition"
+              className="inline-flex min-h-8 items-center rounded border border-white/20 px-3 py-1 text-xs text-white/70 hover:bg-white/10 hover:text-white transition"
             >
               Analytics
             </a>
@@ -638,7 +643,7 @@ export function StaffDashboard({
                 await fetch("/api/staff/logout", { method: "POST" });
                 window.location.href = "/staff/login";
               }}
-              className="inline-flex min-h-9 items-center rounded border border-white/20 px-3 py-1.5 text-sm text-white/70 hover:bg-white/10 hover:text-white transition"
+              className="inline-flex min-h-8 items-center rounded border border-white/20 px-3 py-1 text-xs text-white/70 hover:bg-white/10 hover:text-white transition"
             >
               Switch Department
             </button>
@@ -649,7 +654,7 @@ export function StaffDashboard({
                 await fetch("/api/staff/logout", { method: "POST" });
                 window.location.href = "/staff/login";
               }}
-              className="inline-flex min-h-9 items-center rounded border border-red-500/40 px-3 py-1.5 text-sm text-red-400 hover:bg-red-500/10 hover:text-red-300 transition"
+              className="ml-auto inline-flex min-h-8 items-center rounded border border-red-500/40 px-3 py-1 text-xs text-red-400 hover:bg-red-500/10 hover:text-red-300 transition"
             >
               Sign out
             </button>
