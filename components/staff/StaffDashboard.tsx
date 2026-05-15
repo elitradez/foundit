@@ -609,7 +609,7 @@ export function StaffDashboard({
               Log new item
             </button>
             <div className="h-5 w-px bg-white/20" />
-            <div className="overflow-x-auto whitespace-nowrap">
+            <div className="flex items-center gap-2 overflow-x-auto">
               <TabButton id="active" label="Active Items" />
               <TabButton id="claims" label="Claims" />
               <TabButton id="log" label="Student Log" />
