@@ -27,7 +27,7 @@ export async function scoreLostItemMatch(
   alertDescription: string,
 ): Promise<number> {
   const client = getAnthropicClient();
-  const model = getAnthropicModel();
+  const model = getAnthropicModel("SEMANTIC_SEARCH");
   const userText = `Compare these two lost item descriptions. Return JSON with one field: score (0-100) for how likely they are the same item. Be generous — matching category scores 50, matching color or brand scores 70, matching multiple details scores 90.
 
 Newly logged item description:

@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
 import { createAdminSupabaseClient } from "@/lib/supabase-admin";
+import { checkAdminSecret } from "@/lib/admin-auth";
 
 export async function POST(req: Request) {
-  const secret = req.headers.get("x-admin-secret");
-  if (secret !== process.env.ADMIN_SECRET) {
+  if (!checkAdminSecret(req)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

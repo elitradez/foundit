@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Spinner } from "@/components/ui/Spinner";
-import type { ValueTier } from "@/lib/value-tier";
+import { useFocusTrap } from "@/lib/useFocusTrap";
 
 type Props = {
   onClose: () => void;
@@ -86,6 +86,7 @@ async function compressForIdentify(file: File): Promise<File> {
 }
 
 export function LogItemForm({ onClose, onSaved }: Props) {
+  const dialogRef = useFocusTrap<HTMLDivElement>(true, onClose);
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
@@ -95,7 +96,6 @@ export function LogItemForm({ onClose, onSaved }: Props) {
   const [aiStatus, setAiStatus] = useState<"idle" | "loading" | "done" | "failed">("idle");
   const [saveBusy, setSaveBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [valueTier, setValueTier] = useState<ValueTier>("low_value");
 
   async function runIdentify(file: File) {
     setError(null);
@@ -108,7 +108,6 @@ export function LogItemForm({ onClose, onSaved }: Props) {
       const data = (await res.json().catch(() => ({}))) as {
         name?: string;
         description?: string;
-        value_tier?: ValueTier;
         error?: string;
       };
       if (!res.ok) {
@@ -122,9 +121,6 @@ export function LogItemForm({ onClose, onSaved }: Props) {
         setAiStatus("done");
       } else {
         setAiStatus("failed");
-      }
-      if (data.value_tier === "low_value" || data.value_tier === "high_value") {
-        setValueTier(data.value_tier);
       }
     } catch {
       setAiStatus("failed");
@@ -154,7 +150,6 @@ export function LogItemForm({ onClose, onSaved }: Props) {
       fd.set("location", location);
       fd.set("date_found", dateFound);
       if (optionalPin.trim()) fd.set("optional_pin", optionalPin.trim());
-      fd.set("value_tier", valueTier);
       const res = await fetch("/api/staff/items", { method: "POST", body: fd });
       const data = (await res.json().catch(() => ({}))) as { error?: string };
       if (!res.ok) {
@@ -170,10 +165,16 @@ export function LogItemForm({ onClose, onSaved }: Props) {
 
   return (
     <div className="anim-fade-in fixed inset-0 z-50 flex items-end justify-center bg-black/70 p-0 backdrop-blur-sm sm:items-center sm:p-4">
-      <div className="anim-pop-in max-h-[95vh] w-full overflow-y-auto rounded-none border border-white/10 bg-[#141414] p-6 shadow-xl sm:max-h-[90vh] sm:max-w-lg sm:rounded-2xl">
+      <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="log-item-title"
+        className="anim-pop-in max-h-[95vh] w-full overflow-y-auto rounded-none border border-white/10 bg-[#141414] p-6 shadow-xl sm:max-h-[90vh] sm:max-w-lg sm:rounded-2xl"
+      >
         <div className="mb-6 flex items-start justify-between gap-4">
           <div>
-            <h2 className="text-lg font-semibold text-[#F5F5F0]">Log new item</h2>
+            <h2 id="log-item-title" className="text-lg font-semibold text-[#F5F5F0]">Log new item</h2>
             <p className="mt-1 text-sm text-[#F5F5F0]/55">
               Photo is sent to Claude to suggest a name, description, and value tier. Edit before saving.
             </p>
@@ -237,26 +238,13 @@ export function LogItemForm({ onClose, onSaved }: Props) {
               required
             />
             {aiStatus === "loading" ? (
-              <p className="inline-flex items-center gap-2 text-xs text-[#F5F5F0]/55">
+              <p role="status" className="inline-flex items-center gap-2 text-xs text-[#F5F5F0]/55">
                 <Spinner className="h-3.5 w-3.5 text-brand" />
                 Generating description…
               </p>
             ) : aiStatus === "failed" ? (
-              <p className="text-xs text-amber-400/80">AI unavailable — please describe the item manually</p>
+              <p role="status" className="text-xs text-amber-400/80">AI unavailable — please describe the item manually</p>
             ) : null}
-          </label>
-
-          <label className="block space-y-2">
-            <span className="text-sm text-[#F5F5F0]/80">Value tier</span>
-            <select
-              value={valueTier}
-              onChange={(e) => setValueTier(e.target.value as ValueTier)}
-              className="w-full rounded-xl border border-white/10 bg-black/40 px-4 py-2.5 text-[#F5F5F0] outline-none focus:border-brand/50 focus:ring-2 focus:ring-brand/30"
-            >
-              <option value="low_value">Low value — students see an unblurred photo</option>
-              <option value="high_value">High value — photo blurred until description matches</option>
-            </select>
-            <p className="text-xs text-[#F5F5F0]/60">Set by AI; change here if the classification looks wrong.</p>
           </label>
 
           <label className="block space-y-2">
@@ -294,7 +282,7 @@ export function LogItemForm({ onClose, onSaved }: Props) {
             <p className="text-xs text-[#F5F5F0]/60">Students must enter this PIN to submit a claim.</p>
           </label>
 
-          {error ? <p className="text-sm text-red-400">{error}</p> : null}
+          {error ? <p role="alert" className="text-sm text-red-400">{error}</p> : null}
 
           <div className="flex justify-end gap-2 pt-2">
             <button

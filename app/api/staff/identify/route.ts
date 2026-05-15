@@ -1,3 +1,4 @@
+import * as Sentry from "@sentry/nextjs";
 import { NextResponse } from "next/server";
 import { getStaffSession } from "@/lib/staff-api";
 import {
@@ -6,52 +7,16 @@ import {
   getAnthropicModel,
   parseJsonFromModel,
 } from "@/lib/anthropic";
-import { parseValueTier } from "@/lib/value-tier";
 
 export const maxDuration = 30;
 
 const SYSTEM_PROMPT = `You analyze photos for a university lost-and-found desk. Respond with ONLY valid JSON (no markdown fences) in exactly this shape:
-{"name":"...","description":"...","color":"...","value_tier":"low_value" or "high_value"}
+{"name":"...","description":"...","color":"..."}
 
 FIELD RULES:
+- "name": Short generic name for the item (e.g. "Laptop", "Water bottle", "Hoodie"). Never include brand or model.
 - "description": Brief description with color and distinguishing features (wear, stickers, text, material).
-- "color": Primary color as a short phrase (e.g. "black", "navy blue").
-
-VALUE TIER — classify every item as "low_value" or "high_value". If uncertain, use "high_value".
-
-HIGH_VALUE (expensive, sensitive, or easily resold — student-facing listing will hide photo detail):
-- Laptops, tablets, iPads
-- Phones, smartphones
-- Cameras, lenses
-- Wallets, purses
-- AirPods, headphones, earbuds
-- Jewelry, watches
-- Passports, IDs
-- Graphing calculators
-- External hard drives, USB drives
-- Designer-looking sunglasses
-
-For HIGH_VALUE items, "name" MUST be maximally generic (no brand/model in the name). Examples:
-- "Laptop" not "MacBook Pro"
-- "Headphones" not "AirPods Pro"
-- "Phone" not "iPhone 14"
-- "Wallet" not "Brown leather bifold wallet"
-- "Watch" not "Apple Watch Series 8"
-
-LOW_VALUE (common left-behinds — photo can be shown clearly):
-- Water bottles, mugs, cups
-- Umbrellas
-- Jackets, hoodies, sweaters
-- Keys without expensive fobs
-- Notebooks, textbooks, folders
-- Hats, caps, beanies
-- Chargers, cables
-- Scarves, gloves
-- Reusable bags, plain totes
-- Shoes
-
-For LOW_VALUE items, "name" may be slightly descriptive (still short):
-- "Blue water bottle", "Black umbrella", "Gray hoodie", "House keys"`;
+- "color": Primary color as a short phrase (e.g. "black", "navy blue").`;
 
 type MediaType = "image/jpeg" | "image/png" | "image/gif" | "image/webp";
 
@@ -63,7 +28,7 @@ function toMediaType(mime: string): MediaType {
 async function callAnthropic(base64: string, mediaType: MediaType) {
   const client = getAnthropicClient();
   return client.messages.create({
-    model: getAnthropicModel(),
+    model: getAnthropicModel("PHOTO_ANALYSIS"),
     max_tokens: 1024,
     system: SYSTEM_PROMPT,
     messages: [
@@ -71,7 +36,7 @@ async function callAnthropic(base64: string, mediaType: MediaType) {
         role: "user",
         content: [
           { type: "image", source: { type: "base64", media_type: mediaType, data: base64 } },
-          { type: "text", text: "Analyze this lost item photo. Output only the JSON object with name, description, color, and value_tier." },
+          { type: "text", text: "Analyze this lost item photo. Output only the JSON object with name, description, and color." },
         ],
       },
     ],
@@ -82,9 +47,14 @@ async function callAnthropicWithRetry(base64: string, mediaType: MediaType) {
   try {
     return await callAnthropic(base64, mediaType);
   } catch (err) {
-    console.error("[identify] Anthropic call failed, retrying in 2s:", err);
+    console.error("[identify] call failed, retrying in 2s:", (err as { message?: string })?.message);
     await new Promise((r) => setTimeout(r, 2000));
-    return await callAnthropic(base64, mediaType);
+    try {
+      return await callAnthropic(base64, mediaType);
+    } catch (retryErr) {
+      Sentry.captureException(retryErr, { tags: { route: "identify", phase: "retry" } });
+      throw retryErr;
+    }
   }
 }
 
@@ -127,15 +97,15 @@ export async function POST(req: Request) {
     const name = typeof o.name === "string" ? o.name.trim() : "";
     const description = typeof o.description === "string" ? o.description.trim() : "";
     const color = typeof o.color === "string" ? o.color.trim() : "";
-    const value_tier = parseValueTier(o.value_tier);
 
-    if (!name || !description || !color || !value_tier) {
+    if (!name || !description || !color) {
       return NextResponse.json({ description: "" });
     }
 
-    return NextResponse.json({ name, description, color, value_tier });
+    return NextResponse.json({ name, description, color });
   } catch (err) {
-    console.error("[identify] Anthropic call failed after retry:", err);
+    console.error("[identify] call failed after retry:", (err as { message?: string })?.message);
+    Sentry.captureException(err, { tags: { route: "identify" } });
     return NextResponse.json({ description: "" });
   }
 }

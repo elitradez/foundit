@@ -1,8 +1,20 @@
 import Anthropic from "@anthropic-ai/sdk";
 import type { Message } from "@anthropic-ai/sdk/resources/messages/messages";
+import { ANTHROPIC_MODELS, DEFAULT_MODELS, type AnthropicModel } from "@/lib/models";
 
-export function getAnthropicModel(): string {
-  return process.env.ANTHROPIC_MODEL ?? "claude-opus-4-5";
+const VALID_MODELS = new Set<string>(Object.values(ANTHROPIC_MODELS));
+
+export function getAnthropicModel(purpose: keyof typeof DEFAULT_MODELS = "PHOTO_ANALYSIS"): AnthropicModel {
+  const raw = process.env.ANTHROPIC_MODEL?.trim();
+  if (raw) {
+    if (!VALID_MODELS.has(raw)) {
+      throw new Error(
+        `ANTHROPIC_MODEL "${raw}" is not a recognised model ID. Valid values: ${[...VALID_MODELS].join(", ")}`
+      );
+    }
+    return raw as AnthropicModel;
+  }
+  return DEFAULT_MODELS[purpose];
 }
 
 export function getAnthropicClient(): Anthropic {

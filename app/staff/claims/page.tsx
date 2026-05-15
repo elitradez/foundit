@@ -119,14 +119,10 @@ export default async function StaffClaimsInboxPage() {
 
   return (
     <div className="min-h-screen bg-[#0c0c0c] text-[#F5F5F0]">
-      <style>{`
-        details.claim-modal:not([open]) .claim-modal__overlay { display: none; }
-      `}</style>
-
       <header className="border-b border-white/10 bg-[#0c0c0c]/90 backdrop-blur">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-4">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-wider text-brand">Staff</p>
+            <p className="text-xs font-semibold uppercase tracking-wider text-[#FF4444]">Staff</p>
             <h1 className="text-xl font-semibold">Claims inbox</h1>
           </div>
           <nav aria-label="Site navigation" className="flex items-center gap-2">
