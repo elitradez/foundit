@@ -533,7 +533,7 @@ export function StaffDashboard({
         type="button"
         onClick={() => setTab(id)}
         aria-current={active ? "true" : undefined}
-        className={`inline-flex min-h-9 items-center rounded px-3 py-1.5 text-sm font-medium transition ${
+        className={`inline-flex min-h-9 flex-shrink-0 items-center rounded px-3 py-1.5 text-sm font-medium transition ${
           active
             ? "bg-[#CC0000] text-white"
             : "text-white/75 hover:bg-white/10 hover:text-white"
@@ -609,10 +609,12 @@ export function StaffDashboard({
               Log new item
             </button>
             <div className="h-5 w-px bg-white/20" />
-            <TabButton id="active" label="Active Items" />
-            <TabButton id="claims" label="Claims" />
-            <TabButton id="log" label="Student Log" />
-            <TabButton id="surplus" label="Surplus" />
+            <div className="overflow-x-auto whitespace-nowrap">
+              <TabButton id="active" label="Active Items" />
+              <TabButton id="claims" label="Claims" />
+              <TabButton id="log" label="Student Log" />
+              <TabButton id="surplus" label="Surplus" />
+            </div>
             <div className="h-5 w-px bg-white/20" />
             <a
               href="/staff/analytics"
