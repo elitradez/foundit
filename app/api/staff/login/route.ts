@@ -4,6 +4,7 @@ import { createAdminSupabaseClient } from "@/lib/supabase-admin";
 import { createStaffSessionToken } from "@/lib/staff-token";
 import { verifyPin } from "@/lib/pin";
 import { getUniversityId } from "@/lib/university-config";
+import { loginLimiter, getClientIp, isRateLimited } from "@/lib/ratelimit";
 
 type DepartmentRow = {
   id: string;
@@ -15,6 +16,13 @@ type DepartmentRow = {
 };
 
 export async function POST(req: Request) {
+  if (await isRateLimited(loginLimiter, getClientIp(req))) {
+    return NextResponse.json(
+      { error: "Too many attempts. Please try again in a minute." },
+      { status: 429 }
+    );
+  }
+
   try {
     const body = (await req.json()) as { password?: string };
     const password = body.password?.trim();

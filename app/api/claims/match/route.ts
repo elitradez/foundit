@@ -7,6 +7,7 @@ import {
   getAnthropicModel,
   parseJsonFromModel,
 } from "@/lib/anthropic";
+import { aiLimiter, getClientIp, isRateLimited } from "@/lib/ratelimit";
 
 const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
 type CacheEntry = { score: number; revealUrl: string | null; ts: number };
@@ -17,6 +18,13 @@ function getCacheKey(itemId: string, description: string): string {
 }
 
 export async function POST(req: Request) {
+  if (await isRateLimited(aiLimiter, getClientIp(req))) {
+    return NextResponse.json(
+      { error: "Too many requests. Please try again in a minute." },
+      { status: 429 }
+    );
+  }
+
   try {
     const body = (await req.json()) as { itemId?: string; studentDescription?: string };
     const itemId = body.itemId?.trim();

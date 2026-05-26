@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createAdminSupabaseClient } from "@/lib/supabase-admin";
 import { getUniversityId } from "@/lib/university-config";
+import { aiLimiter, getClientIp, isRateLimited } from "@/lib/ratelimit";
 
 type SearchBody = { query?: string };
 
@@ -38,6 +39,13 @@ function extractDate(query: string): string | null {
 }
 
 export async function POST(req: Request) {
+  if (await isRateLimited(aiLimiter, getClientIp(req))) {
+    return NextResponse.json(
+      { error: "Too many requests. Please try again in a minute." },
+      { status: 429 }
+    );
+  }
+
   try {
     const body = (await req.json().catch(() => ({}))) as SearchBody;
     const query = body.query?.trim() ?? "";
