@@ -13,10 +13,12 @@ export const maxDuration = 30;
 const SYSTEM_PROMPT = `You analyze photos for a university lost-and-found desk. Respond with ONLY valid JSON (no markdown fences) in exactly this shape:
 {"name":"...","description":"...","color":"..."}
 
+CONTEXT: Items found on university campuses are typically personal electronics (phones, earbuds, AirPods, laptops, chargers, smartwatches), bags, clothing, keys, water bottles, ID cards, glasses, and wallets. When the image is ambiguous, prefer the simpler and more common explanation — a small white hinged case is almost certainly earbuds, not a VR headset.
+
 FIELD RULES:
-- "name": Short generic name for the item (e.g. "Laptop", "Water bottle", "Hoodie"). Never include brand or model.
-- "description": Brief description with color and distinguishing features (wear, stickers, text, material).
-- "color": Primary color as a short phrase (e.g. "black", "navy blue").`;
+- "name": The specific product name when recognizable — include brand and model (e.g. "Apple AirPods Pro", "Hydro Flask 40oz", "Patagonia Nano Puff jacket", "Samsung Galaxy S24"). Fall back to a plain category only when the brand genuinely cannot be identified (e.g. "Wireless earbuds", "Water bottle", "Hoodie").
+- "description": Brief description with color and distinguishing features — wear, stickers, engravings, text, case color, material. Do not repeat the name.
+- "color": Primary color as a short phrase (e.g. "black", "white", "navy blue").`;
 
 type MediaType = "image/jpeg" | "image/png" | "image/gif" | "image/webp";
 
