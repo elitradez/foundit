@@ -6,7 +6,6 @@ export const dynamic = "force-dynamic";
 
 export async function GET() {
   const model = getAnthropicModel();
-  const start = Date.now();
 
   try {
     const client = getAnthropicClient();
@@ -26,26 +25,8 @@ export async function GET() {
       clearTimeout(timeout);
     }
 
-    return NextResponse.json(
-      {
-        status: "ok",
-        model,
-        latency_ms: Date.now() - start,
-        admin_secret_configured: !!process.env.ADMIN_API_SECRET?.trim(),
-      },
-      { status: 200 }
-    );
-  } catch (err) {
-    const e = err as { message?: string; status?: number; name?: string };
-    return NextResponse.json(
-      {
-        status: "error",
-        model,
-        latency_ms: Date.now() - start,
-        error: e?.message ?? "Unknown error",
-        code: e?.status,
-      },
-      { status: 500 }
-    );
+    return NextResponse.json({ status: "ok" }, { status: 200 });
+  } catch {
+    return NextResponse.json({ status: "error" }, { status: 500 });
   }
 }
