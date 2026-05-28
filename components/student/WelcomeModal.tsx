@@ -31,21 +31,9 @@ function readableTextColor(hex: string): string {
 }
 
 const STEPS = [
-  {
-    n: 1,
-    title: "Search for your item",
-    sub: "Type a name, color, or where you lost it.",
-  },
-  {
-    n: 2,
-    title: "Describe it to verify it is yours",
-    sub: "Add details only the owner would know.",
-  },
-  {
-    n: 3,
-    title: "Get your pickup details",
-    sub: "We will tell you where and when to collect it.",
-  },
+  { n: 1, title: "Search for your item" },
+  { n: 2, title: "Describe it to prove it's yours" },
+  { n: 3, title: "Pick it up" },
 ];
 
 export function WelcomeModal({ universityName, brandColor, brandColorHover, onClose }: Props) {
@@ -60,7 +48,7 @@ export function WelcomeModal({ universityName, brandColor, brandColorHover, onCl
         inset: 0,
         zIndex: 60,
         display: "flex",
-        alignItems: "flex-end",
+        alignItems: "center",
         justifyContent: "center",
         backgroundColor: "rgba(0,0,0,0.5)",
         padding: 16,
@@ -142,23 +130,23 @@ export function WelcomeModal({ universityName, brandColor, brandColorHover, onCl
 
         {/* Body */}
         <div style={{ padding: 20, display: "flex", flexDirection: "column", gap: 16 }}>
-          <p id="welcome-desc" style={{ fontSize: 14, color: "#333333", lineHeight: 1.5, margin: 0 }}>
-            Here is how to get your item back in three quick steps.
+          <p id="welcome-desc" style={{ fontSize: 17, color: "#1a1a1a", fontWeight: 600, lineHeight: 1.4, margin: 0 }}>
+            Get your item back in three steps.
           </p>
 
-          <ol style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: 12 }}>
+          <ol style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: 18 }}>
             {STEPS.map((s) => (
-              <li key={s.n} style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
+              <li key={s.n} style={{ display: "flex", alignItems: "center", gap: 16 }}>
                 <span
                   aria-hidden="true"
                   style={{
                     flexShrink: 0,
-                    width: 26,
-                    height: 26,
+                    width: 38,
+                    height: 38,
                     borderRadius: "50%",
                     backgroundColor: brandColor,
                     color: buttonTextColor,
-                    fontSize: 13,
+                    fontSize: 18,
                     fontWeight: 700,
                     display: "flex",
                     alignItems: "center",
@@ -167,12 +155,9 @@ export function WelcomeModal({ universityName, brandColor, brandColorHover, onCl
                 >
                   {s.n}
                 </span>
-                <div>
-                  <p style={{ fontSize: 14, fontWeight: 600, color: "#1a1a1a", margin: "2px 0 2px", lineHeight: 1.3 }}>
-                    {s.title}
-                  </p>
-                  <p style={{ fontSize: 13, color: "#333333", margin: 0, lineHeight: 1.4 }}>{s.sub}</p>
-                </div>
+                <p style={{ fontSize: 21, fontWeight: 700, color: "#1a1a1a", margin: 0, lineHeight: 1.25 }}>
+                  {s.title}
+                </p>
               </li>
             ))}
           </ol>
