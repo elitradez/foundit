@@ -30,7 +30,7 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function Home() {
   let items: PublicItem[] = [];
   let loadError: string | null = null;
-  const { name: universityName } = getUniversityConfig();
+  const { name: universityName, brandColor, brandColorHover } = getUniversityConfig();
   try {
     items = await fetchActiveItemsForPublic();
   } catch (e) {
@@ -43,6 +43,8 @@ export default async function Home() {
       initialItems={items}
       loadError={loadError}
       universityName={universityName}
+      brandColor={brandColor}
+      brandColorHover={brandColorHover}
       departments={departments}
     />
   );
