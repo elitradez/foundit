@@ -3,7 +3,12 @@
 import Link from "next/link";
 import { useFocusTrap } from "@/lib/useFocusTrap";
 
-const FONT = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+// Single sans across the app (see DESIGN.md). Uses the app's --font-sans token.
+const FONT = "var(--font-sans)";
+const TEXT = "#1F2328"; // near-black, never pure black
+const MUTED = "#656D76"; // muted text, AA on white (~5.2:1)
+const HAIRLINE = "rgba(0,0,0,0.06)";
+const OUTLINE = "rgba(0,0,0,0.18)"; // step numeral outline
 
 type Props = {
   universityName: string;
@@ -27,7 +32,7 @@ function readableTextColor(hex: string): string {
   const b = int & 0xff;
   // Relative luminance (sRGB). Bright backgrounds get dark text.
   const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
-  return luminance > 0.6 ? "#1a1a1a" : "#FFFFFF";
+  return luminance > 0.6 ? TEXT : "#FFFFFF";
 }
 
 const STEPS = [
@@ -68,13 +73,14 @@ export function WelcomeModal({ universityName, brandColor, brandColorHover, onCl
         style={{
           maxHeight: "92vh",
           width: "100%",
-          maxWidth: 480,
+          maxWidth: 440,
           overflowY: "auto",
           backgroundColor: "#FFFFFF",
-          border: "1px solid #E5E5E5",
-          borderRadius: 8,
-          boxShadow: "0 20px 60px rgba(0,0,0,0.2)",
+          border: `1px solid ${HAIRLINE}`,
+          borderRadius: 12,
+          boxShadow: "0 0 0 1px rgba(0,0,0,0.05), 0 12px 24px rgba(0,0,0,0.1)",
           fontFamily: FONT,
+          letterSpacing: "-0.011em",
         }}
       >
         {/* Header */}
@@ -84,25 +90,25 @@ export function WelcomeModal({ universityName, brandColor, brandColorHover, onCl
             alignItems: "flex-start",
             justifyContent: "space-between",
             gap: 12,
-            borderBottom: "1px solid #E5E5E5",
-            padding: "18px 20px",
+            borderBottom: `1px solid ${HAIRLINE}`,
+            padding: "20px 24px",
           }}
         >
           <div>
             <p
               style={{
-                color: brandColor,
+                color: MUTED,
                 fontSize: 11,
-                fontWeight: 600,
-                letterSpacing: "0.12em",
+                fontWeight: 500,
+                letterSpacing: "0.08em",
                 textTransform: "uppercase",
                 lineHeight: 1.3,
-                margin: "0 0 2px",
+                margin: "0 0 4px",
               }}
             >
               {universityName}
             </p>
-            <h2 id="welcome-title" style={{ fontSize: 19, fontWeight: 600, color: "#1a1a1a", margin: 0 }}>
+            <h2 id="welcome-title" style={{ fontSize: 19, fontWeight: 500, color: TEXT, margin: 0, letterSpacing: "-0.011em" }}>
               Lost something? Start here.
             </h2>
           </div>
@@ -111,43 +117,54 @@ export function WelcomeModal({ universityName, brandColor, brandColorHover, onCl
             onClick={onClose}
             aria-label="Close welcome dialog"
             style={{
-              minHeight: 36,
-              minWidth: 36,
-              padding: "6px 12px",
-              backgroundColor: "#FFFFFF",
-              border: "1px solid #E5E5E5",
-              borderRadius: 4,
+              flexShrink: 0,
+              minHeight: 32,
+              minWidth: 32,
+              padding: "4px 8px",
+              backgroundColor: "transparent",
+              border: `1px solid ${HAIRLINE}`,
+              borderRadius: 6,
               fontSize: 16,
               lineHeight: 1,
-              color: "#333333",
+              color: MUTED,
               cursor: "pointer",
               fontFamily: FONT,
+              transition: "background-color 150ms ease-out, transform 150ms ease-out",
             }}
+            onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "rgba(0,0,0,0.04)")}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = "transparent";
+              e.currentTarget.style.transform = "none";
+            }}
+            onMouseDown={(e) => (e.currentTarget.style.transform = "scale(0.98)")}
+            onMouseUp={(e) => (e.currentTarget.style.transform = "none")}
           >
             &times;
           </button>
         </div>
 
         {/* Body */}
-        <div style={{ padding: 20, display: "flex", flexDirection: "column", gap: 16 }}>
-          <p id="welcome-desc" style={{ fontSize: 17, color: "#1a1a1a", fontWeight: 600, lineHeight: 1.4, margin: 0 }}>
+        <div style={{ padding: "20px 24px 24px", display: "flex", flexDirection: "column", gap: 20 }}>
+          <p id="welcome-desc" style={{ fontSize: 17, color: MUTED, fontWeight: 400, lineHeight: 1.4, margin: 0 }}>
             Get your item back in three steps.
           </p>
 
-          <ol style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: 18 }}>
+          <ol style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: 16 }}>
             {STEPS.map((s) => (
-              <li key={s.n} style={{ display: "flex", alignItems: "center", gap: 16 }}>
+              <li key={s.n} style={{ display: "flex", alignItems: "center", gap: 12 }}>
                 <span
                   aria-hidden="true"
                   style={{
                     flexShrink: 0,
-                    width: 38,
-                    height: 38,
+                    width: 24,
+                    height: 24,
                     borderRadius: "50%",
-                    backgroundColor: brandColor,
-                    color: buttonTextColor,
+                    border: `1px solid ${OUTLINE}`,
+                    backgroundColor: "transparent",
+                    color: MUTED,
                     fontSize: 18,
-                    fontWeight: 700,
+                    fontWeight: 500,
+                    lineHeight: 1,
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
@@ -155,14 +172,14 @@ export function WelcomeModal({ universityName, brandColor, brandColorHover, onCl
                 >
                   {s.n}
                 </span>
-                <p style={{ fontSize: 21, fontWeight: 700, color: "#1a1a1a", margin: 0, lineHeight: 1.25 }}>
+                <p style={{ fontSize: 21, fontWeight: 500, color: TEXT, margin: 0, lineHeight: 1.25, letterSpacing: "-0.011em" }}>
                   {s.title}
                 </p>
               </li>
             ))}
           </ol>
 
-          {/* Primary action */}
+          {/* Primary action — the single brand-colored surface */}
           <button
             type="button"
             onClick={onClose}
@@ -175,24 +192,30 @@ export function WelcomeModal({ universityName, brandColor, brandColorHover, onCl
               backgroundColor: brandColor,
               color: buttonTextColor,
               fontSize: 15,
-              fontWeight: 600,
+              fontWeight: 500,
               border: "none",
               borderRadius: 6,
               cursor: "pointer",
               fontFamily: FONT,
-              transition: "background-color 0.15s",
+              letterSpacing: "-0.011em",
+              transition: "background-color 150ms ease-out, transform 150ms ease-out",
             }}
             onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = brandColorHover)}
-            onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = brandColor)}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = brandColor;
+              e.currentTarget.style.transform = "none";
+            }}
+            onMouseDown={(e) => (e.currentTarget.style.transform = "scale(0.98)")}
+            onMouseUp={(e) => (e.currentTarget.style.transform = "none")}
           >
             Continue to items
           </button>
 
-          {/* Discreet staff link */}
-          <p style={{ textAlign: "center", margin: "2px 0 0" }}>
+          {/* Discreet staff link — muted ghost text, not a button */}
+          <p style={{ textAlign: "center", margin: 0 }}>
             <Link
               href="/staff/login"
-              style={{ fontSize: 12, color: "#888888", textDecoration: "none" }}
+              style={{ fontSize: 12, fontWeight: 400, color: MUTED, textDecoration: "none" }}
               onMouseEnter={(e) => (e.currentTarget.style.textDecoration = "underline")}
               onMouseLeave={(e) => (e.currentTarget.style.textDecoration = "none")}
             >
