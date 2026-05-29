@@ -1,23 +1,28 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { Work_Sans } from "next/font/google";
 import { useFocusTrap } from "@/lib/useFocusTrap";
 
-// Work Sans (humanist sans) carries the "human" feel. Self-hosted via next/font,
-// scoped to this component so no change to app/layout.tsx is needed.
-const workSans = Work_Sans({ subsets: ["latin"], weight: ["400", "500"], display: "swap" });
+// Work Sans (humanist sans). Self-hosted via next/font, scoped to this
+// component so no change to app/layout.tsx is needed.
+const workSans = Work_Sans({ subsets: ["latin"], weight: ["400", "500", "600"], display: "swap" });
 const FONT = workSans.style.fontFamily;
-const TEXT = "#1F2328"; // near-black, never pure black
-const MUTED = "#62666D"; // muted grey, AA on white
-const INK_HOVER = "#2E333B"; // near-black button hover (slightly lighter)
-const HAIRLINE = "rgba(0,0,0,0.06)";
-const OUTLINE = "rgba(0,0,0,0.18)"; // neutral step numeral outline
 
-// Per-tenant logo sourcing. No tenant logo field exists in config yet, so this
-// reads an optional public env var; when unset we fall back to the name.
-// A real `logoUrl` should be promoted to getUniversityConfig() (see PR note).
-const LOGO_URL = process.env.NEXT_PUBLIC_UNIVERSITY_LOGO_URL?.trim() || null;
+// Per-tenant logo. Sourced from a single swappable constant for now; this
+// should be promoted to a `logoUrl` field in university-config.ts for real
+// multi-tenancy (see PR note). The file is a neutral placeholder, not the
+// official licensed University of Utah mark.
+const LOGO_SRC = "/logos/university-of-utah.svg";
+
+const TEXT = "#1A1A1A"; // near-black ink
+const MUTED = "#6E6E6E"; // muted grey (AA on white, ~5.1:1)
+const STAFF = "#767676"; // staff link grey — nearest AA-compliant to spec's #9A9A9A
+const STAFF_HOVER = "#1A1A1A";
+const BRAND = "#CC0000"; // school red — the single accent, white text passes AA (~5.9:1)
+const BRAND_HOVER = "#B30000";
+const HAIRLINE = "rgba(0,0,0,0.08)";
 
 type Props = {
   universityName: string;
@@ -29,12 +34,12 @@ type Props = {
 };
 
 const STEPS = [
-  { n: 1, title: "Search for your item" },
-  { n: 2, title: "Describe it to prove it's yours" },
-  { n: 3, title: "Pick it up" },
+  { n: 1, title: "Search for your item", desc: "Browse what's been turned in across campus." },
+  { n: 2, title: "Describe it to prove it's yours", desc: "A detail or two only the owner would know." },
+  { n: 3, title: "Pick it up", desc: "Grab it from the nearest collection point." },
 ];
 
-export function WelcomeModal({ universityName, brandColor, onClose }: Props) {
+export function WelcomeModal({ universityName, onClose }: Props) {
   const dialogRef = useFocusTrap<HTMLDivElement>(true, onClose);
 
   return (
@@ -77,156 +82,131 @@ export function WelcomeModal({ universityName, brandColor, onClose }: Props) {
         style={{
           maxHeight: "92vh",
           width: "100%",
-          maxWidth: 420,
+          maxWidth: 460,
           overflowY: "auto",
           backgroundColor: "#FFFFFF",
           border: `1px solid ${HAIRLINE}`,
-          borderRadius: 10,
-          boxShadow: "0 0 0 1px rgba(0,0,0,0.05), 0 12px 28px rgba(0,0,0,0.1)",
+          borderRadius: 16,
+          boxShadow: "0 1px 2px rgba(0,0,0,0.04), 0 16px 40px rgba(0,0,0,0.10)",
           fontFamily: FONT,
-          letterSpacing: "-0.011em",
         }}
       >
-        {/* Header: tenant logo (or name fallback) + close */}
-        <div
-          style={{
-            display: "flex",
-            alignItems: "flex-start",
-            justifyContent: "space-between",
-            gap: 12,
-            padding: "24px 24px 0",
-          }}
-        >
-          {LOGO_URL ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={LOGO_URL}
-              alt={universityName}
-              style={{ height: 32, width: "auto", display: "block" }}
-            />
-          ) : (
-            <p style={{ fontSize: 16, fontWeight: 500, color: TEXT, margin: 0, letterSpacing: "-0.011em" }}>
-              {universityName}
-            </p>
-          )}
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="Close welcome dialog"
-            style={{
-              flexShrink: 0,
-              minHeight: 32,
-              minWidth: 32,
-              padding: "4px 8px",
-              backgroundColor: "transparent",
-              border: `1px solid ${HAIRLINE}`,
-              borderRadius: 6,
-              fontSize: 16,
-              lineHeight: 1,
-              color: MUTED,
-              cursor: "pointer",
-              fontFamily: FONT,
-              transition: "background-color 150ms ease-out, transform 150ms ease-out",
-            }}
-            onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "rgba(0,0,0,0.04)")}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = "transparent";
-              e.currentTarget.style.transform = "none";
-            }}
-            onMouseDown={(e) => (e.currentTarget.style.transform = "scale(0.98)")}
-            onMouseUp={(e) => (e.currentTarget.style.transform = "none")}
-          >
-            &times;
-          </button>
+        {/* 1. Header: logo + institution name */}
+        <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "20px 24px" }}>
+          <Image
+            src={LOGO_SRC}
+            alt={universityName}
+            width={28}
+            height={28}
+            unoptimized
+            style={{ height: 28, width: "auto", display: "block" }}
+          />
+          <span style={{ fontSize: 15, fontWeight: 500, color: TEXT, letterSpacing: "-0.005em" }}>
+            {universityName}
+          </span>
         </div>
 
-        {/* Body */}
-        <div style={{ padding: "16px 24px 24px", display: "flex", flexDirection: "column", gap: 20 }}>
-          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            <h2 id="welcome-title" style={{ fontSize: 21, fontWeight: 500, color: TEXT, margin: 0, lineHeight: 1.25, letterSpacing: "-0.011em" }}>
-              Lost something? Let&apos;s find it.
-            </h2>
-            <p id="welcome-desc" style={{ fontSize: 17, color: MUTED, fontWeight: 400, lineHeight: 1.45, margin: 0 }}>
-              Three quick steps and it&apos;s back in your hands.
-            </p>
-          </div>
+        {/* 2. Full-width hairline divider */}
+        <div style={{ height: 1, backgroundColor: HAIRLINE }} />
 
-          <ol style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: 16 }}>
-            {STEPS.map((s, i) => {
-              const isFirst = i === 0; // the one branded touch: first step's numeral
-              return (
-                <li key={s.n} style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                  <span
-                    aria-hidden="true"
-                    style={{
-                      flexShrink: 0,
-                      width: 24,
-                      height: 24,
-                      borderRadius: "50%",
-                      border: `1px solid ${isFirst ? brandColor : OUTLINE}`,
-                      backgroundColor: "transparent",
-                      color: isFirst ? brandColor : MUTED,
-                      fontSize: 18,
-                      fontWeight: 500,
-                      lineHeight: 1,
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                    }}
-                  >
-                    {s.n}
-                  </span>
-                  <p style={{ fontSize: 21, fontWeight: 500, color: TEXT, margin: 0, lineHeight: 1.25, letterSpacing: "-0.011em" }}>
-                    {s.title}
-                  </p>
-                </li>
-              );
-            })}
+        {/* Content */}
+        <div style={{ padding: 24 }}>
+          {/* 3. Headline */}
+          <h2
+            id="welcome-title"
+            style={{ fontSize: 28, fontWeight: 700, color: TEXT, margin: 0, letterSpacing: "-0.02em", lineHeight: 1.12 }}
+          >
+            Lost something? Let&apos;s find it.
+          </h2>
+          {/* 4. Subhead */}
+          <p id="welcome-desc" style={{ fontSize: 14, fontWeight: 400, color: MUTED, margin: "8px 0 0", lineHeight: 1.45 }}>
+            Everything turned in across campus, in one place.
+          </p>
+
+          {/* 5. Numbered ledger list */}
+          <ol
+            style={{
+              listStyle: "none",
+              margin: "20px 0 0",
+              padding: 0,
+              borderBottom: `1px solid ${HAIRLINE}`,
+            }}
+          >
+            {STEPS.map((s) => (
+              <li
+                key={s.n}
+                style={{
+                  display: "flex",
+                  gap: 12,
+                  padding: "13px 0",
+                  borderTop: `1px solid ${HAIRLINE}`,
+                }}
+              >
+                <span
+                  aria-hidden="true"
+                  style={{
+                    flexShrink: 0,
+                    width: 20,
+                    fontSize: 15,
+                    fontWeight: 400,
+                    color: MUTED,
+                    lineHeight: 1.3,
+                    fontVariantNumeric: "tabular-nums",
+                  }}
+                >
+                  {s.n}.
+                </span>
+                <div>
+                  <p style={{ fontSize: 15, fontWeight: 600, color: TEXT, margin: 0, lineHeight: 1.3 }}>{s.title}</p>
+                  <p style={{ fontSize: 13, fontWeight: 400, color: MUTED, margin: "2px 0 0", lineHeight: 1.4 }}>{s.desc}</p>
+                </div>
+              </li>
+            ))}
           </ol>
 
-          {/* Primary action — near-black, not the brand color */}
-          <button
-            type="button"
-            onClick={onClose}
-            style={{
-              display: "inline-flex",
-              width: "100%",
-              alignItems: "center",
-              justifyContent: "center",
-              minHeight: 48,
-              backgroundColor: TEXT,
-              color: "#FFFFFF",
-              fontSize: 15,
-              fontWeight: 500,
-              border: "none",
-              borderRadius: 6,
-              cursor: "pointer",
-              fontFamily: FONT,
-              letterSpacing: "-0.011em",
-              transition: "background-color 150ms ease-out, transform 150ms ease-out",
-            }}
-            onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = INK_HOVER)}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = TEXT;
-              e.currentTarget.style.transform = "none";
-            }}
-            onMouseDown={(e) => (e.currentTarget.style.transform = "scale(0.98)")}
-            onMouseUp={(e) => (e.currentTarget.style.transform = "none")}
-          >
-            Continue to items
-          </button>
+          {/* 6. Footer: centered primary button, staff link beneath */}
+          <div style={{ marginTop: 24, display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>
+            <button
+              type="button"
+              onClick={onClose}
+              style={{
+                display: "inline-flex",
+                width: "100%",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 8,
+                minHeight: 48,
+                backgroundColor: BRAND,
+                color: "#FFFFFF",
+                fontSize: 15,
+                fontWeight: 600,
+                border: "none",
+                borderRadius: 9,
+                cursor: "pointer",
+                fontFamily: FONT,
+                transition: "background-color 150ms ease-out, transform 150ms ease-out",
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = BRAND_HOVER)}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = BRAND;
+                e.currentTarget.style.transform = "none";
+              }}
+              onMouseDown={(e) => (e.currentTarget.style.transform = "scale(0.98)")}
+              onMouseUp={(e) => (e.currentTarget.style.transform = "none")}
+            >
+              Continue to items
+              <span aria-hidden="true">&rarr;</span>
+            </button>
 
-          {/* Discreet staff link — muted ghost link, subordinate */}
-          <p style={{ textAlign: "center", margin: 0 }}>
             <Link
               href="/staff/login"
-              style={{ fontSize: 12, fontWeight: 400, color: MUTED, textDecoration: "none" }}
-              onMouseEnter={(e) => (e.currentTarget.style.textDecoration = "underline")}
-              onMouseLeave={(e) => (e.currentTarget.style.textDecoration = "none")}
+              style={{ fontSize: 12.5, fontWeight: 400, color: STAFF, textDecoration: "none", transition: "color 150ms ease-out" }}
+              onMouseEnter={(e) => (e.currentTarget.style.color = STAFF_HOVER)}
+              onMouseLeave={(e) => (e.currentTarget.style.color = STAFF)}
             >
               Staff login
             </Link>
-          </p>
+          </div>
         </div>
       </div>
     </div>

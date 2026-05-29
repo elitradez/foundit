@@ -45,9 +45,15 @@ A techy, crisp visual language for the foundit / Laika Campus app, but more huma
 - Respect `prefers-reduced-motion`.
 - **Focus**: a clearly visible focus ring (the app ships a global `:focus-visible` ring in brand via `app/globals.css`; keep it visible, never remove focus rings).
 
-## Step indicators
+## Step indicators (ledger pattern)
 
-- **Thin 24px outlined numerals** — a 24px circle, 1px border, numeral inside. **Not** solid colored circles. The current/first step's numeral may use the school accent color as the one branded touch; the rest stay neutral/muted.
+- Steps render as a **numbered ledger**: plain numerals (`1.` `2.` `3.`, muted grey, regular weight, `tabular-nums`) in a narrow left column, with a bold title and a muted description line beside them.
+- **Hairline rows**: a 1px `rgba(0,0,0,0.08)` divider above the first row, between every row, and below the last.
+- **Never colored circles**, no icons, no per-row hover affordances. The numerals stay neutral — the brand color does not appear on steps.
+
+## Brand color usage
+
+- Against an otherwise fully neutral layout, the brand color is used **exactly once: on the primary action button** (solid fill, white text). This restraint is the point — no second brand element (not in the logo treatment, not on steps, not on links).
 
 ## Copy
 
