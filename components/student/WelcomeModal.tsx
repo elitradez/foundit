@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { Work_Sans } from "next/font/google";
 import { useFocusTrap } from "@/lib/useFocusTrap";
@@ -9,12 +8,6 @@ import { useFocusTrap } from "@/lib/useFocusTrap";
 // component so no change to app/layout.tsx is needed.
 const workSans = Work_Sans({ subsets: ["latin"], weight: ["400", "500", "600"], display: "swap" });
 const FONT = workSans.style.fontFamily;
-
-// Per-tenant logo. Sourced from a single swappable constant for now; this
-// should be promoted to a `logoUrl` field in university-config.ts for real
-// multi-tenancy (see PR note). The file is a neutral placeholder, not the
-// official licensed University of Utah mark.
-const LOGO_SRC = "/logos/university-of-utah.svg";
 
 const TEXT = "#1A1A1A"; // near-black ink
 const MUTED = "#6E6E6E"; // muted grey (AA on white, ~5.1:1)
@@ -91,16 +84,8 @@ export function WelcomeModal({ universityName, onClose }: Props) {
           fontFamily: FONT,
         }}
       >
-        {/* 1. Header: logo + institution name */}
-        <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "20px 24px" }}>
-          <Image
-            src={LOGO_SRC}
-            alt={universityName}
-            width={28}
-            height={28}
-            unoptimized
-            style={{ height: 28, width: "auto", display: "block" }}
-          />
+        {/* 1. Header: institution name */}
+        <div style={{ display: "flex", alignItems: "center", padding: "20px 24px" }}>
           <span style={{ fontSize: 15, fontWeight: 500, color: TEXT, letterSpacing: "-0.005em" }}>
             {universityName}
           </span>
