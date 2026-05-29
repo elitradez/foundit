@@ -1,51 +1,64 @@
 # Design System
 
-A restrained, content-first visual language for the foundit / Laika Campus app, inspired by Linear and Vercel. The goal: near-black text on neutral surfaces, the university brand color used sparingly as an accent, generous-but-tight spacing, and quiet micro-interactions. Multi-tenant: the brand color is sourced per university from `getUniversityConfig().brandColor` (never hardcode a single brand color).
+A techy, crisp visual language for the foundit / Laika Campus app, but more human than Vercel/Stripe. Clean white canvas, precise structure, humanist type, and one restrained use of the tenant's school color. Multi-tenant: the brand color is sourced per university from `getUniversityConfig().brandColor` (never hardcode a single brand color).
 
-## Color
+## Canvas
 
-- **Text**: near-black `#1F2328` (never pure black). Muted/secondary text `#656D76` (AA on white, ~5.2:1).
-- **Surfaces**: white `#FFFFFF` and neutral greys. No solid brand fills on large areas.
-- **Brand**: the university color (e.g. U of U `#CC0000`) is an **accent only**. Follow 60/30/10 — at most ~10% of any view is brand, and the brand *surface* area in a given component should be ~3%. In practice the brand color appears on a single primary CTA and the focus ring.
-- **Tinted brand backgrounds**: when a brand-tinted surface is needed, use 6–10% opacity of the brand color, never a solid brand fill.
+- **Clinical white** `#FFFFFF`. Crisp, precise, techy structure. No color walls, no large brand fills.
+
+## Ink (text)
+
+- **Primary**: near-black `#1F2328` (never pure black).
+- **Secondary/muted**: grey `#62666D` (AA on white).
 
 ## Type
 
-- A **single clean sans-serif** across the whole app. Currently the system sans stack via the `--font-sans` CSS variable. (Future enhancement: load **Inter** via `next/font` for crisper small sizes — requires a change to `app/layout.tsx`, out of scope for a single-component task.)
-- **No serif** anywhere.
-- **Weights 400 / 500 only.** 400 for body and muted text, 500 for titles and emphasis. Avoid 600+.
-- **Letter-spacing**: slight negative tracking `-0.011em` on body and larger text. Uppercase eyebrows/labels are the exception (positive tracking).
-- **Never reduce a text size below its current value** when restyling; readability and AA come first.
+- **Work Sans** — a humanist sans; it carries the "human" feel. Weights **400 / 500** only.
+- Slight **negative letter-spacing** (`-0.011em`) on large/heading text.
+- No serif. Never reduce a text size below its current value when restyling.
 
-## Radius
+## Geometry (rounded but not bubbly)
 
-- **6px** on buttons, inputs, and cards.
-- **12px** on modals/dialogs.
-- **Full** (`9999px` / `50%`) on avatars and pills.
+- **10px** on modals/dialogs.
+- **8px** on cards.
+- **6px** on buttons and inputs.
+- **Full** on avatars/pills.
+- Slightly rounder than pure-techy reads as friendlier.
+
+## Accent
+
+- The tenant's school color is **ONE restrained accent only** — the active/first step, a thin detail, or links. **Not** a fill, **not** a wall.
+- **Primary actions are near-black `#1F2328`**, not the brand color, with white text.
+- When a brand-tinted surface is genuinely needed, use 6–10% opacity, never a solid brand fill.
 
 ## Borders & Shadows
 
-- Prefer **1px low-opacity borders** `rgba(0,0,0,0.06)` over heavy shadows.
-- For elevation, use a **soft 2-layer shadow**:
-  `box-shadow: 0 0 0 1px rgba(0,0,0,0.05), 0 12px 24px rgba(0,0,0,0.1);`
+- Crisp **1px hairline borders** `rgba(0,0,0,0.06)`.
+- For gentle depth, a **soft 2-layer shadow**:
+  `box-shadow: 0 0 0 1px rgba(0,0,0,0.05), 0 12px 28px rgba(0,0,0,0.1);`
 
-## Micro-interactions
+## Motion (the human/techy line — lively but refined)
 
-- **Hover**: 150ms ease-out transitions.
+- **Hover**: 150ms ease-out.
 - **Active/press**: `transform: scale(0.98)`.
-- **Focus**: a visible **2px focus ring in the brand color at ~40% opacity**, offset 2px. (The app currently ships a global `:focus-visible` ring in solid brand via `app/globals.css`; keep it clearly visible. Do not remove focus rings.)
+- **Modal entrance**: opacity + `scale(0.97 → 1)` over ~200ms ease-out.
 - Respect `prefers-reduced-motion`.
+- **Focus**: a clearly visible focus ring (the app ships a global `:focus-visible` ring in brand via `app/globals.css`; keep it visible, never remove focus rings).
 
 ## Step indicators
 
-- **Thin 24px outlined numerals** — a 24px circle with a 1px neutral border and a muted numeral inside. **Not** solid colored circles. The brand color does not appear on step indicators.
+- **Thin 24px outlined numerals** — a 24px circle, 1px border, numeral inside. **Not** solid colored circles. The current/first step's numeral may use the school accent color as the one branded touch; the rest stay neutral/muted.
+
+## Copy
+
+- Warm and plain-spoken, never terse or robotic. **No em dashes.**
 
 ## Spacing
 
-- Lay out on a **4px grid** (4 / 8 / 12 / 16 / 20 / 24 …).
+- Lay out on a **4px grid** (4 / 8 / 12 / 16 / 20 / 24 …), with generous whitespace.
 
 ## Accessibility (non-negotiable)
 
-- Visual changes must never alter logic, auth, data flow, or RLS.
+- Visual changes never alter logic, auth, data flow, or RLS.
 - Preserve focus traps, ARIA dialog roles, keyboard navigation, and escape-to-close.
-- Every text/background pairing (brand CTA, tinted surfaces) must meet **WCAG AA** contrast (≥4.5:1 normal text, ≥3:1 large). If a brand shade fails, use the nearest compliant shade and flag it.
+- Every text/background pairing must meet **WCAG AA** (≥4.5:1 normal text, ≥3:1 large). The white canvas makes this easy; confirm the accent on white and the near-black button both pass. If a shade fails, use the nearest compliant shade and flag it.
