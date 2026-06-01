@@ -1,0 +1,108 @@
+import { categoryByKey, isSensitiveCategory, type CategoryKey } from "@/lib/retrieve/config";
+import { T } from "@/lib/retrieve/tokens";
+
+/** Deterministic gradient per category for placeholder "photos" (no binaries needed). */
+const GRADIENTS: Record<CategoryKey, [string, string]> = {
+  phone: ["#3A3F4B", "#1B1E26"],
+  wallet: ["#7A5C3E", "#4A3826"],
+  id: ["#3E5A7A", "#26384A"],
+  keys: ["#8A7A3E", "#4A4226"],
+  headphones: ["#4B4B5A", "#26262E"],
+  electronics: ["#3E6A6A", "#264242"],
+  bottle: ["#3E7A5C", "#264A38"],
+  clothing: ["#6A4B7A", "#42264A"],
+  bag: ["#7A4B4B", "#4A2626"],
+  jewelry: ["#7A6A3E", "#4A4026"],
+  eyewear: ["#4B5A6A", "#262E38"],
+  other: ["#5A5A5A", "#2E2E2E"],
+};
+
+/**
+ * Item photo surface. Renders a captured data-URL photo when present, otherwise
+ * a branded gradient placeholder with the category icon.
+ *
+ * Sensitive categories (ID / wallet / phone) are blurred by default with a
+ * "Protected" overlay, unless `reveal` is set (e.g. staff-side views).
+ */
+export function ItemPhoto({
+  category,
+  photo,
+  aspectRatio = "4 / 3",
+  reveal = false,
+  rounded = 0,
+}: {
+  category: CategoryKey;
+  photo: string | null;
+  aspectRatio?: string;
+  reveal?: boolean;
+  rounded?: number;
+}) {
+  const cat = categoryByKey(category);
+  const [g1, g2] = GRADIENTS[category] ?? GRADIENTS.other;
+  const blurred = isSensitiveCategory(category) && !reveal;
+
+  return (
+    <div
+      style={{
+        position: "relative",
+        width: "100%",
+        aspectRatio,
+        background: photo ? "#000" : `linear-gradient(135deg, ${g1}, ${g2})`,
+        overflow: "hidden",
+        borderRadius: rounded,
+      }}
+    >
+      {photo ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={photo}
+          alt=""
+          style={{
+            position: "absolute",
+            inset: 0,
+            width: "100%",
+            height: "100%",
+            objectFit: "cover",
+            filter: blurred ? "blur(18px)" : "none",
+            transform: blurred ? "scale(1.1)" : "none",
+          }}
+        />
+      ) : (
+        <div
+          aria-hidden
+          style={{
+            position: "absolute",
+            inset: 0,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            fontSize: 52,
+            filter: blurred ? "blur(14px)" : "none",
+            userSelect: "none",
+          }}
+        >
+          {cat.icon}
+        </div>
+      )}
+
+      {blurred ? (
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 4,
+            background: "rgba(18,18,18,0.28)",
+            color: T.heroForeground,
+          }}
+        >
+          <span aria-hidden style={{ fontSize: 18 }}>🔒</span>
+          <span style={{ fontSize: 12, fontWeight: 600, letterSpacing: "0.02em" }}>Protected</span>
+        </div>
+      ) : null}
+    </div>
+  );
+}

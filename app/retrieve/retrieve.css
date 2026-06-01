@@ -1,0 +1,90 @@
+/*
+ * Retrieve (gym tenant) — scoped styles.
+ * Everything here is namespaced under .retrieve-root so it cannot leak into the
+ * campus/university UI. No Tailwind re-import (globals.css already loads it).
+ */
+
+.retrieve-root {
+  /* Design tokens (HSL spec) */
+  --background: 0 0% 100%;
+  --foreground: 0 0% 7%;
+  --primary: 20 90% 50%; /* brand accent / wordmark / record button */
+  --primary-strong: 20 90% 42%; /* white-on-orange buttons — AA 4.60:1 */
+  --primary-foreground: 0 0% 100%;
+  --hero: 0 0% 7%;
+  --hero-foreground: 0 0% 100%;
+  --muted: 0 0% 95%;
+  --muted-foreground: 0 0% 40%;
+  --border: 0 0% 88%;
+  --radius: 1rem;
+
+  --font-display: "Space Grotesk", ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-body: "DM Sans", ui-sans-serif, system-ui, -apple-system, sans-serif;
+
+  background-color: hsl(var(--background));
+  color: hsl(var(--foreground));
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
+}
+
+.retrieve-root h1,
+.retrieve-root h2,
+.retrieve-root h3,
+.retrieve-root .font-display {
+  font-family: var(--font-display);
+}
+
+/* Signature record-button pulse halo */
+@keyframes retrieve-pulse-ring {
+  0% {
+    transform: scale(1);
+    opacity: 0.55;
+  }
+  70% {
+    transform: scale(1.7);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1.7);
+    opacity: 0;
+  }
+}
+.retrieve-pulse-ring {
+  animation: retrieve-pulse-ring 1.8s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+@keyframes retrieve-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.retrieve-fade-up {
+  animation: retrieve-fade-up 240ms ease-out both;
+}
+
+/* Visible focus ring in the gym brand color (scoped — does not touch campus) */
+.retrieve-root :focus-visible {
+  outline: 2px solid hsl(var(--primary-strong));
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+.retrieve-root input:focus-visible,
+.retrieve-root textarea:focus-visible,
+.retrieve-root select:focus-visible,
+.retrieve-root button:focus-visible {
+  outline: 2px solid hsl(var(--primary-strong));
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .retrieve-pulse-ring,
+  .retrieve-fade-up {
+    animation: none !important;
+  }
+}
