@@ -6,6 +6,8 @@
  * Supabase, or any env. All gym behavior is gated behind tenant_type === "gym".
  *
  * No database this pass — data is mocked in lib/retrieve/store.ts.
+ *
+ * Deploy marker: livefit-gym Vercel project (deploy trigger).
  */
 
 export type TenantType = "university" | "gym";
