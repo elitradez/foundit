@@ -39,7 +39,12 @@ export function ItemPhoto({
 }) {
   const cat = categoryByKey(category);
   const [g1, g2] = GRADIENTS[category] ?? GRADIENTS.other;
-  const blurred = isSensitiveCategory(category) && !reveal;
+  // Sensitive items (ID / wallet / phone) are never shown to non-staff. We do
+  // not request the photo at all in that case — the server route would 403
+  // anyway, but this avoids the request and any broken-image flash. Real
+  // enforcement is server-side; this is just the matching UI.
+  const sensitiveHidden = isSensitiveCategory(category) && !reveal;
+  const showImage = !!photo && !sensitiveHidden;
 
   return (
     <div
@@ -47,15 +52,15 @@ export function ItemPhoto({
         position: "relative",
         width: "100%",
         aspectRatio,
-        background: photo ? "#000" : `linear-gradient(135deg, ${g1}, ${g2})`,
+        background: showImage ? "#000" : `linear-gradient(135deg, ${g1}, ${g2})`,
         overflow: "hidden",
         borderRadius: rounded,
       }}
     >
-      {photo ? (
+      {showImage ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img
-          src={photo}
+          src={photo!}
           alt=""
           style={{
             position: "absolute",
@@ -63,8 +68,6 @@ export function ItemPhoto({
             width: "100%",
             height: "100%",
             objectFit: "cover",
-            filter: blurred ? "blur(18px)" : "none",
-            transform: blurred ? "scale(1.1)" : "none",
           }}
         />
       ) : (
@@ -77,7 +80,6 @@ export function ItemPhoto({
             alignItems: "center",
             justifyContent: "center",
             fontSize: 52,
-            filter: blurred ? "blur(14px)" : "none",
             userSelect: "none",
           }}
         >
@@ -85,7 +87,7 @@ export function ItemPhoto({
         </div>
       )}
 
-      {blurred ? (
+      {sensitiveHidden ? (
         <div
           style={{
             position: "absolute",

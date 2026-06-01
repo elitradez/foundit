@@ -1,6 +1,6 @@
 "use client";
 
-import { getRetrieveSupabase, RETRIEVE_PHOTO_BUCKET } from "@/lib/retrieve/supabase";
+import { getRetrieveSupabase } from "@/lib/retrieve/supabase";
 import type { CategoryKey } from "@/lib/retrieve/config";
 import type {
   ItemStatus,
@@ -24,13 +24,18 @@ type ItemRow = {
 
 function client() {
   const c = getRetrieveSupabase();
-  if (!c) throw new Error("Retrieve Supabase is not configured (missing NEXT_PUBLIC_RETRIEVE_SUPABASE_* env vars).");
+  if (!c) throw new Error("Retrieve Supabase is not configured (missing NEXT_PUBLIC_RETRIEVE_* env vars).");
   return c;
 }
 
-function publicUrl(path: string | null): string | null {
-  if (!path) return null;
-  return getRetrieveSupabase()!.storage.from(RETRIEVE_PHOTO_BUCKET).getPublicUrl(path).data.publicUrl;
+/**
+ * Photos live in a PRIVATE bucket. We never embed a Supabase URL here; instead
+ * we point at the server route, which checks sensitivity + staff auth and 302s
+ * to a short-lived signed URL (or 403s sensitive items for non-staff). The
+ * `<ItemPhoto>` component decides whether to actually request it.
+ */
+function photoSrc(row: ItemRow): string | null {
+  return row.photo_path ? `/retrieve/api/photo/${row.id}` : null;
 }
 
 function rowToItem(row: ItemRow): RetrieveItem {
@@ -42,26 +47,21 @@ function rowToItem(row: ItemRow): RetrieveItem {
     location: row.location,
     dateFound: row.date_found,
     notes: row.notes ?? "",
-    photo: publicUrl(row.photo_path),
+    photo: photoSrc(row),
     status: row.status,
     createdAt: Date.parse(row.created_at),
   };
 }
 
-/** Upload a data-URL photo to the gym bucket, returning its storage path. */
-async function uploadDataUrl(dataUrl: string, prefix: string): Promise<string> {
-  const blob = await (await fetch(dataUrl)).blob();
-  const ext = blob.type.includes("png") ? "png" : "jpg";
-  const path = `${prefix}/${crypto.randomUUID()}.${ext}`;
-  const { error } = await client().storage.from(RETRIEVE_PHOTO_BUCKET).upload(path, blob, {
-    contentType: blob.type || "image/jpeg",
-    upsert: false,
+async function postJson(url: string, body: unknown): Promise<Response> {
+  return fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
   });
-  if (error) throw error;
-  return path;
 }
 
-// ── Queries / mutations ────────────────────────────────────────────────────
+// ── Reads (client, publishable key) ──────────────────────────────────────────
 
 export async function fetchItems(): Promise<RetrieveItem[]> {
   const { data, error } = await client()
@@ -72,44 +72,53 @@ export async function fetchItems(): Promise<RetrieveItem[]> {
   return (data as ItemRow[]).map(rowToItem);
 }
 
-export async function insertItem(input: NewItemInput): Promise<RetrieveItem> {
-  let photo_path: string | null = null;
-  if (input.photo) photo_path = await uploadDataUrl(input.photo, "items");
+// ── Writes (server routes — staff-gated mutations / private-bucket uploads) ───
 
-  const { data, error } = await client()
-    .from("items")
-    .insert({
-      name: input.name,
-      category: input.category,
-      location: input.location,
-      date_found: input.dateFound,
-      notes: input.notes,
-      photo_path,
-      status: input.status ?? "active",
-    })
-    .select("*")
-    .single();
-  if (error) throw error;
-  return rowToItem(data as ItemRow);
+export async function insertItem(input: NewItemInput): Promise<RetrieveItem> {
+  const res = await postJson("/retrieve/api/staff/items", {
+    name: input.name,
+    category: input.category,
+    location: input.location,
+    dateFound: input.dateFound,
+    notes: input.notes,
+    photo: input.photo ?? null,
+    status: input.status ?? "active",
+  });
+  const data = (await res.json().catch(() => ({}))) as {
+    item?: ItemRow;
+    error?: string;
+    photoError?: string;
+  };
+  if (!res.ok && res.status !== 207) {
+    throw new Error(data.error ?? "Could not save item");
+  }
+  if (!data.item) throw new Error(data.error ?? "Could not save item");
+  return rowToItem(data.item);
 }
 
 export async function updateItemStatus(id: string, status: ItemStatus): Promise<void> {
-  const { error } = await client().from("items").update({ status }).eq("id", id);
-  if (error) throw error;
+  const res = await fetch(`/retrieve/api/staff/items/${id}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ status }),
+  });
+  if (!res.ok) {
+    const data = (await res.json().catch(() => ({}))) as { error?: string };
+    throw new Error(data.error ?? "Could not update item");
+  }
 }
 
 export async function insertClaim(input: NewClaimInput): Promise<void> {
-  const photo_paths: string[] = [];
-  for (const p of input.photos) {
-    photo_paths.push(await uploadDataUrl(p, "claims"));
-  }
-  const { error } = await client().from("claims").insert({
-    item_id: input.itemId,
+  const res = await postJson("/retrieve/api/claim", {
+    itemId: input.itemId,
     description: input.description,
-    photo_paths,
-    contact_name: input.contactName,
-    contact_value: input.contactValue,
+    photos: input.photos,
+    contactName: input.contactName,
+    contactValue: input.contactValue,
     fulfillment: input.fulfillment,
   });
-  if (error) throw error;
+  if (!res.ok) {
+    const data = (await res.json().catch(() => ({}))) as { error?: string };
+    throw new Error(data.error ?? "Could not submit claim");
+  }
 }
