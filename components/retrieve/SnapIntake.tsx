@@ -29,6 +29,60 @@ export function SnapIntake() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Photo auto-fill (AI vision). Never blocks the intake — on any failure the
+  // staffer just fills the form by hand.
+  const [analyzing, setAnalyzing] = useState(false);
+  const [aiPrefilled, setAiPrefilled] = useState(false);
+
+  // Prefill only fields the staffer hasn't already touched (functional updates
+  // read the latest value), so a slow AI response can never clobber typing.
+  const analyzePhoto = useCallback(async (dataUrl: string) => {
+    setAnalyzing(true);
+    setAiPrefilled(false);
+    try {
+      const res = await fetch("/retrieve/api/staff/vision", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ photo: dataUrl }),
+      });
+      const data = (await res.json().catch(() => ({}))) as {
+        name?: string;
+        category?: CategoryKey | "";
+        notes?: string;
+      };
+      let applied = false;
+      const suggestedName = data.name?.trim();
+      const suggestedNotes = data.notes?.trim();
+      const suggestedCategory = data.category;
+      if (suggestedName) {
+        setName((prev) => {
+          if (prev.trim()) return prev;
+          applied = true;
+          return suggestedName;
+        });
+      }
+      if (suggestedCategory) {
+        setCategory((prev) => {
+          if (prev !== "other") return prev;
+          applied = true;
+          return suggestedCategory as CategoryKey;
+        });
+      }
+      if (suggestedNotes) {
+        setNotes((prev) => {
+          if (prev.trim()) return prev;
+          applied = true;
+          return suggestedNotes;
+        });
+      }
+      setAiPrefilled(applied);
+    } catch {
+      // swallow — manual entry still works
+    } finally {
+      setAnalyzing(false);
+    }
+  }, []);
+
   function reset() {
     setPhoto(null);
     setName("");
@@ -37,6 +91,8 @@ export function SnapIntake() {
     setDate(todayISO());
     setNotes("");
     setError(null);
+    setAnalyzing(false);
+    setAiPrefilled(false);
     setStep("capture");
   }
 
@@ -62,7 +118,7 @@ export function SnapIntake() {
 
       {step === "capture" ? (
         <CaptureStep
-          onCaptured={(p) => { setPhoto(p); setStep("details"); }}
+          onCaptured={(p) => { setPhoto(p); setStep("details"); void analyzePhoto(p); }}
           onSkip={() => { setPhoto(null); setStep("details"); }}
         />
       ) : null}
@@ -81,6 +137,15 @@ export function SnapIntake() {
               <button type="button" onClick={() => setStep("capture")} style={{ background: "none", border: "none", color: T.primaryStrong, fontWeight: 600, fontSize: 14, cursor: "pointer", padding: 0 }}>
                 {photo ? "Retake" : "Add a photo"}
               </button>
+              {analyzing ? (
+                <p style={{ margin: "6px 0 0", fontSize: 13, color: T.mutedForeground }}>
+                  <span aria-hidden>✨</span> Reading the photo…
+                </p>
+              ) : aiPrefilled ? (
+                <p style={{ margin: "6px 0 0", fontSize: 13, color: T.primaryStrong, fontWeight: 500 }}>
+                  <span aria-hidden>✨</span> Prefilled from photo — edit anything
+                </p>
+              ) : null}
             </div>
           </div>
 

@@ -7,7 +7,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "vitest run"
+    "test": "vitest run",
+    "reembed:gym": "node --env-file=.env.local scripts/retrieve/reembed-items.mjs",
+    "eval:gym": "node --env-file=.env.local scripts/retrieve/eval.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.80.0",

@@ -21,6 +21,12 @@ export const retrieveLoginLimiter = redis
   ? new Ratelimit({ redis, limiter: Ratelimit.slidingWindow(5, "60 s"), analytics: false })
   : null;
 
+// Member search hits OpenAI (embedding) + Anthropic (rerank) per call, so cap it
+// per IP. Fails open when Redis is unconfigured (pilot-acceptable).
+export const retrieveSearchLimiter = redis
+  ? new Ratelimit({ redis, limiter: Ratelimit.slidingWindow(20, "60 s"), analytics: false })
+  : null;
+
 export function getClientIp(req: Request): string {
   const xff = req.headers.get("x-forwarded-for");
   if (xff) return xff.split(",")[0].trim();

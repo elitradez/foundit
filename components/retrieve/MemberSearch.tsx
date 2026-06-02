@@ -1,14 +1,54 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ItemPhoto } from "@/components/retrieve/ItemPhoto";
 import { TextInput } from "@/components/retrieve/ui";
 import { useRetrieveData } from "@/lib/retrieve/store";
 import { RETRIEVE_CATEGORIES, categoryByKey, type CategoryKey } from "@/lib/retrieve/config";
-import type { RetrieveItem } from "@/lib/retrieve/types";
 import { T } from "@/lib/retrieve/tokens";
 import { RetrieveStateNote, RetrieveSpinner } from "@/components/retrieve/StateViews";
+
+/** Minimal shape the result card needs — satisfied by both local items and API hits. */
+type CardItem = {
+  id: string;
+  name: string;
+  category: CategoryKey;
+  location: string;
+  dateFound: string;
+  photo: string | null;
+  reason?: string;
+};
+
+type ApiItem = {
+  id: string;
+  name: string;
+  category: string;
+  location: string;
+  dateFound: string;
+  photo: string | null;
+  reason?: string;
+};
+
+type AiState = {
+  forQuery: string;
+  mode: "ai" | "vector" | "degraded" | "empty";
+  noStrongMatch: boolean;
+  results: ApiItem[];
+  candidates: ApiItem[];
+};
+
+function apiToCard(i: ApiItem): CardItem {
+  return {
+    id: i.id,
+    name: i.name,
+    category: i.category as CategoryKey,
+    location: i.location,
+    dateFound: i.dateFound,
+    photo: i.photo,
+    reason: i.reason,
+  };
+}
 
 export function MemberSearch() {
   const { items, loading, error } = useRetrieveData();
@@ -24,13 +64,73 @@ export function MemberSearch() {
     return RETRIEVE_CATEGORIES.filter((c) => present.has(c.key));
   }, [active]);
 
-  const results = useMemo(() => {
+  // Instant layer: local substring filter, shown immediately while AI runs.
+  const instant = useMemo<CardItem[]>(() => {
     const q = query.trim().toLowerCase();
     return active
       .filter((i) => (cat === "all" ? true : i.category === cat))
       .filter((i) => !q || `${i.name} ${i.location} ${i.notes} ${categoryByKey(i.category).label}`.toLowerCase().includes(q))
-      .sort((a, b) => b.createdAt - a.createdAt);
+      .sort((a, b) => b.createdAt - a.createdAt)
+      .map((i) => ({ id: i.id, name: i.name, category: i.category, location: i.location, dateFound: i.dateFound, photo: i.photo }));
   }, [active, cat, query]);
+
+  // AI layer: debounced hybrid search (vector retrieval + Haiku rerank).
+  const [ai, setAi] = useState<AiState | null>(null);
+  const [aiLoading, setAiLoading] = useState(false);
+  const reqIdRef = useRef(0);
+
+  useEffect(() => {
+    const q = query.trim();
+    if (q.length < 2) {
+      setAi(null);
+      setAiLoading(false);
+      return;
+    }
+    const reqId = ++reqIdRef.current;
+    setAiLoading(true);
+    const t = setTimeout(async () => {
+      try {
+        const res = await fetch("/retrieve/api/search", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ query: q, category: cat }),
+        });
+        const data = (await res.json()) as Omit<AiState, "forQuery">;
+        if (reqId !== reqIdRef.current) return; // a newer query superseded this one
+        setAi({ forQuery: q, ...data });
+      } catch {
+        if (reqId === reqIdRef.current) setAi({ forQuery: q, mode: "degraded", noStrongMatch: false, results: [], candidates: [] });
+      } finally {
+        if (reqId === reqIdRef.current) setAiLoading(false);
+      }
+    }, 350);
+    return () => clearTimeout(t);
+  }, [query, cat]);
+
+  const searching = query.trim().length >= 2;
+  const aiReady = ai !== null && ai.forQuery === query.trim();
+
+  // Decide what to render. AI ranked results win; honest no-match shows the
+  // closest candidates under a clear "not a confident match" banner; degraded
+  // or pre-result states fall back to the instant local list.
+  let banner: string | null = null;
+  let display: CardItem[] = instant;
+  let showReasons = false;
+
+  if (searching && aiReady && ai) {
+    if (ai.mode === "ai" && ai.results.length > 0) {
+      display = ai.results.map(apiToCard);
+      showReasons = true;
+      banner = "Best matches";
+    } else if (ai.mode === "ai" && ai.noStrongMatch) {
+      display = ai.candidates.map(apiToCard);
+      banner = `No confident match for “${ai.forQuery}”. Here's what's closest — start a claim only if one is really yours.`;
+    } else if (ai.mode === "vector" && ai.results.length > 0) {
+      display = ai.results.map(apiToCard);
+      banner = "Closest matches";
+    }
+    // mode "degraded"/"empty" → keep instant
+  }
 
   return (
     <div>
@@ -69,23 +169,39 @@ export function MemberSearch() {
           <RetrieveStateNote kind="error" detail={error} />
         ) : loading && active.length === 0 ? (
           <RetrieveSpinner label="Loading lost items…" />
-        ) : results.length === 0 ? (
-          <div style={{ textAlign: "center", padding: "72px 24px", color: T.mutedForeground }}>
-            <p style={{ fontSize: 44, margin: "0 0 12px" }}>🔍</p>
-            <p style={{ fontSize: 16, margin: 0 }}>
-              {active.length === 0 ? "Nothing's been turned in yet. Check back soon." : "No items match — try a different word or category."}
-            </p>
-          </div>
         ) : (
           <>
-            <p style={{ fontSize: 14, color: T.mutedForeground, margin: "0 0 14px" }}>{results.length} item{results.length === 1 ? "" : "s"}</p>
-            <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: 18 }}>
-              {results.map((item) => (
-                <li key={item.id}>
-                  <ResultCard item={item} onClaim={() => router.push(`/retrieve/claim?item=${encodeURIComponent(item.id)}`)} />
-                </li>
-              ))}
-            </ul>
+            {/* Status line: AI progress, or the no-match / heading banner. */}
+            {searching && aiLoading && !aiReady ? (
+              <p style={{ fontSize: 14, color: T.mutedForeground, margin: "0 0 14px" }}>
+                <span aria-hidden>✨</span> Finding your best matches…
+              </p>
+            ) : banner ? (
+              <p style={{ fontSize: 14, color: T.mutedForeground, margin: "0 0 14px" }}>{banner}</p>
+            ) : display.length > 0 ? (
+              <p style={{ fontSize: 14, color: T.mutedForeground, margin: "0 0 14px" }}>{display.length} item{display.length === 1 ? "" : "s"}</p>
+            ) : null}
+
+            {display.length === 0 ? (
+              <div style={{ textAlign: "center", padding: "72px 24px", color: T.mutedForeground }}>
+                <p style={{ fontSize: 44, margin: "0 0 12px" }}>🔍</p>
+                <p style={{ fontSize: 16, margin: 0 }}>
+                  {active.length === 0
+                    ? "Nothing's been turned in yet. Check back soon."
+                    : searching
+                      ? `Nothing matches “${query.trim()}” — try a different word or category.`
+                      : "No items match — try a different word or category."}
+                </p>
+              </div>
+            ) : (
+              <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: 18 }}>
+                {display.map((item) => (
+                  <li key={item.id}>
+                    <ResultCard item={item} showReason={showReasons} onClaim={() => router.push(`/retrieve/claim?item=${encodeURIComponent(item.id)}`)} />
+                  </li>
+                ))}
+              </ul>
+            )}
           </>
         )}
       </main>
@@ -117,7 +233,7 @@ function Chip({ label, active, onClick }: { label: string; active: boolean; onCl
   );
 }
 
-function ResultCard({ item, onClaim }: { item: RetrieveItem; onClaim: () => void }) {
+function ResultCard({ item, showReason, onClaim }: { item: CardItem; showReason?: boolean; onClaim: () => void }) {
   const [hover, setHover] = useState(false);
   const cat = categoryByKey(item.category);
   return (
@@ -148,6 +264,11 @@ function ResultCard({ item, onClaim }: { item: RetrieveItem; onClaim: () => void
         <p style={{ margin: "0 0 6px", fontFamily: T.fontDisplay, fontWeight: 600, fontSize: 16, color: T.foreground }}>{item.name}</p>
         <p style={{ margin: 0, fontSize: 13, color: T.mutedForeground }}>{cat.icon} {cat.label}</p>
         <p style={{ margin: "2px 0 0", fontSize: 13, color: T.mutedForeground }}>{item.location} · Found {item.dateFound}</p>
+        {showReason && item.reason ? (
+          <p style={{ margin: "10px 0 0", fontSize: 13, lineHeight: 1.4, color: "#B23F08", backgroundColor: "#FFF1E8", borderRadius: 8, padding: "8px 10px" }}>
+            <span aria-hidden>✨ </span>{item.reason}
+          </p>
+        ) : null}
         <span
           style={{
             marginTop: 14,

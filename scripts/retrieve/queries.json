@@ -1,0 +1,23 @@
+{
+  "_comment": "Eval fixture for the gym Retrieve hybrid search. expectName must match a seeded item name exactly (resolved to its id at runtime); null = the item is NOT in the lost-and-found, so an honest pipeline must return no confident match.",
+  "queries": [
+    { "query": "i lost my airpods pro, the charging case", "expectName": "Black AirPods Pro case" },
+    { "query": "apple watch with a blue strap", "expectName": "Apple Watch, blue band" },
+    { "query": "brown leather billfold", "expectName": "Brown leather wallet" },
+    { "query": "my school id card", "expectName": "Student ID card" },
+    { "query": "green metal water bottle, hydroflask", "expectName": "Hydro Flask, sage green" },
+    { "query": "iphone with a cracked screen", "expectName": "iPhone, cracked screen" },
+    { "query": "grey nike sweatshirt medium", "expectName": "Nike hoodie, gray, size M" },
+    { "query": "toyota car key", "expectName": "Car key fob (Toyota)" },
+    { "query": "rayban shades", "expectName": "Ray-Ban sunglasses" },
+    { "query": "adidas gym sack bag", "expectName": "Adidas drawstring bag" },
+    { "query": "exercise stretch bands", "expectName": "Resistance band set" },
+
+    { "query": "a single silver hoop earring", "expectName": null, "_note": "item exists but status=recovered → active-only search must honestly return no confident match" },
+    { "query": "blue folding umbrella", "expectName": null },
+    { "query": "orange prescription pill bottle", "expectName": null },
+    { "query": "brown leather belt", "expectName": null },
+    { "query": "macbook usb-c charger brick", "expectName": null },
+    { "query": "navy passport", "expectName": null }
+  ]
+}

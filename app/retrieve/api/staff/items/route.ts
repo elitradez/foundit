@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getRetrieveServiceClient } from "@/lib/retrieve/supabase-server";
 import { getRetrieveStaffSession } from "@/lib/retrieve/staff-session";
 import { RETRIEVE_PHOTO_BUCKET } from "@/lib/retrieve/supabase";
+import { embedText, itemEmbeddingText } from "@/lib/retrieve/ai";
 
 export const runtime = "nodejs";
 
@@ -59,6 +60,7 @@ export async function POST(req: Request) {
   const { data: inserted, error: insErr } = await supabase
     .from("items")
     .insert({
+      tenant_id: TENANT_PREFIX,
       name,
       category,
       location,
@@ -70,6 +72,20 @@ export async function POST(req: Request) {
     .single();
   if (insErr || !inserted) {
     return NextResponse.json({ error: insErr?.message ?? "Insert failed" }, { status: 500 });
+  }
+
+  // Embed-on-write (best-effort). Depends only on name/notes/category, so we do
+  // it before the photo step — a photo failure must not skip vector indexing,
+  // and an embedding failure must not fail the intake (item is already saved).
+  try {
+    const vec = await embedText(
+      itemEmbeddingText({ name: inserted.name, notes: inserted.notes ?? "", category: inserted.category }),
+    );
+    if (vec) {
+      await supabase.from("items").update({ embedding: JSON.stringify(vec) }).eq("id", inserted.id);
+    }
+  } catch (e) {
+    console.error("[retrieve/items] embed-on-write failed:", e instanceof Error ? e.message : e);
   }
 
   let row = inserted;
