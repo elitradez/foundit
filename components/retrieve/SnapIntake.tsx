@@ -6,6 +6,7 @@ import { Button, Field, Select, TextArea, TextInput } from "@/components/retriev
 import { ItemPhoto } from "@/components/retrieve/ItemPhoto";
 import { RETRIEVE_CATEGORIES, RETRIEVE_LOCATIONS, type CategoryKey } from "@/lib/retrieve/config";
 import { addItem } from "@/lib/retrieve/store";
+import { retryItemPhoto } from "@/lib/retrieve/db";
 import { T } from "@/lib/retrieve/tokens";
 
 type Step = "capture" | "details" | "done";
@@ -26,8 +27,13 @@ export function SnapIntake() {
   const [date, setDate] = useState(todayISO());
   const [notes, setNotes] = useState("");
   const [savedName, setSavedName] = useState("");
+  const [savedId, setSavedId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Photo-upload failure surfacing (item is still saved; the warning offers a retry).
+  const [photoWarning, setPhotoWarning] = useState<string | null>(null);
+  const [retrying, setRetrying] = useState(false);
 
   // Photo auto-fill (AI vision). Never blocks the intake — on any failure the
   // staffer just fills the form by hand.
@@ -93,7 +99,23 @@ export function SnapIntake() {
     setError(null);
     setAnalyzing(false);
     setAiPrefilled(false);
+    setSavedId(null);
+    setPhotoWarning(null);
+    setRetrying(false);
     setStep("capture");
+  }
+
+  async function retryPhoto() {
+    if (!savedId || !photo || retrying) return;
+    setRetrying(true);
+    try {
+      await retryItemPhoto(savedId, photo);
+      setPhotoWarning(null);
+    } catch (err) {
+      setPhotoWarning(err instanceof Error ? err.message : "Photo upload failed again.");
+    } finally {
+      setRetrying(false);
+    }
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -102,8 +124,11 @@ export function SnapIntake() {
     setSaving(true);
     setError(null);
     try {
-      await addItem({ name: name.trim(), category, location, dateFound: date, notes: notes.trim(), photo });
+      const { item, photoError } = await addItem({ name: name.trim(), category, location, dateFound: date, notes: notes.trim(), photo });
       setSavedName(name.trim());
+      setSavedId(item.id);
+      // Item saved; if the photo upload failed, surface it (don't block the save).
+      setPhotoWarning(photo && photoError ? photoError : null);
       setStep("done");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Couldn't save. Please try again.");
@@ -187,9 +212,27 @@ export function SnapIntake() {
         <div className="retrieve-fade-up" style={{ textAlign: "center", padding: "32px 0" }}>
           <div style={{ width: 72, height: 72, borderRadius: 999, backgroundColor: "#E8F6EC", color: "#1B7A3D", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 34, margin: "0 auto 18px" }}>✓</div>
           <h2 style={{ fontFamily: T.fontDisplay, fontSize: 24, fontWeight: 700, margin: "0 0 6px" }}>Logged it</h2>
-          <p style={{ color: T.mutedForeground, fontSize: 16, margin: "0 0 28px" }}>
+          <p style={{ color: T.mutedForeground, fontSize: 16, margin: photoWarning ? "0 0 18px" : "0 0 28px" }}>
             <strong style={{ color: T.foreground }}>{savedName}</strong> is now searchable by members.
           </p>
+
+          {photoWarning ? (
+            <div
+              role="alert"
+              style={{ textAlign: "left", display: "flex", flexDirection: "column", gap: 10, padding: "14px 16px", marginBottom: 24, borderRadius: 14, border: `1px solid ${T.primaryStrong}`, backgroundColor: "#FFF1E8" }}
+            >
+              <p style={{ margin: 0, fontSize: 14, fontWeight: 600, color: "#B23F08" }}>
+                <span aria-hidden>⚠️ </span>The photo didn&apos;t upload
+              </p>
+              <p style={{ margin: 0, fontSize: 13, color: T.mutedForeground, lineHeight: 1.5 }}>
+                The item is saved, but without its photo — members will see a category icon until you add one.
+              </p>
+              <Button variant="secondary" onClick={() => void retryPhoto()} disabled={retrying || !photo}>
+                {retrying ? "Uploading…" : "Retry photo upload"}
+              </Button>
+            </div>
+          ) : null}
+
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
             <Button onClick={reset}>Snap another item</Button>
             <Link href="/retrieve/staff" style={{ textDecoration: "none" }}>

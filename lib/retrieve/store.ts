@@ -95,10 +95,12 @@ export async function revalidate(): Promise<void> {
 
 // ── Mutations (write to Supabase, then update cache) ────────────────────────
 
-export async function addItem(input: NewItemInput): Promise<RetrieveItem> {
-  const item = await insertItem(input);
+export async function addItem(
+  input: NewItemInput,
+): Promise<{ item: RetrieveItem; photoError?: string }> {
+  const { item, photoError } = await insertItem(input);
   set({ items: [item, ...state.items] });
-  return item;
+  return { item, photoError };
 }
 
 export async function setItemStatus(id: string, status: ItemStatus): Promise<void> {

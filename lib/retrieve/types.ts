@@ -43,3 +43,22 @@ export type NewItemInput = Omit<RetrieveItem, "id" | "createdAt" | "status" | "t
 };
 
 export type NewClaimInput = Omit<RetrieveClaim, "id" | "createdAt" | "status">;
+
+/** Open = awaiting staff; resolved = handled / picked up. */
+export type StaffClaimStatus = "submitted" | "resolved";
+
+/** A member claim as seen by staff — joined to its item, with signed proof URLs. */
+export type StaffClaim = {
+  id: string;
+  itemId: string;
+  itemName: string;
+  itemCategory: CategoryKey;
+  itemPhoto: string | null; // server photo-route URL for the item thumbnail (staff-authed)
+  description: string;
+  contactName: string;
+  contactValue: string;
+  fulfillment: "pickup" | "ship";
+  status: StaffClaimStatus;
+  createdAt: number; // epoch ms
+  proofPhotos: string[]; // short-lived signed URLs
+};

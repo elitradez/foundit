@@ -1,13 +1,12 @@
 import { NextResponse } from "next/server";
 import { getRetrieveServiceClient } from "@/lib/retrieve/supabase-server";
 import { getRetrieveStaffSession } from "@/lib/retrieve/staff-session";
-import { RETRIEVE_PHOTO_BUCKET } from "@/lib/retrieve/supabase";
 import { embedText, itemEmbeddingText } from "@/lib/retrieve/ai";
+import { uploadItemPhoto } from "@/lib/retrieve/storage";
 
 export const runtime = "nodejs";
 
 const TENANT_PREFIX = "livefitgym"; // single-tenant pilot; becomes tenant_id later
-const MAX_DATA_URL_BYTES = 8 * 1024 * 1024;
 
 type IntakeBody = {
   name?: string;
@@ -48,20 +47,6 @@ async function embedAndStore(
     `[retrieve/items] embedding unavailable for item ${item.id} ("${item.name}") — browse-visible but missing from AI search until reembed. Run: npm run reembed:gym`,
   );
   return false;
-}
-
-/** Upload a data-URL photo to the PRIVATE bucket at {tenant}/{itemId}.{ext}. */
-async function uploadItemPhoto(itemId: string, dataUrl: string): Promise<string> {
-  const blob = await (await fetch(dataUrl)).blob();
-  if (blob.size > MAX_DATA_URL_BYTES) throw new Error("Image too large");
-  const ext = blob.type.includes("png") ? "png" : "jpg";
-  const path = `${TENANT_PREFIX}/${itemId}.${ext}`;
-  const supabase = getRetrieveServiceClient();
-  const { error } = await supabase.storage
-    .from(RETRIEVE_PHOTO_BUCKET)
-    .upload(path, blob, { contentType: blob.type || "image/jpeg", upsert: true });
-  if (error) throw error;
-  return path;
 }
 
 export async function POST(req: Request) {

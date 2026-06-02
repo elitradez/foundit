@@ -9,11 +9,14 @@ import { categoryByKey } from "@/lib/retrieve/config";
 import type { ItemStatus } from "@/lib/retrieve/types";
 import { T } from "@/lib/retrieve/tokens";
 import { RetrieveStateNote, RetrieveSpinner } from "@/components/retrieve/StateViews";
+import { StaffClaims } from "@/components/retrieve/StaffClaims";
 
 type Filter = "all" | ItemStatus;
+type View = "items" | "claims";
 
 export function StaffDashboard() {
   const { items, loading, error } = useRetrieveData();
+  const [view, setView] = useState<View>("items");
   const [filter, setFilter] = useState<Filter>("active");
   const [query, setQuery] = useState("");
 
@@ -44,13 +47,50 @@ export function StaffDashboard() {
       <div style={{ display: "flex", flexWrap: "wrap", gap: 16, alignItems: "flex-end", justifyContent: "space-between", marginBottom: 20 }}>
         <div>
           <h1 style={{ fontFamily: T.fontDisplay, fontSize: 30, fontWeight: 700, letterSpacing: "-0.02em", margin: "0 0 4px" }}>Lost &amp; found</h1>
-          <p style={{ color: T.mutedForeground, fontSize: 15, margin: 0 }}>{counts.active} active item{counts.active === 1 ? "" : "s"} waiting to be claimed.</p>
+          <p style={{ color: T.mutedForeground, fontSize: 15, margin: 0 }}>
+            {view === "claims"
+              ? "Member claims to review and pick up."
+              : `${counts.active} active item${counts.active === 1 ? "" : "s"} waiting to be claimed.`}
+          </p>
         </div>
         <Link href="/retrieve/staff/snap" style={{ textDecoration: "none", fontFamily: T.fontDisplay, fontWeight: 600, fontSize: 16, color: "#fff", backgroundColor: T.primaryStrong, padding: "12px 20px", borderRadius: 14, display: "inline-flex", alignItems: "center", gap: 8 }}>
           <span aria-hidden style={{ fontSize: 18 }}>＋</span> Snap an item
         </Link>
       </div>
 
+      {/* Items / Claims section switch — same pill language as the status tabs */}
+      <div role="tablist" aria-label="Dashboard section" style={{ display: "flex", gap: 6, marginBottom: 18 }}>
+        {(["items", "claims"] as View[]).map((v) => {
+          const active = view === v;
+          return (
+            <button
+              key={v}
+              role="tab"
+              aria-selected={active}
+              type="button"
+              onClick={() => setView(v)}
+              style={{
+                fontFamily: T.fontDisplay,
+                fontSize: 15,
+                fontWeight: 600,
+                padding: "9px 18px",
+                borderRadius: 999,
+                border: `1px solid ${active ? T.primaryStrong : T.border}`,
+                backgroundColor: active ? "#FFF1E8" : T.background,
+                color: active ? "#B23F08" : T.mutedForeground,
+                cursor: "pointer",
+              }}
+            >
+              {v === "items" ? "Items" : "Claims"}
+            </button>
+          );
+        })}
+      </div>
+
+      {view === "claims" ? (
+        <StaffClaims />
+      ) : (
+      <>
       {/* Controls */}
       <div style={{ display: "flex", flexWrap: "wrap", gap: 12, marginBottom: 18, alignItems: "center" }}>
         <div role="tablist" aria-label="Filter by status" style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
@@ -118,6 +158,8 @@ export function StaffDashboard() {
             </li>
           ))}
         </ul>
+      )}
+      </>
       )}
     </div>
   );

@@ -7,6 +7,8 @@ import type {
   NewClaimInput,
   NewItemInput,
   RetrieveItem,
+  StaffClaim,
+  StaffClaimStatus,
 } from "@/lib/retrieve/types";
 
 /** Shape of a row in public.items (retrieve-gym-dev). */
@@ -74,7 +76,9 @@ export async function fetchItems(): Promise<RetrieveItem[]> {
 
 // ── Writes (server routes — staff-gated mutations / private-bucket uploads) ───
 
-export async function insertItem(input: NewItemInput): Promise<RetrieveItem> {
+export async function insertItem(
+  input: NewItemInput,
+): Promise<{ item: RetrieveItem; photoError?: string }> {
   const res = await postJson("/retrieve/api/staff/items", {
     name: input.name,
     category: input.category,
@@ -89,11 +93,25 @@ export async function insertItem(input: NewItemInput): Promise<RetrieveItem> {
     error?: string;
     photoError?: string;
   };
+  // 207 = item saved but the photo upload failed; surface that to the caller.
   if (!res.ok && res.status !== 207) {
     throw new Error(data.error ?? "Could not save item");
   }
   if (!data.item) throw new Error(data.error ?? "Could not save item");
-  return rowToItem(data.item);
+  return { item: rowToItem(data.item), photoError: data.photoError };
+}
+
+/** Retry a failed photo upload for an already-saved item (staff-gated route). */
+export async function retryItemPhoto(id: string, photoDataUrl: string): Promise<void> {
+  const res = await fetch(`/retrieve/api/staff/items/${id}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ photo: photoDataUrl }),
+  });
+  if (!res.ok) {
+    const data = (await res.json().catch(() => ({}))) as { error?: string };
+    throw new Error(data.error ?? "Photo upload failed");
+  }
 }
 
 export async function updateItemStatus(id: string, status: ItemStatus): Promise<void> {
@@ -120,5 +138,40 @@ export async function insertClaim(input: NewClaimInput): Promise<void> {
   if (!res.ok) {
     const data = (await res.json().catch(() => ({}))) as { error?: string };
     throw new Error(data.error ?? "Could not submit claim");
+  }
+}
+
+// ── Staff claims (server route — staff-gated reads/mutations) ────────────────
+
+type StaffClaimWire = Omit<StaffClaim, "itemCategory" | "createdAt"> & {
+  itemCategory: string;
+  createdAt: string;
+};
+
+/** Staff-only: list member claims (newest first) with signed proof URLs. */
+export async function fetchStaffClaims(): Promise<StaffClaim[]> {
+  const res = await fetch("/retrieve/api/staff/claims");
+  if (!res.ok) {
+    const data = (await res.json().catch(() => ({}))) as { error?: string };
+    throw new Error(data.error ?? "Could not load claims");
+  }
+  const data = (await res.json()) as { claims: StaffClaimWire[] };
+  return data.claims.map((c) => ({
+    ...c,
+    itemCategory: c.itemCategory as CategoryKey,
+    createdAt: Date.parse(c.createdAt),
+  }));
+}
+
+/** Staff-only: mark a claim resolved (picked up) or reopen it. */
+export async function setClaimStatus(id: string, status: StaffClaimStatus): Promise<void> {
+  const res = await fetch(`/retrieve/api/staff/claims/${id}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ status }),
+  });
+  if (!res.ok) {
+    const data = (await res.json().catch(() => ({}))) as { error?: string };
+    throw new Error(data.error ?? "Could not update claim");
   }
 }
