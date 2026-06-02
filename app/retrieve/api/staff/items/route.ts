@@ -19,6 +19,37 @@ type IntakeBody = {
   status?: string;
 };
 
+/**
+ * Embed an item and store it in items.embedding. Best-effort and non-blocking:
+ * retries once, and on final failure logs a clear WARNING with the id (the row
+ * keeps a null embedding, so `npm run reembed:gym` backfills it later — without
+ * it the item is browse-visible but missing from AI search). Never throws.
+ */
+async function embedAndStore(
+  supabase: ReturnType<typeof getRetrieveServiceClient>,
+  item: { id: string; name: string; notes: string | null; category: string },
+): Promise<boolean> {
+  const text = itemEmbeddingText({ name: item.name, notes: item.notes ?? "", category: item.category });
+  for (let attempt = 1; attempt <= 2; attempt++) {
+    try {
+      const vec = await embedText(text);
+      if (vec) {
+        const { error } = await supabase.from("items").update({ embedding: JSON.stringify(vec) }).eq("id", item.id);
+        if (error) throw error;
+        return true;
+      }
+      console.error(`[retrieve/items] embed attempt ${attempt} returned no vector for ${item.id}`);
+    } catch (e) {
+      console.error(`[retrieve/items] embed attempt ${attempt} failed for ${item.id}:`, e instanceof Error ? e.message : e);
+    }
+    if (attempt < 2) await new Promise((r) => setTimeout(r, 800));
+  }
+  console.warn(
+    `[retrieve/items] embedding unavailable for item ${item.id} ("${item.name}") — browse-visible but missing from AI search until reembed. Run: npm run reembed:gym`,
+  );
+  return false;
+}
+
 /** Upload a data-URL photo to the PRIVATE bucket at {tenant}/{itemId}.{ext}. */
 async function uploadItemPhoto(itemId: string, dataUrl: string): Promise<string> {
   const blob = await (await fetch(dataUrl)).blob();
@@ -74,19 +105,11 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: insErr?.message ?? "Insert failed" }, { status: 500 });
   }
 
-  // Embed-on-write (best-effort). Depends only on name/notes/category, so we do
-  // it before the photo step — a photo failure must not skip vector indexing,
-  // and an embedding failure must not fail the intake (item is already saved).
-  try {
-    const vec = await embedText(
-      itemEmbeddingText({ name: inserted.name, notes: inserted.notes ?? "", category: inserted.category }),
-    );
-    if (vec) {
-      await supabase.from("items").update({ embedding: JSON.stringify(vec) }).eq("id", inserted.id);
-    }
-  } catch (e) {
-    console.error("[retrieve/items] embed-on-write failed:", e instanceof Error ? e.message : e);
-  }
+  // Embed-on-write (best-effort, retried, non-blocking). Depends only on
+  // name/notes/category, so we do it before the photo step — a photo failure
+  // must not skip vector indexing, and an embedding failure must not fail the
+  // intake (item is already saved; a null embedding is backfilled by reembed).
+  await embedAndStore(supabase, inserted);
 
   let row = inserted;
   if (body.photo) {
