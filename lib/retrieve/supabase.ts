@@ -11,7 +11,10 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js";
  * are absent.
  */
 
-export const RETRIEVE_PHOTO_BUCKET = "retrieve-item-photos";
+// RETRIEVE_PHOTO_BUCKET moved to ./constants — it must NOT live in this
+// "use client" module, or server-side imports resolve to a client-reference
+// proxy instead of the string (caused `400 Bucket name invalid` on upload).
+export { RETRIEVE_PHOTO_BUCKET } from "./constants";
 
 const URL = process.env.NEXT_PUBLIC_RETRIEVE_SUPABASE_URL;
 const KEY = process.env.NEXT_PUBLIC_RETRIEVE_SUPABASE_PUBLISHABLE_KEY;

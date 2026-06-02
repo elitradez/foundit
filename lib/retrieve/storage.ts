@@ -1,6 +1,6 @@
 import "server-only";
 import { getRetrieveServiceClient } from "@/lib/retrieve/supabase-server";
-import { RETRIEVE_PHOTO_BUCKET } from "@/lib/retrieve/supabase";
+import { RETRIEVE_PHOTO_BUCKET } from "@/lib/retrieve/constants";
 
 /**
  * SERVER-ONLY storage helpers for the gym "Retrieve" tenant. Centralizes item

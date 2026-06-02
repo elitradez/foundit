@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getRetrieveServiceClient } from "@/lib/retrieve/supabase-server";
-import { RETRIEVE_PHOTO_BUCKET } from "@/lib/retrieve/supabase";
+import { RETRIEVE_PHOTO_BUCKET } from "@/lib/retrieve/constants";
 import { decodeImageDataUrl } from "@/lib/retrieve/storage";
 
 export const runtime = "nodejs";

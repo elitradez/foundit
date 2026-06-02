@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getRetrieveServiceClient } from "@/lib/retrieve/supabase-server";
 import { getRetrieveStaffSession } from "@/lib/retrieve/staff-session";
-import { RETRIEVE_PHOTO_BUCKET } from "@/lib/retrieve/supabase";
+import { RETRIEVE_PHOTO_BUCKET } from "@/lib/retrieve/constants";
 import { isSensitiveCategory, type CategoryKey } from "@/lib/retrieve/config";
 
 export const runtime = "nodejs";

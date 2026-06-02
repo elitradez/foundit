@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getRetrieveServiceClient } from "@/lib/retrieve/supabase-server";
 import { getRetrieveStaffSession } from "@/lib/retrieve/staff-session";
-import { RETRIEVE_PHOTO_BUCKET } from "@/lib/retrieve/supabase";
+import { RETRIEVE_PHOTO_BUCKET } from "@/lib/retrieve/constants";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
