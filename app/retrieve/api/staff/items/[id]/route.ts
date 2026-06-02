@@ -40,10 +40,9 @@ export async function PATCH(
       if (error) throw error;
       return NextResponse.json({ ok: true, photoPath: path });
     } catch (e) {
-      return NextResponse.json(
-        { error: e instanceof Error ? e.message : "Photo upload failed" },
-        { status: 400 },
-      );
+      const msg = e instanceof Error ? e.message : "Photo upload failed";
+      console.error(`[retrieve/items] photo retry failed for ${id}:`, msg);
+      return NextResponse.json({ error: msg }, { status: 400 });
     }
   }
 

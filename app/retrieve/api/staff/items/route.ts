@@ -111,6 +111,7 @@ export async function POST(req: Request) {
     } catch (e) {
       // Item row is saved; surface the photo failure without losing the record.
       const msg = e instanceof Error ? e.message : "Photo upload failed";
+      console.error(`[retrieve/items] photo upload failed for ${inserted.id}:`, msg);
       return NextResponse.json({ item: row, photoError: msg }, { status: 207 });
     }
   }

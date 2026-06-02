@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
 import { getRetrieveServiceClient } from "@/lib/retrieve/supabase-server";
 import { RETRIEVE_PHOTO_BUCKET } from "@/lib/retrieve/supabase";
+import { decodeImageDataUrl } from "@/lib/retrieve/storage";
 
 export const runtime = "nodejs";
 
-const MAX_DATA_URL_BYTES = 8 * 1024 * 1024;
 const MAX_PHOTOS = 5;
 
 type ClaimBody = {
@@ -43,21 +43,18 @@ export async function POST(req: Request) {
   const photo_paths: string[] = [];
 
   try {
-    let i = 0;
     for (const dataUrl of photos) {
-      const blob = await (await fetch(dataUrl)).blob();
-      if (blob.size > MAX_DATA_URL_BYTES) throw new Error("Image too large");
-      const ext = blob.type.includes("png") ? "png" : "jpg";
+      const { buffer, contentType, ext } = decodeImageDataUrl(dataUrl);
       const path = `claims/${itemId}/${crypto.randomUUID()}.${ext}`;
       const { error } = await supabase.storage
         .from(RETRIEVE_PHOTO_BUCKET)
-        .upload(path, blob, { contentType: blob.type || "image/jpeg", upsert: false });
+        .upload(path, buffer, { contentType, upsert: false });
       if (error) throw error;
       photo_paths.push(path);
-      i++;
     }
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Photo upload failed";
+    console.error(`[retrieve/claim] proof photo upload failed for item ${itemId}:`, msg);
     return NextResponse.json({ error: msg }, { status: 400 });
   }
 
