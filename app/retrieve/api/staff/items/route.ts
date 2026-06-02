@@ -112,27 +112,6 @@ export async function POST(req: Request) {
       // Item row is saved; surface the photo failure without losing the record.
       const msg = e instanceof Error ? e.message : "Photo upload failed";
       console.error(`[retrieve/items] photo upload failed for ${inserted.id}:`, msg);
-      // TEMP DEBUG (remove after diagnosis): capture the FULL verbatim error to a
-      // table so it can be read untruncated via SQL (the Vercel log viewer clips
-      // the message). Best-effort; never blocks the response.
-      try {
-        const errRaw = (() => {
-          try {
-            return JSON.stringify(e, Object.getOwnPropertyNames(e as object));
-          } catch {
-            return String(e);
-          }
-        })();
-        await supabase.from("_photo_upload_debug").insert({
-          item_id: inserted.id,
-          err_name: e instanceof Error ? e.name : typeof e,
-          err_message: msg,
-          err_stack: e instanceof Error ? e.stack ?? null : null,
-          err_raw: errRaw,
-        });
-      } catch {
-        // ignore debug-capture failures
-      }
       return NextResponse.json({ item: row, photoError: msg }, { status: 207 });
     }
   }

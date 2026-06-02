@@ -45,6 +45,12 @@ export function ItemPhoto({
   // enforcement is server-side; this is just the matching UI.
   const sensitiveHidden = isSensitiveCategory(category) && !reveal;
   const showImage = !!photo && !sensitiveHidden;
+  // Non-sensitive photos get a slight blur in the member view so the exact item
+  // isn't fully legible until a claim is made. Staff (reveal) always see sharp,
+  // and sensitive items are hidden entirely above — so this only ever applies to
+  // a member viewing a non-sensitive photo. The small scale hides the
+  // translucent edges blur would otherwise reveal against the background.
+  const memberBlur = showImage && !reveal;
 
   return (
     <div
@@ -68,6 +74,8 @@ export function ItemPhoto({
             width: "100%",
             height: "100%",
             objectFit: "cover",
+            filter: memberBlur ? "blur(4px)" : undefined,
+            transform: memberBlur ? "scale(1.06)" : undefined,
           }}
         />
       ) : (
