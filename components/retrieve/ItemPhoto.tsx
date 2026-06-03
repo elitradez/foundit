@@ -74,8 +74,15 @@ export function ItemPhoto({
             width: "100%",
             height: "100%",
             objectFit: "cover",
+            // iOS Safari (WebKit) frequently won't paint `filter: blur()` on an
+            // <img> unless the element is forced onto its own GPU compositing
+            // layer — a 2D `scale()` alone doesn't promote it (Safari applies the
+            // scale but drops the blur). `translateZ(0)` forces the layer; the
+            // -webkit-filter alias covers older WebKit, and will-change hints it.
             filter: memberBlur ? "blur(4px)" : undefined,
-            transform: memberBlur ? "scale(1.06)" : undefined,
+            WebkitFilter: memberBlur ? "blur(4px)" : undefined,
+            transform: memberBlur ? "scale(1.06) translateZ(0)" : undefined,
+            willChange: memberBlur ? "filter" : undefined,
           }}
         />
       ) : (
