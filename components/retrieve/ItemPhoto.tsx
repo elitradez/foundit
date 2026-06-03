@@ -74,15 +74,6 @@ export function ItemPhoto({
             width: "100%",
             height: "100%",
             objectFit: "cover",
-            // iOS Safari (WebKit) frequently won't paint `filter: blur()` on an
-            // <img> unless the element is forced onto its own GPU compositing
-            // layer — a 2D `scale()` alone doesn't promote it (Safari applies the
-            // scale but drops the blur). `translateZ(0)` forces the layer; the
-            // -webkit-filter alias covers older WebKit, and will-change hints it.
-            filter: memberBlur ? "blur(4px)" : undefined,
-            WebkitFilter: memberBlur ? "blur(4px)" : undefined,
-            transform: memberBlur ? "scale(1.06) translateZ(0)" : undefined,
-            willChange: memberBlur ? "filter" : undefined,
           }}
         />
       ) : (
@@ -101,6 +92,25 @@ export function ItemPhoto({
           {cat.icon}
         </div>
       )}
+
+      {/* Member-view blur. iOS Safari reliably DROPS `filter: blur()` on an
+          <img> (worse alongside a transform, inside an overflow-hidden rounded
+          container — exactly this layout), so we don't filter the image. Instead
+          we overlay a frosted layer via backdrop-filter, the compositor path
+          WebKit uses for frosted glass — it paints dependably on iOS. Only ever
+          shown for a member viewing a non-sensitive photo (memberBlur); staff/
+          reveal stays sharp and sensitive items are hidden by the block below. */}
+      {memberBlur ? (
+        <div
+          aria-hidden
+          style={{
+            position: "absolute",
+            inset: 0,
+            backdropFilter: "blur(12px)",
+            WebkitBackdropFilter: "blur(12px)",
+          }}
+        />
+      ) : null}
 
       {sensitiveHidden ? (
         <div
