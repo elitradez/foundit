@@ -48,17 +48,22 @@ export type VectorRow = {
 
 export type LexicalRow = { id: string; name?: string; description?: string; lex_score?: number };
 
-// "Close match" boundary, used only as a UI signal (never to trim results):
-// vector junk measured below ~0.34 on the live catalog; a lexical 0.5 means a
-// real word-level hit. Below both, results are best-effort neighbours.
+// "Close match" boundary: vector junk measured below ~0.34 on the live
+// catalog; a lexical 0.5 means a real word-level hit. Below both, results are
+// best-effort neighbours — the API still returns them (ranked last) but the
+// client collapses them behind a "show similar items" toggle so the default
+// view stays clean as the catalog grows.
 export const STRONG_VECTOR_SIM = 0.35;
 export const STRONG_LEX_SCORE = 0.5;
 
-/** How many candidates qualify as close matches (UI signal only). */
+/** A close match: clears the measured strong bar on either signal. */
+export function isStrongCandidate(row: VectorRow): boolean {
+  return (row.similarity ?? 0) >= STRONG_VECTOR_SIM || (row.lexScore ?? 0) >= STRONG_LEX_SCORE;
+}
+
+/** How many candidates qualify as close matches. */
 export function countStrongCandidates(rows: VectorRow[]): number {
-  return rows.filter(
-    (r) => (r.similarity ?? 0) >= STRONG_VECTOR_SIM || (r.lexScore ?? 0) >= STRONG_LEX_SCORE,
-  ).length;
+  return rows.filter(isStrongCandidate).length;
 }
 
 /** Embed a query with the same model used for item embeddings. Returns null on failure. */

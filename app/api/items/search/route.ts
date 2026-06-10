@@ -4,7 +4,7 @@ import { getUniversityId } from "@/lib/university-config";
 import { aiLimiter, getClientIp, isRateLimited } from "@/lib/ratelimit";
 import {
   browseVectorFloor,
-  countStrongCandidates,
+  isStrongCandidate,
   embedQuery,
   lexicalSearchItems,
   mergeHybridCandidates,
@@ -82,7 +82,8 @@ export async function POST(req: Request) {
     // and sit ahead of the similarity-ranked results (an exact date is a
     // strong, intentional signal).
     const parsedDate = extractDate(query);
-    let dateMatchCount = 0;
+    // Exact date hits are strong by definition.
+    const strongIds = new Set<string>();
     if (parsedDate) {
       const { data } = await supabase
         .from("items")
@@ -90,8 +91,10 @@ export async function POST(req: Request) {
         .eq("date_found", parsedDate)
         .eq("university_id", universityId)
         .is("returned_at", null);
-      for (const row of data ?? []) matchedIds.add(row.id);
-      dateMatchCount = matchedIds.size;
+      for (const row of data ?? []) {
+        matchedIds.add(row.id);
+        strongIds.add(row.id);
+      }
     }
 
     // 2. Hybrid recall: pgvector + trigram lexical, in parallel, unioned.
@@ -104,11 +107,13 @@ export async function POST(req: Request) {
       ? await vectorSearchItems(supabase, embedding, universityId, { matchThreshold: browseVectorFloor(query) })
       : [];
     const candidates = mergeHybridCandidates(query, vectorRows, lexicalRows);
-    // UI signal only — results are never trimmed by this. Lets the client say
-    // "no close matches — showing similar items" instead of presenting a weak
-    // best-effort tail as if it were confident matches. Exact date hits are
-    // strong by definition.
-    const strongCount = countStrongCandidates(candidates) + dateMatchCount;
+    // Results are never trimmed server-side; strongIds tells the client WHICH
+    // results are close matches so it can collapse the weak best-effort tail
+    // behind a "show similar items" toggle (a count is not enough — the
+    // reranker may interleave strong and weak).
+    for (const c of candidates) {
+      if (isStrongCandidate(c)) strongIds.add(c.id);
+    }
 
     if (candidates.length > 0) {
       let orderedIds: string[];
@@ -130,7 +135,11 @@ export async function POST(req: Request) {
       for (const row of [...(nameData ?? []), ...(descData ?? [])]) matchedIds.add(row.id);
     }
 
-    return NextResponse.json({ itemIds: Array.from(matchedIds), strongCount });
+    return NextResponse.json({
+      itemIds: Array.from(matchedIds),
+      strongCount: strongIds.size,
+      strongIds: Array.from(strongIds),
+    });
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Search failed";
     return NextResponse.json({ error: msg }, { status: 500 });
