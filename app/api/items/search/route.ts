@@ -87,7 +87,25 @@ export async function POST(req: Request) {
           match_count: 20,
           p_university_id: universityId,
         });
-        for (const row of vectorResults ?? []) matchedIds.add(row.id);
+        // The RPC returns rows with a `similarity` score that was previously
+        // ignored — with a low 0.3 threshold the raw set carries a long tail
+        // of generic near-noise matches, so results barely narrowed. Rank by
+        // similarity and trim the tail adaptively: keep rows close to the
+        // best match (or strong in absolute terms), but never fewer than the
+        // top 3 so a weak-but-real match still surfaces. Within this vector
+        // segment IDs are similarity-ordered (the client preserves array
+        // order). Note: any explicit date matches added above are unranked and
+        // already sit ahead of these — intended, since an exact date is a
+        // strong signal.
+        type VectorRow = { id: string; similarity?: number };
+        const ranked = ((vectorResults ?? []) as VectorRow[])
+          .filter((r) => r && typeof r.id === "string")
+          .sort((a, b) => (b.similarity ?? 0) - (a.similarity ?? 0));
+        const best = ranked[0]?.similarity ?? 0;
+        const cutoff = Math.max(0.35, best - 0.18);
+        const kept = ranked.filter((r) => (r.similarity ?? 0) >= cutoff);
+        const final = kept.length >= 3 ? kept : ranked.slice(0, 3);
+        for (const row of final) matchedIds.add(row.id);
       }
     }
 

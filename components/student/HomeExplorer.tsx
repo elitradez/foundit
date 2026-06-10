@@ -30,6 +30,20 @@ export function HomeExplorer({ initialItems, loadError, universityName = "Univer
   const [selectedDept, setSelectedDept] = useState<string | null>(null);
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const searchCacheRef = useRef<Map<string, string[]>>(new Map());
+  const [toast, setToast] = useState<string | null>(null);
+  const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  function showToast(message: string) {
+    setToast(message);
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    toastTimerRef.current = setTimeout(() => setToast(null), 6000);
+  }
+
+  useEffect(() => {
+    return () => {
+      if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    };
+  }, []);
 
   async function loadMore() {
     setLoadingMore(true);
@@ -71,6 +85,11 @@ export function HomeExplorer({ initialItems, loadError, universityName = "Univer
       return;
     }
 
+    // Clear the previous query's AI results so the grid falls back to the
+    // instant local filter for THIS query while the new request is in flight,
+    // instead of showing stale matches from the prior query.
+    setAiItemIds(null);
+
     const controller = new AbortController();
     const timer = setTimeout(async () => {
       setSearchBusy(true);
@@ -87,10 +106,12 @@ export function HomeExplorer({ initialItems, loadError, universityName = "Univer
           searchCacheRef.current.set(key, ids);
           setAiItemIds(ids);
         } else {
-          setAiItemIds([]);
+          // Search service unavailable (rate limit, outage): fall back to the
+          // instant local filter rather than blanking the grid.
+          setAiItemIds(null);
         }
       } catch {
-        if (!controller.signal.aborted) setAiItemIds([]);
+        if (!controller.signal.aborted) setAiItemIds(null);
       } finally {
         if (!controller.signal.aborted) setSearchBusy(false);
       }
@@ -106,16 +127,38 @@ export function HomeExplorer({ initialItems, loadError, universityName = "Univer
     setVisibleCount(PAGE_SIZE);
   }, [query, selectedDept]);
 
+  // Instant client-side narrowing on the fields available in the public
+  // payload (name, location, department, date). This is what the user sees
+  // immediately on each keystroke; the AI semantic results replace it as soon
+  // as they arrive (they catch matches like "water bottle" → "Hydro Flask"
+  // that plain text matching cannot).
+  const localMatchIds = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return null;
+    const tokens = q.split(/\s+/).filter(Boolean);
+    return allItems
+      .filter((i) => {
+        const hay = `${i.name} ${i.location} ${i.department_name ?? ""} ${i.date_found}`.toLowerCase();
+        return tokens.every((t) => hay.includes(t));
+      })
+      .map((i) => i.id);
+  }, [allItems, query]);
+
   const filtered = useMemo(() => {
     const base = selectedDept
       ? allItems.filter((i) => i.department_id === selectedDept)
       : allItems;
     const q = query.trim();
     if (!q) return base;
-    if (aiItemIds === null) return base;
-    const idSet = new Set(aiItemIds);
-    return base.filter((i) => idSet.has(i.id));
-  }, [aiItemIds, allItems, query, selectedDept]);
+    // Prefer AI results; while they're pending (or the service is down) use
+    // the instant local match so typing always visibly narrows the grid.
+    const ids = aiItemIds ?? localMatchIds;
+    if (ids === null) return base;
+    const order = new Map(ids.map((id, idx) => [id, idx]));
+    return base
+      .filter((i) => order.has(i.id))
+      .sort((a, b) => (order.get(a.id) ?? 0) - (order.get(b.id) ?? 0));
+  }, [aiItemIds, localMatchIds, allItems, query, selectedDept]);
 
   const visibleItems = filtered.slice(0, visibleCount);
 
@@ -299,7 +342,32 @@ export function HomeExplorer({ initialItems, loadError, universityName = "Univer
         )}
       </main>
 
-      {openItem ? <ClaimModal key={openItem.id} item={openItem} onClose={() => setOpenItem(null)} departmentName={openItem.department_name ?? "Lost & Found"} /> : null}
+      {openItem ? (
+        <ClaimModal
+          key={openItem.id}
+          item={openItem}
+          onClose={() => setOpenItem(null)}
+          departmentName={openItem.department_name ?? "Lost & Found"}
+          onSubmitted={() => showToast("Claim submitted — we’ll contact you shortly.")}
+        />
+      ) : null}
+
+      {/* Toast — container stays mounted so screen readers announce the text */}
+      <div
+        role="status"
+        aria-live="polite"
+        style={{ position: "fixed", bottom: 24, left: 0, right: 0, zIndex: 100, display: "flex", justifyContent: "center", pointerEvents: "none", padding: "0 16px" }}
+      >
+        {toast ? (
+          <div
+            className="anim-pop-in"
+            style={{ display: "flex", alignItems: "center", gap: 10, backgroundColor: "#1a1a1a", color: "#FFFFFF", padding: "12px 20px", borderRadius: 8, fontSize: 14, fontWeight: 500, boxShadow: "0 8px 24px rgba(0,0,0,0.3)", maxWidth: "100%" }}
+          >
+            <span aria-hidden="true" style={{ color: "#4ADE80", fontWeight: 700 }}>✓</span>
+            {toast}
+          </div>
+        ) : null}
+      </div>
 
       {/* ── Footer ── */}
       <footer style={{ borderTop: "1px solid #E5E5E5", backgroundColor: "#FFFFFF", padding: "24px 16px", textAlign: "center" }}>
@@ -384,7 +452,7 @@ function ItemCard({ item, onClick }: { item: PublicItem; onClick: () => void }) 
 
 type ModalStep = 1 | 2 | 3 | 4;
 
-function ClaimModal({ item, onClose, departmentName }: { item: PublicItem; onClose: () => void; departmentName: string }) {
+function ClaimModal({ item, onClose, departmentName, onSubmitted }: { item: PublicItem; onClose: () => void; departmentName: string; onSubmitted: () => void }) {
   const dialogRef = useFocusTrap<HTMLDivElement>(true, onClose);
   const [step, setStep] = useState<ModalStep>(1);
   const [studentDescription, setStudentDescription] = useState("");
@@ -403,6 +471,16 @@ function ClaimModal({ item, onClose, departmentName }: { item: PublicItem; onClo
   const contactError = contactTouched && !email.trim() && !phoneNumber.trim();
   const canSubmit = studentName.trim().length > 0 && (email.trim().length > 0 || phoneNumber.trim().length > 0);
 
+  // Each step swap unmounts the element that had focus, which would drop focus
+  // to <body> (breaking Tab order and giving screen-reader users no cue). Move
+  // focus to a meaningful element in the new step. Focusing the step-4 heading
+  // announces "You're all set" inside the dialog, which the aria-modal would
+  // otherwise suppress for an outside-the-dialog toast.
+  useEffect(() => {
+    if (step === 3) document.getElementById("claim-name")?.focus();
+    if (step === 4) document.getElementById("claim-title")?.focus();
+  }, [step]);
+
   async function checkMatch() {
     setError(null);
     setMatchBusy(true);
@@ -417,6 +495,8 @@ function ClaimModal({ item, onClose, departmentName }: { item: PublicItem; onClo
       setMatchScore(data.score ?? 0);
       setRevealUrl(data.revealUrl ?? null);
       setStep(2);
+    } catch {
+      setError("Couldn’t reach the server — please check your connection and try again.");
     } finally {
       setMatchBusy(false);
     }
@@ -439,7 +519,10 @@ function ClaimModal({ item, onClose, departmentName }: { item: PublicItem; onClo
       });
       const data = (await res.json().catch(() => ({}))) as { error?: string };
       if (!res.ok) { setError(data.error ?? "Submit failed"); return; }
+      onSubmitted();
       setStep(4);
+    } catch {
+      setError("Couldn’t reach the server — your claim was NOT submitted. Please try again.");
     } finally {
       setSubmitBusy(false);
     }
@@ -504,7 +587,7 @@ function ClaimModal({ item, onClose, departmentName }: { item: PublicItem; onClo
     <div
       className="anim-fade-in"
       style={{ position: "fixed", inset: 0, zIndex: 50, display: "flex", alignItems: "flex-end", justifyContent: "center", backgroundColor: "rgba(0,0,0,0.5)", padding: 16, backdropFilter: "blur(4px)" }}
-      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+      onClick={(e) => { if (e.target === e.currentTarget && !submitBusy) onClose(); }}
     >
       <div
         ref={dialogRef}
@@ -517,7 +600,7 @@ function ClaimModal({ item, onClose, departmentName }: { item: PublicItem; onClo
         {/* Header */}
         <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, borderBottom: "1px solid #E5E5E5", padding: "16px 20px" }}>
           <div>
-            <h2 id="claim-title" style={{ fontSize: 17, fontWeight: 600, color: "#1a1a1a", margin: 0 }}>
+            <h2 id="claim-title" tabIndex={-1} style={{ fontSize: 17, fontWeight: 600, color: "#1a1a1a", margin: 0, outline: "none" }}>
               {step === 4 ? "You\u2019re all set \u2713" : "Claim item"}
             </h2>
             {step !== 4 ? <p style={{ marginTop: 2, fontSize: 13, color: "#555555" }}>{item.name}</p> : null}
@@ -525,7 +608,8 @@ function ClaimModal({ item, onClose, departmentName }: { item: PublicItem; onClo
           <button
             type="button"
             onClick={onClose}
-            style={{ minHeight: 36, padding: "6px 14px", backgroundColor: "#FFFFFF", border: "1px solid #E5E5E5", borderRadius: 4, fontSize: 13, color: "#555555", cursor: "pointer", fontFamily: FONT }}
+            disabled={submitBusy}
+            style={{ minHeight: 36, padding: "6px 14px", backgroundColor: "#FFFFFF", border: "1px solid #E5E5E5", borderRadius: 4, fontSize: 13, color: "#555555", cursor: submitBusy ? "not-allowed" : "pointer", opacity: submitBusy ? 0.5 : 1, fontFamily: FONT }}
           >
             Close
           </button>
