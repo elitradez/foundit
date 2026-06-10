@@ -1,7 +1,15 @@
 import { NextResponse } from "next/server";
 import { createAdminSupabaseClient } from "@/lib/supabase-admin";
+import { claimLimiter, getClientIp, isRateLimited } from "@/lib/ratelimit";
 
 export async function POST(req: Request) {
+  if (await isRateLimited(claimLimiter, getClientIp(req))) {
+    return NextResponse.json(
+      { error: "Too many requests. Please try again in a minute." },
+      { status: 429 }
+    );
+  }
+
   try {
     const body = (await req.json()) as {
       itemId?: string;

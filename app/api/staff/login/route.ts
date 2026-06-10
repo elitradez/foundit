@@ -73,7 +73,9 @@ export async function POST(req: Request) {
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
       path: "/",
-      maxAge: 60 * 60 * 24 * 7,
+      // Match the token's 12-hour absolute expiry so a stale cookie can't linger
+      // long after the session it carries has already expired server-side.
+      maxAge: 60 * 60 * 12,
     });
 
     return NextResponse.json({ ok: true });

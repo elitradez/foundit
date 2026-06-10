@@ -130,7 +130,7 @@ export async function GET() {
       status: "Returned" as const,
     })),
     ...deptClaimedRows.map((c) => ({
-      kind: c.status === "returned" ? ("returned" as "returned") : ("claimed" as "claimed"),
+      kind: c.status === "returned" ? ("returned" as const) : ("claimed" as const),
       claim_id: c.id,
       item_id: c.item_id,
       item_name: itemMap.get(c.item_id)?.name ?? "Unknown item",
@@ -138,7 +138,7 @@ export async function GET() {
       student_id_number: c.student_id_number,
       phone_number: c.phone_number ?? null,
       date: (c.updated_at ?? c.created_at).slice(0, 10),
-      status: c.status === "returned" ? ("Returned" as "Returned") : ("Claimed" as "Claimed"),
+      status: c.status === "returned" ? ("Returned" as const) : ("Claimed" as const),
     })),
   ].sort((a, b) => (a.date < b.date ? 1 : -1));
 

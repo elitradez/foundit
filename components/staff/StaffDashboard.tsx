@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useFocusTrap } from "@/lib/useFocusTrap";
 import { LogItemForm } from "@/components/staff/LogItemForm";
@@ -665,12 +666,12 @@ export function StaffDashboard({
       {/* Return to student view */}
       <div className="border-b border-[#E5E5E5] bg-white px-4 py-2">
         <div className="mx-auto max-w-6xl">
-          <a
+          <Link
             href="/"
             className="text-xs font-medium text-[#CC0000] hover:underline"
           >
             ← Return to student view
-          </a>
+          </Link>
         </div>
       </div>
 

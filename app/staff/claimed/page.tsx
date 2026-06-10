@@ -58,6 +58,16 @@ async function relistAction(formData: FormData) {
   const supabase = createAdminSupabaseClient();
 
   if (kind === "returned") {
+    // Verify the item belongs to this department before touching its claims —
+    // otherwise a crafted itemId could reset claims in another department.
+    const { data: itemRow } = await supabase
+      .from("items")
+      .select("id")
+      .eq("id", itemId)
+      .eq("department_id", session.department_id)
+      .maybeSingle();
+    if (!itemRow) throw new Error("Item not found");
+
     const { error } = await supabase
       .from("items")
       .update({
@@ -161,6 +171,14 @@ async function deleteLogRowAction(formData: FormData) {
     if (delErr) throw delErr;
   } else if (kind === "claimed") {
     if (!claimId) return;
+    // Only allow deleting a claim whose item belongs to this department.
+    const { data: claimRow } = await supabase
+      .from("claims")
+      .select("id, items!inner(department_id)")
+      .eq("id", claimId)
+      .eq("items.department_id", session.department_id)
+      .maybeSingle();
+    if (!claimRow) throw new Error("Claim not found");
     const { error: delErr } = await supabase.from("claims").delete().eq("id", claimId);
     if (delErr) throw delErr;
   }

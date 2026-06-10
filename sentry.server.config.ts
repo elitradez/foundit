@@ -10,10 +10,12 @@ Sentry.init({
   // Define how likely traces are sampled. Adjust this value in production, or use tracesSampler for greater control.
   tracesSampleRate: 0.1,
 
-  // Enable logs to be sent to Sentry
-  enableLogs: true,
+  // Do NOT forward console logs to Sentry: error paths in this app log phone
+  // numbers and other PII, which must not leave our infrastructure.
+  enableLogs: false,
 
-  // Enable sending user PII (Personally Identifiable Information)
+  // Do NOT send user PII (cookies, IP, headers) to a third party — this app
+  // handles student PII and publishes a "no third parties" posture.
   // https://docs.sentry.io/platforms/javascript/guides/nextjs/configuration/options/#sendDefaultPii
-  sendDefaultPii: true,
+  sendDefaultPii: false,
 });

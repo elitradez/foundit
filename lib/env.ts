@@ -49,6 +49,21 @@ function validateEnv(): ValidationResult {
     errors.push("SUPABASE_SERVICE_ROLE_KEY is missing");
   }
 
+  // STAFF_SESSION_SECRET — signs staff session cookies; must be 32+ chars or
+  // token minting/verification throws at request time.
+  const staffSecret = process.env.STAFF_SESSION_SECRET?.trim() ?? "";
+  if (!staffSecret) {
+    errors.push("STAFF_SESSION_SECRET is missing (required to sign staff sessions)");
+  } else if (staffSecret.length < 32) {
+    errors.push("STAFF_SESSION_SECRET must be at least 32 characters");
+  }
+
+  // OPENAI_API_KEY — used for item embeddings and semantic search. Without it
+  // search silently degrades and newly logged items never become searchable.
+  if (!process.env.OPENAI_API_KEY?.trim()) {
+    errors.push("OPENAI_API_KEY is missing (required for item embeddings / search)");
+  }
+
   // TWILIO — TWILIO_AUTH_TOKEN is required for webhook signature verification
   if (!process.env.TWILIO_ACCOUNT_SID?.trim()) {
     errors.push("TWILIO_ACCOUNT_SID is missing");

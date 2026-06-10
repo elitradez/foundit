@@ -24,10 +24,13 @@ const supabaseMock = {
   mutationResult:          { data: null, error: null },
 };
 
-const storageRemoveSpy = vi.fn(async (_paths: string[]) => supabaseMock.storageRemoveResult);
+const storageRemoveSpy = vi.fn(async () => supabaseMock.storageRemoveResult);
 const deleteSpy  = vi.fn();
 const updateSpy  = vi.fn();
 const insertSpy  = vi.fn();
+
+// A minimal awaitable shape: supabase query builders resolve via .then().
+type Thenable = { then: (resolve: (v: unknown) => unknown) => unknown };
 
 // Build a chainable Supabase query builder that resolves via .then().
 function makeChain(resolvedValue: unknown) {
@@ -35,10 +38,8 @@ function makeChain(resolvedValue: unknown) {
   for (const method of ["select", "eq", "in", "or", "update", "delete", "insert", "limit"]) {
     chain[method] = vi.fn(() => chain);
   }
-  (chain as { then: Function }).then = (
-    resolve: (v: unknown) => unknown,
-    _reject?: (e: unknown) => unknown
-  ) => Promise.resolve(resolvedValue).then(resolve);
+  (chain as unknown as Thenable).then = (resolve: (v: unknown) => unknown) =>
+    Promise.resolve(resolvedValue).then(resolve);
   return chain;
 }
 
@@ -108,11 +109,11 @@ function buildMockSupabase() {
         if (opts?.count === "exact") return makeChain(supabaseMock.alertsCountResult);
         return makeChain({ data: [], error: null });
       });
-      chain.update = vi.fn((data: unknown, _opts?: unknown) => {
+      chain.update = vi.fn((data: unknown) => {
         updateSpy(table, data);
         return makeChain({ data: null, error: null, count: supabaseMock.alertsUpdateCount });
       });
-      (chain as { then: Function }).then = (resolve: Function) =>
+      (chain as unknown as Thenable).then = (resolve: (v: unknown) => unknown) =>
         Promise.resolve(supabaseMock.alertsCountResult).then(resolve);
       return chain;
     }
@@ -397,7 +398,11 @@ describe("POST /api/admin/erasure", () => {
       expect.objectContaining({ event_type: "erasure_admin", university_id: "u-1" })
     );
 
-    const [[, logData]] = insertSpy.mock.calls.filter(([t]: [string]) => t === "security_log");
+    const securityLogCall = insertSpy.mock.calls.find(
+      (call: unknown[]) => call[0] === "security_log",
+    ) as [string, { description: string }] | undefined;
+    expect(securityLogCall).toBeDefined();
+    const logData = (securityLogCall as [string, { description: string }])[1];
     expect(logData.description).not.toContain("s@uni.edu");
     expect(logData.description).not.toMatch(/@/);
     expect(logData.description).toMatch(/alert/i);

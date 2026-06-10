@@ -91,25 +91,10 @@ create index if not exists alerts_notified_created_idx on public.alerts (notifie
 alter table public.alerts enable row level security;
 
 -- Vector similarity search used by /api/items/search.
--- Requires the pgvector extension: CREATE EXTENSION IF NOT EXISTS vector;
-create or replace function search_items(
-  query_embedding vector,
-  match_threshold float,
-  match_count int,
-  p_university_id text
-)
-returns table (id uuid, similarity float)
-language sql
-as $$
-  select
-    id,
-    1 - (embedding <=> query_embedding) as similarity
-  from public.items
-  where
-    returned_at is null
-    and embedding is not null
-    and (p_university_id is null or university_id = p_university_id) -- TODO: remove null-bypass once app-layer UUID guard has baked for 2 weeks (app now guarantees non-null)
-    and 1 - (embedding <=> query_embedding) >= match_threshold
-  order by similarity desc
-  limit match_count;
-$$;
+-- The search_items function is defined (and security-hardened: pinned
+-- search_path, EXECUTE revoked from PUBLIC/anon/authenticated) in
+--   supabase/migrations/20260610010000_function_grants_and_search_path.sql
+-- Do NOT define it here: an older text-signature version previously lived in
+-- this file, and re-creating it alongside the live uuid version produces an
+-- overload pair with identical parameter names that PostgREST cannot
+-- disambiguate, silently breaking the search RPC.
