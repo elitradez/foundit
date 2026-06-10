@@ -10,15 +10,16 @@ type SearchBody = { query?: string };
 // RECALL: surface every plausible match and let the student's eye (and the
 // in-person staff check) pick out their item. A missed match means someone
 // never gets their property back; an extra item just costs a glance.
-//   - A low absolute floor keeps near-matches (teal ≈ blue) in the results.
-//   - Relevance ORDER (best first) surfaces the strongest matches at the top;
-//     it does NOT shrink the set, so the floor is the real narrowing lever.
-// TUNING: text-embedding-3-small produces compressed cosine scores, so on a
-// homogeneous lost-and-found catalog a low floor can let a vague query ("black",
-// "jacket") clear it against much of the catalog. 0.3 favors recall; if vague
-// queries feel unfiltered against the live data, raise the floor a little —
-// but cautiously, since real near-matches (the teal bottle) sit around ~0.5.
-const VECTOR_MATCH_THRESHOLD = 0.3; // recall floor — tune against the live catalog
+//   - An absolute floor keeps real near-matches (teal ≈ blue) while dropping
+//     unrelated items; relevance ORDER (best first) surfaces the closest match.
+// MEASURED against the live catalog (text-embedding-3-small) for "blue water
+// bottle": every real bottle scores high — Water bottle .607, Teal .576,
+// Green .540, Blue Stanley .453, Hydro Flask .402 — while unrelated items fall
+// below ~.34 (Red camera .335, Sunglasses .323, Sunglasses case .304). 0.40
+// sits in that gap: it keeps all bottles/tumblers with a wide margin (lowest
+// real bottle .540) and drops the camera/sunglasses noise. A floor of 0.30 was
+// letting that noise through. Holds across "water bottle"/"black backpack" too.
+const VECTOR_MATCH_THRESHOLD = 0.4; // measured separation point on the live catalog
 const VECTOR_MATCH_COUNT = 50;
 
 const MONTH_MAP: Record<string, number> = {
