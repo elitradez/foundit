@@ -1,7 +1,9 @@
 import { useEffect, useRef } from "react";
 
+// Exclude hidden inputs: they match input:not([disabled]) but cannot hold
+// focus, so treating one as the "first focusable" silently breaks Tab.
 const FOCUSABLE =
-  'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
+  'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]):not([type="hidden"]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
 export function useFocusTrap<T extends HTMLElement = HTMLDivElement>(
   active: boolean,
@@ -45,13 +47,27 @@ export function useFocusTrap<T extends HTMLElement = HTMLDivElement>(
         if (!els.length) return;
         const first = els[0];
         const last = els[els.length - 1];
+        const current = document.activeElement;
+
+        // If focus is outside the dialog (e.g. the focused element was
+        // unmounted by a step change and focus fell back to <body>), the
+        // browser's default Tab would move focus to content BEHIND the modal.
+        // Pull it back inside instead.
+        if (!(current instanceof HTMLElement) || !container.contains(current)) {
+          e.preventDefault();
+          (e.shiftKey ? last : first).focus();
+          return;
+        }
+
+        // At the edges, wrap. Anywhere else, do NOT preventDefault — the
+        // browser performs standard focus advancement between fields.
         if (e.shiftKey) {
-          if (document.activeElement === first) {
+          if (current === first) {
             e.preventDefault();
             last.focus();
           }
         } else {
-          if (document.activeElement === last) {
+          if (current === last) {
             e.preventDefault();
             first.focus();
           }
