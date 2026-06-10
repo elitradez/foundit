@@ -44,55 +44,7 @@ export function FindMyItem({
   const [alertBusy, setAlertBusy] = useState(false);
   const [alertDone, setAlertDone] = useState(false);
   const [alertError, setAlertError] = useState<string | null>(null);
-  // Inline verify step for blurred matches: the student adds detail and the
-  // existing match endpoint (same >60 bar as browse) decides whether to unblur.
-  const [verifyId, setVerifyId] = useState<string | null>(null);
-  const [verifyText, setVerifyText] = useState("");
-  const [verifyBusy, setVerifyBusy] = useState(false);
-  const [verifyError, setVerifyError] = useState<string | null>(null);
-  const [verifyTried, setVerifyTried] = useState(false);
-  // The richest description given per item — carried into the claim so staff
-  // see everything the student said. The original committed description stays
-  // immutable server-side via findRequestId.
-  const [refinedDescriptions, setRefinedDescriptions] = useState<Record<string, string>>({});
-
   const tooShort = description.trim().length < 20;
-
-  function openVerify(matchId: string) {
-    setVerifyId(matchId);
-    setVerifyText(refinedDescriptions[matchId] ?? description.trim());
-    setVerifyError(null);
-    setVerifyTried(false);
-  }
-
-  async function submitVerify() {
-    if (!verifyId) return;
-    setVerifyError(null);
-    setVerifyBusy(true);
-    try {
-      const res = await fetch("/api/claims/match", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ itemId: verifyId, studentDescription: verifyText.trim() }),
-      });
-      const data = (await res.json().catch(() => ({}))) as { score?: number; revealUrl?: string | null; error?: string };
-      if (!res.ok) {
-        setVerifyError(data.error ?? "Check failed — please try again.");
-        return;
-      }
-      setRefinedDescriptions((prev) => ({ ...prev, [verifyId]: verifyText.trim() }));
-      if (data.revealUrl) {
-        setMatches((prev) => prev.map((m) => (m.id === verifyId ? { ...m, photoUrl: data.revealUrl ?? null } : m)));
-        setVerifyId(null);
-      } else {
-        setVerifyTried(true);
-      }
-    } catch {
-      setVerifyError("Couldn’t reach the server — please try again.");
-    } finally {
-      setVerifyBusy(false);
-    }
-  }
 
   async function submitFind() {
     setError(null);
@@ -328,7 +280,7 @@ export function FindMyItem({
                   />
                   {!m.photoUrl ? (
                     <span style={{ position: "absolute", bottom: 8, left: 8, backgroundColor: "rgba(26,26,26,0.8)", color: "#FFFFFF", fontSize: 11, fontWeight: 500, padding: "4px 8px", borderRadius: 4 }}>
-                      {m.requiresPin ? "Photo hidden — this item needs its PIN at pickup" : "Photo hidden — add detail below to unlock it"}
+                      {m.requiresPin ? "Photo hidden — this item needs its PIN at pickup" : "Photo hidden — verify it’s yours to see it"}
                     </span>
                   ) : null}
                 </div>
@@ -337,58 +289,13 @@ export function FindMyItem({
                   <p style={{ fontSize: 13, color: "#666666", margin: "0 0 12px" }}>
                     {m.department_name ?? "Lost & Found"}{m.date_found ? ` · found ${m.date_found}` : ""}
                   </p>
-
-                  {/* Verify step: only where unblurring is actually possible */}
                   {!m.photoUrl && !m.requiresPin ? (
-                    verifyId === m.id ? (
-                      <div style={{ marginBottom: 12, padding: 12, backgroundColor: "#F5F5F5", borderRadius: 8 }}>
-                        <p style={{ fontSize: 13, color: "#333333", margin: "0 0 8px", lineHeight: 1.5 }}>
-                          Add specifics only the owner would know — engravings, stickers, contents, damage — and we&apos;ll unlock the photo if it matches.
-                        </p>
-                        <textarea
-                          value={verifyText}
-                          onChange={(e) => setVerifyText(e.target.value)}
-                          rows={3}
-                          style={{ ...inputStyle, resize: "vertical", marginBottom: 8 }}
-                          {...focusRing}
-                        />
-                        {verifyTried ? (
-                          <p style={{ fontSize: 12, color: "#92400E", backgroundColor: "#FFFBEB", border: "1px solid #FDE68A", borderRadius: 6, padding: "8px 10px", margin: "0 0 8px", lineHeight: 1.5 }}>
-                            Still not enough to unlock the photo. You can add more detail and try again — or claim it anyway and staff will verify in person at pickup.
-                          </p>
-                        ) : null}
-                        {verifyError ? <p role="alert" style={{ fontSize: 12, color: "#CC0000", margin: "0 0 8px" }}>{verifyError}</p> : null}
-                        <div style={{ display: "flex", gap: 8 }}>
-                          <button
-                            type="button"
-                            onClick={() => void submitVerify()}
-                            disabled={verifyBusy || verifyText.trim().length < 20}
-                            style={{ ...primaryBtn, minHeight: 44, fontSize: 14, opacity: verifyBusy || verifyText.trim().length < 20 ? 0.5 : 1 }}
-                          >
-                            {verifyBusy ? <><Spinner className="h-4 w-4" style={{ color: "#fff" }} /> Checking…</> : "Verify it’s mine"}
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setVerifyId(null)}
-                            style={{ minHeight: 44, padding: "0 16px", backgroundColor: "#FFFFFF", border: "1px solid #E5E5E5", borderRadius: 8, fontSize: 14, color: "#555555", cursor: "pointer", fontFamily: FONT }}
-                          >
-                            Cancel
-                          </button>
-                        </div>
-                      </div>
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={() => openVerify(m.id)}
-                        style={{ display: "flex", width: "100%", alignItems: "center", justifyContent: "center", minHeight: 44, marginBottom: 8, backgroundColor: "#FFFFFF", color: "#CC0000", fontSize: 14, fontWeight: 600, border: "1px solid #CC0000", borderRadius: 8, cursor: "pointer", fontFamily: FONT }}
-                      >
-                        Add more detail to see the photo
-                      </button>
-                    )
+                    <p style={{ fontSize: 12, color: "#666666", margin: "0 0 10px", lineHeight: 1.5 }}>
+                      Think it&apos;s yours? You&apos;ll add a few identifying details and the photo unblurs if they match.
+                    </p>
                   ) : null}
-
                   <button type="button" onClick={() => setClaimItem(m)} style={primaryBtn}>
-                    Yes, this is mine
+                    {m.photoUrl ? "Yes, this is mine" : "Verify it’s mine"}
                   </button>
                 </div>
               </div>
@@ -458,8 +365,13 @@ export function FindMyItem({
         ) : null}
       </div>
 
-      {/* Existing claim contact form, entered at the contact step with the
-          committed description — the form itself is unchanged. */}
+      {/* The existing browse claim modal, reused wholesale:
+          - photo already unblurred (both gates passed) -> straight to the
+            contact step; the verification already happened server-side.
+          - photo still blurred -> enter at the DESCRIBE step, prefilled with
+            the committed description, so the student goes through the same
+            verify-and-unblur sequence the browse flow uses (AI check -> photo
+            reveals on match -> "Yes, this is mine" -> contact form). */}
       {claimItem ? (
         <ClaimModal
           key={claimItem.id}
@@ -467,8 +379,8 @@ export function FindMyItem({
           departmentName={claimItem.department_name ?? "Lost & Found"}
           onClose={() => setClaimItem(null)}
           onSubmitted={onClaimSubmitted}
-          initialStep={3}
-          committedDescription={refinedDescriptions[claimItem.id] ?? description.trim()}
+          initialStep={claimItem.photoUrl ? 3 : 1}
+          committedDescription={description.trim()}
           findRequestId={findRequestId ?? undefined}
         />
       ) : null}
