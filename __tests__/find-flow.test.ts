@@ -16,6 +16,7 @@ const h = vi.hoisted(() => {
     rateLimited: false,
     findInsertResult: { data: { id: "11111111-1111-4111-8111-111111111111" }, error: null as { message: string } | null },
     vectorRows: [] as Array<{ id: string; name?: string; description?: string; similarity?: number }>,
+    lexicalRows: [] as Array<{ id: string; name?: string; description?: string; lex_score?: number }>,
     itemsRows: [] as Array<Record<string, unknown>>,
     itemLookup: null as Record<string, unknown> | null,
     findReqLookup: null as Record<string, unknown> | null,
@@ -96,6 +97,7 @@ vi.mock("@/lib/ratelimit", () => ({
 vi.mock("@/lib/search", () => ({
   embedQuery: vi.fn(async () => [0.1, 0.2, 0.3]),
   vectorSearchItems: vi.fn(async () => h.state.vectorRows),
+  lexicalSearchItems: vi.fn(async () => h.state.lexicalRows),
   rerankByRelevance: vi.fn(async (_q: string, rows: Array<{ id: string }>) => rows.map((r) => r.id)),
 }));
 
@@ -142,6 +144,7 @@ beforeEach(() => {
   s.rateLimited = false;
   s.findInsertResult = { data: { id: FR_ID }, error: null };
   s.vectorRows = [];
+  s.lexicalRows = [];
   s.itemsRows = [];
   s.itemLookup = null;
   s.findReqLookup = null;
@@ -169,6 +172,27 @@ describe("POST /api/find", () => {
     expect(res.status).toBe(200);
     expect(h.state.findInserts).toHaveLength(1);
     expect(h.state.findInserts[0].description).toBe("knife");
+  });
+
+  it("shows a lexical word-hit even when vector similarity is below the gate ('knife' -> Pocket Knife), still blurred", async () => {
+    h.state.vectorRows = []; // one-word query: nothing clears the 0.45 vector gate
+    h.state.lexicalRows = [{ id: "pk", name: "Pocket Knife", description: "Husky pocket knife", lex_score: 1.0 }];
+    h.state.itemsRows = [makeItemRow("pk", { name: "Pocket Knife" })];
+    h.state.scoreResult = 10; // strict scorer says not corroborated -> stays blurred
+    const res = await findPost(jsonReq({ description: "knife" }));
+    const body = await res.json();
+    expect(res.status).toBe(200);
+    expect(body.matches.map((m: { id: string }) => m.id)).toEqual(["pk"]);
+    expect(body.matches[0].photoUrl).toBeNull(); // unblur gates unchanged
+  });
+
+  it("weak trigram noise below the lexical bar is NOT shown", async () => {
+    h.state.vectorRows = [];
+    h.state.lexicalRows = [{ id: "noise", name: "Green water bottle", lex_score: 0.4 }];
+    h.state.itemsRows = [makeItemRow("noise", { name: "Green water bottle" })];
+    const res = await findPost(jsonReq({ description: "knife" }));
+    const body = await res.json();
+    expect(body.matches).toEqual([]);
   });
 
   it("commits the description BEFORE matching, even when zero matches return", async () => {
