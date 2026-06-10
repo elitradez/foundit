@@ -73,11 +73,10 @@ export async function POST(req: Request) {
     const locationLost = body.locationLost?.trim() || null;
     const dateLost = body.dateLost?.trim() || null;
 
-    if (description.length < 20) {
-      return NextResponse.json(
-        { error: "Please describe your item in a bit more detail (at least 20 characters)." },
-        { status: 400 }
-      );
+    // No minimum length — "knife" is a valid search. The unblur gates carry
+    // the anti-fraud burden; terse descriptions just stay blurred.
+    if (description.length === 0) {
+      return NextResponse.json({ error: "Please describe your item." }, { status: 400 });
     }
     if (description.length > 4000) {
       return NextResponse.json({ error: "Description too long" }, { status: 400 });

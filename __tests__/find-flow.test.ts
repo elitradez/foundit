@@ -157,10 +157,18 @@ beforeEach(() => {
 });
 
 describe("POST /api/find", () => {
-  it("rejects short descriptions without committing anything", async () => {
-    const res = await findPost(jsonReq({ description: "blue bottle" }));
+  it("rejects empty descriptions without committing anything", async () => {
+    const res = await findPost(jsonReq({ description: "   " }));
     expect(res.status).toBe(400);
     expect(h.state.findInserts).toHaveLength(0);
+  });
+
+  it("accepts a one-word description — no minimum length", async () => {
+    h.state.vectorRows = [];
+    const res = await findPost(jsonReq({ description: "knife" }));
+    expect(res.status).toBe(200);
+    expect(h.state.findInserts).toHaveLength(1);
+    expect(h.state.findInserts[0].description).toBe("knife");
   });
 
   it("commits the description BEFORE matching, even when zero matches return", async () => {

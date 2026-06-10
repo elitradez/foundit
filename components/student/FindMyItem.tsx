@@ -53,7 +53,10 @@ export function FindMyItem({
   const [alertError, setAlertError] = useState<string | null>(null);
   const stepInputRef = useRef<HTMLTextAreaElement | HTMLSelectElement | HTMLInputElement | null>(null);
 
-  const tooShort = description.trim().length < 20;
+  // No minimum length: "knife" is a legitimate search. The anti-fraud unblur
+  // gates are what protect photos, not input friction — a terse description
+  // just yields blurred matches plus the verify step.
+  const tooShort = description.trim().length === 0;
 
   // Each step swap unmounts the previously focused control; refocus the new
   // step's input so keyboard and screen-reader users land somewhere sensible.
@@ -260,9 +263,7 @@ export function FindMyItem({
                 aria-label="Describe your lost item"
                 style={{ ...inputBase, resize: "none", lineHeight: 1.5 }}
               />
-              {tooShort && description.trim().length > 0 ? (
-                <p style={{ fontSize: 13, color: INK_60, margin: "8px 0 0" }}>A little more detail — 20 characters minimum.</p>
-              ) : null}
+              <p style={{ fontSize: 13, color: INK_60, margin: "8px 0 0" }}>More detail means better matches — but one word works too.</p>
               {error ? <p role="alert" style={{ fontSize: 14, color: "#CC0000", margin: "12px 0 0" }}>{error}</p> : null}
             </div>
           ) : null}
