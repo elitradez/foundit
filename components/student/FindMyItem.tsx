@@ -146,7 +146,7 @@ export function FindMyItem({
   return (
     <div
       className="anim-fade-in"
-      style={{ position: "fixed", inset: 0, zIndex: 60, backgroundColor: "rgba(0,0,0,0.5)", backdropFilter: "blur(4px)", display: "flex", alignItems: "flex-end", justifyContent: "center" }}
+      style={{ position: "fixed", inset: 0, zIndex: 60, backgroundColor: "rgba(0,0,0,0.5)", backdropFilter: "blur(4px)", display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}
       onClick={(e) => { if (e.target === e.currentTarget && phase !== "searching") onClose(); }}
     >
       <div
@@ -158,11 +158,11 @@ export function FindMyItem({
         style={{
           width: "100%",
           maxWidth: 560,
-          maxHeight: "94vh",
+          maxHeight: "90vh",
           overflowY: "auto",
           backgroundColor: "#FFFFFF",
-          borderRadius: "16px 16px 0 0",
-          boxShadow: "0 -8px 40px rgba(0,0,0,0.25)",
+          borderRadius: 16,
+          boxShadow: "0 20px 60px rgba(0,0,0,0.3)",
           fontFamily: FONT,
           color: "#333333",
         }}
@@ -186,8 +186,9 @@ export function FindMyItem({
         {phase === "form" ? (
           <div style={{ padding: 20, display: "flex", flexDirection: "column", gap: 18 }}>
             <p style={{ fontSize: 14, color: "#555555", lineHeight: 1.5, margin: 0 }}>
-              Describe what you lost and we&apos;ll check everything that&apos;s been turned in.
-              The more detail, the better the match.
+              Describe your item with <strong style={{ color: "#1a1a1a" }}>as much detail as possible</strong> —
+              color, brand, stickers, scratches, what&apos;s inside. The more detail you give,
+              the more accurate your claim will be.
             </p>
 
             <label style={{ display: "block" }}>
@@ -203,7 +204,7 @@ export function FindMyItem({
                 {...focusRing}
               />
               <span style={{ display: "block", marginTop: 4, fontSize: 12, color: tooShort && description.length > 0 ? "#CC0000" : "#666666" }}>
-                Include color, brand, stickers, damage — anything that makes it yours.
+                Vague descriptions match poorly — specifics like &quot;dented Hydro Flask with a U sticker&quot; work far better than &quot;water bottle&quot;.
               </span>
             </label>
 

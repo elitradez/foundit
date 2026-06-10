@@ -33,7 +33,7 @@ const FIND_MATCH_SIMILARITY = 0.45;
 // details of this exact item.
 const UNBLUR_MATCH_SCORE = 60;
 
-const MAX_MATCHES = 3;
+const MAX_MATCHES = 5;
 const SIGNED_URL_TTL_S = 60 * 10; // same TTL as the existing browse reveal
 
 export const maxDuration = 30; // embedding + rerank + up to 3 parallel scorer calls

@@ -217,9 +217,10 @@ export function HomeExplorer({ initialItems, loadError, universityName = "Univer
             type="button"
             onClick={() => setFindOpen(true)}
             style={{
-              display: "inline-flex",
+              display: "flex",
               width: "100%",
               maxWidth: 420,
+              margin: "0 auto 16px",
               alignItems: "center",
               justifyContent: "center",
               gap: 8,
@@ -233,14 +234,13 @@ export function HomeExplorer({ initialItems, loadError, universityName = "Univer
               cursor: "pointer",
               fontFamily: FONT,
               boxShadow: "0 2px 8px rgba(204,0,0,0.25)",
-              marginBottom: 16,
             }}
             onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#A80000")}
             onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#CC0000")}
           >
-            🔍 Find my item
+            Submit a claim
           </button>
-          <p style={{ color: "#666666", fontSize: 13, margin: "0 0 8px 0" }}>
+          <p style={{ color: "#666666", fontSize: 13, margin: "0 0 8px 0", textAlign: "center" }}>
             or browse everything that&apos;s been found:
           </p>
           <div style={{ position: "relative" }}>

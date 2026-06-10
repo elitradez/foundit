@@ -181,21 +181,24 @@ describe("POST /api/find", () => {
     expect(res.status).toBe(500);
   });
 
-  it("never shows matches below the similarity gate, caps at 3, keeps rank order", async () => {
+  it("never shows matches below the similarity gate, caps at 5, keeps rank order", async () => {
     h.state.vectorRows = [
       { id: "a", similarity: 0.7 },
-      { id: "b", similarity: 0.6 },
-      { id: "c", similarity: 0.5 },
-      { id: "d", similarity: 0.46 },
-      { id: "e", similarity: 0.44 }, // below 0.45 — must never appear
+      { id: "b", similarity: 0.65 },
+      { id: "c", similarity: 0.6 },
+      { id: "d", similarity: 0.55 },
+      { id: "e", similarity: 0.5 },
+      { id: "f", similarity: 0.46 }, // 6th above gate — cut by the cap
+      { id: "g", similarity: 0.44 }, // below 0.45 — must never appear
     ];
-    h.state.itemsRows = ["a", "b", "c", "d", "e"].map((id) => makeItemRow(id));
+    h.state.itemsRows = ["a", "b", "c", "d", "e", "f", "g"].map((id) => makeItemRow(id));
     const res = await findPost(jsonReq({ description: GOOD_DESCRIPTION }));
     const body = await res.json();
     expect(res.status).toBe(200);
     const ids = body.matches.map((m: { id: string }) => m.id);
-    expect(ids).toEqual(["a", "b", "c"]);
-    expect(ids).not.toContain("e");
+    expect(ids).toEqual(["a", "b", "c", "d", "e"]);
+    expect(ids).not.toContain("f");
+    expect(ids).not.toContain("g");
   });
 
   it("unblurs only past the strict scorer gate (score > 60)", async () => {
