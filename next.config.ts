@@ -20,12 +20,40 @@ if (supabaseUrl) {
 const nextConfig: NextConfig = {
   images: remotePatterns.length ? { remotePatterns } : undefined,
   async headers() {
+    // A conservative Content-Security-Policy: it locks down the directives that
+    // are safe to set without per-page testing (clickjacking, <base> injection,
+    // form hijacking, plugins) but deliberately does NOT constrain
+    // script/style/connect sources, which would require validating every page
+    // (Next.js inline bootstrap, Supabase, Sentry, fonts) before tightening.
+    // NOTE: no default-src is set on purpose. Setting default-src 'self' would
+    // make inline scripts/styles (Next.js hydration bootstrap, inline style
+    // attributes used throughout the app) inherit it and break the pages.
+    // Directives left unspecified stay unrestricted until script/style/connect
+    // sources are validated per-page and tightened in a follow-up.
+    const csp = [
+      "frame-ancestors 'none'",
+      "object-src 'none'",
+      "base-uri 'self'",
+      "form-action 'self'",
+      "upgrade-insecure-requests",
+    ].join("; ");
+
     return [
       {
         source: "/(.*)",
         headers: [
-          { key: "X-Frame-Options", value: "SAMEORIGIN" },
+          { key: "X-Frame-Options", value: "DENY" },
           { key: "X-Content-Type-Options", value: "nosniff" },
+          { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+          {
+            key: "Strict-Transport-Security",
+            value: "max-age=63072000; includeSubDomains; preload",
+          },
+          {
+            key: "Permissions-Policy",
+            value: "camera=(), microphone=(), geolocation=()",
+          },
+          { key: "Content-Security-Policy", value: csp },
         ],
       },
     ];

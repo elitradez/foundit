@@ -461,7 +461,7 @@ export default async function StaffAnalyticsPage() {
                   </p>
                 </div>
                 <div className="divide-y divide-[#F3F4F6]">
-                  {deptBreakdown.map(({ name, total, returned }) => (
+                  {deptBreakdown.map(({ name, total }) => (
                     <div key={name} className="flex items-center gap-3 px-5 py-3">
                       <span className="min-w-0 flex-1 truncate text-sm text-[#374151]">{name}</span>
                       <div className="flex items-center gap-2">

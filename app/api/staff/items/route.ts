@@ -18,7 +18,7 @@ export async function GET() {
   const { data, error } = await supabase
     .from("items")
     .select(
-      "id, name, description, location, date_found, photo_path, returned_at, claim_description, pin_hash, pin_salt, created_at, value_tier",
+      "id, name, description, location, date_found, photo_path, returned_at, claim_description, pin_hash, created_at, value_tier",
     )
     .eq("department_id", session.department_id)
     .is("returned_at", null)
@@ -27,7 +27,12 @@ export async function GET() {
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
-  return NextResponse.json({ items: data ?? [] });
+  // Never ship the PIN hash/salt to the browser; expose only whether a PIN is set.
+  const items = (data ?? []).map((row) => {
+    const { pin_hash, ...rest } = row as { pin_hash: string | null } & Record<string, unknown>;
+    return { ...rest, requires_pin: pin_hash != null };
+  });
+  return NextResponse.json({ items });
 }
 
 export async function POST(req: Request) {

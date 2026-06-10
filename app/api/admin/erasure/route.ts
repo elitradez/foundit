@@ -36,12 +36,22 @@ export async function POST(req: Request) {
     );
   }
 
+  // Reject malformed identifiers — these are interpolated into PostgREST .or()
+  // filters, so stray commas/parentheses could otherwise broaden the match or
+  // break the query.
+  if (email && !/^[^\s@,]+@[^\s@,]+\.[^\s@,]+$/.test(email)) {
+    return NextResponse.json({ error: "Invalid email address" }, { status: 400 });
+  }
+  if (phone && !/^[+0-9().\-\s]{3,20}$/.test(phone)) {
+    return NextResponse.json({ error: "Invalid phone number" }, { status: 400 });
+  }
+
   const supabase = createAdminSupabaseClient();
 
   // -----------------------------------------------------------------------
   // 1. Find matching claims (student_email / phone_number columns)
   // -----------------------------------------------------------------------
-  let claimsQuery = supabase.from("claims").select("id, university_id");
+  let claimsQuery = supabase.from("claims").select("id, university_id, item_id");
 
   if (email && phone) {
     claimsQuery = claimsQuery.or(`student_email.eq.${email},phone_number.eq.${phone}`);
@@ -185,6 +195,31 @@ export async function POST(req: Request) {
       })
       .in("id", claimIds);
     if (claimsUpdateErr) console.error("[erasure] claims update failed:", claimsUpdateErr.message);
+
+    // -----------------------------------------------------------------------
+    // 7b. Scrub PII copied onto the items table at return time. The resolve
+    //     route stamps returned_student_name / returned_student_id_number and
+    //     claim_description onto items; without this, erasure leaves the
+    //     student's name and ID number behind on the item record.
+    // -----------------------------------------------------------------------
+    const itemIds = Array.from(
+      new Set(
+        (claims ?? [])
+          .map((c: { item_id?: string | null }) => c.item_id)
+          .filter((v): v is string => Boolean(v)),
+      ),
+    );
+    if (itemIds.length > 0) {
+      const { error: itemsScrubErr } = await supabase
+        .from("items")
+        .update({
+          returned_student_name: null,
+          returned_student_id_number: null,
+          claim_description: null,
+        })
+        .in("id", itemIds);
+      if (itemsScrubErr) console.error("[erasure] items PII scrub failed:", itemsScrubErr.message);
+    }
   }
 
   // -----------------------------------------------------------------------

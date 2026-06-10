@@ -36,7 +36,7 @@ export default function PrivacyPage() {
       {/* Content */}
       <main id="main-content" style={{ maxWidth: 720, margin: "0 auto", padding: "48px 24px 80px" }}>
         <h1 style={{ fontSize: 28, fontWeight: 700, color: "#1a1a1a", margin: "0 0 6px" }}>Privacy Policy</h1>
-        <p style={{ fontSize: 14, color: "#767676", margin: "0 0 40px" }}>Last updated April 2026</p>
+        <p style={{ fontSize: 14, color: "#767676", margin: "0 0 40px" }}>Last updated June 2026</p>
 
         <Section title="What data we collect">
           <p>When an item is logged by staff, we collect: a photo of the item, a brief description, the location where it was found, and the date found.</p>
@@ -55,13 +55,23 @@ export default function PrivacyPage() {
 
         <Section title="Who can access your data">
           <p>Only authorized department staff at {universityName} can view claims and item records. Staff access is limited to items and claims belonging to their own department — they cannot view records from other departments.</p>
-          <p>No third parties have access to your personal information. We do not sell, share, or license your data to any outside organization.</p>
+          <p>We do not sell, rent, or license your personal information, and we never share it with outside organizations for their own purposes. The only other parties that process your data are the service providers listed below, who act solely on our instructions to operate this service.</p>
+        </Section>
+
+        <Section title="Service providers we use">
+          <p>We rely on a small number of vendors to run this service. Each processes only the data needed for its function, under agreements that prohibit using it for any other purpose:</p>
+          <ul style={{ margin: 0, paddingLeft: 20, display: "flex", flexDirection: "column", gap: 8 }}>
+            <li><strong>Hosting &amp; storage</strong> (Supabase, Vercel) — store item records, claims, and photos and run the website.</li>
+            <li><strong>SMS notifications</strong> (Twilio) — if you text us to set up an alert, your phone number and message are processed to send you match notifications.</li>
+            <li><strong>AI-assisted matching</strong> (Anthropic, OpenAI) — item and claim descriptions are processed to help match lost items to their owners. Names and contact details are not sent for this purpose, and these providers do not use the data to train their models.</li>
+            <li><strong>Error monitoring</strong> (Sentry) — collects technical diagnostics only, and is configured to exclude personal information.</li>
+          </ul>
         </Section>
 
         <Section title="Data retention">
           <p>Item records remain active until the item is returned to its owner or transferred to surplus.</p>
           <p>Claim records containing personal information are automatically deleted 90 days after submission. Alerts are deleted 90 days after creation. We maintain an internal log of when deletions occur for audit purposes.</p>
-          <p>Students may request earlier deletion by emailing <a href="mailto:eli@laikacampus.com" style={{ color: "#CC0000" }}>eli@laikacampus.com</a>.</p>
+          <p>Students may request earlier deletion by emailing <a href="mailto:privacy@laikacampus.com" style={{ color: "#CC0000" }}>privacy@laikacampus.com</a>.</p>
         </Section>
 
         <Section title="FERPA compliance">
@@ -69,16 +79,16 @@ export default function PrivacyPage() {
         </Section>
 
         <Section title="No advertising, no data sales">
-          <p>We do not use your data for advertising purposes. We do not sell, trade, or transfer your personal information to outside parties under any circumstances.</p>
+          <p>We do not use your data for advertising purposes, and we never sell or trade your personal information. Data is shared only with the service providers described above, strictly to operate the lost and found.</p>
         </Section>
 
         <Section title="Your rights">
           <p>You have the right to request access to, correction of, or deletion of any personal information you have submitted. To exercise these rights, contact us at:</p>
-          <p><a href="mailto:eli@laikacampus.com" style={{ color: "#CC0000", fontWeight: 500 }}>eli@laikacampus.com</a></p>
+          <p><a href="mailto:privacy@laikacampus.com" style={{ color: "#CC0000", fontWeight: 500 }}>privacy@laikacampus.com</a></p>
         </Section>
 
         <Section title="Contact">
-          <p>Questions about this policy? Email <a href="mailto:eli@laikacampus.com" style={{ color: "#CC0000" }}>eli@laikacampus.com</a>.</p>
+          <p>Questions about this policy? Email <a href="mailto:privacy@laikacampus.com" style={{ color: "#CC0000" }}>privacy@laikacampus.com</a>.</p>
         </Section>
       </main>
 

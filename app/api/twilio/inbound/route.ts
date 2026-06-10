@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import twilio from "twilio";
 import { createAdminSupabaseClient } from "@/lib/supabase-admin";
-import { getUniversityConfig } from "@/lib/university-config";
+import { getUniversityConfig, getUniversityId } from "@/lib/university-config";
 import { validateTwilioSignature, shouldSkipTwilioValidation } from "@/lib/twilio-auth";
 
 function getAutoReply(): string {
@@ -53,6 +53,9 @@ export async function POST(req: Request) {
     phone: from,
     description: body,
     notified: false,
+    // Without university_id the match job (which filters on it) can never
+    // find this alert, so the notify-on-match loop would silently never fire.
+    university_id: getUniversityId(),
   });
 
   if (insErr) {

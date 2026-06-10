@@ -1,36 +1,75 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Foundit — University Lost & Found
 
-## Getting Started
+A Next.js (App Router) application for running a university lost-and-found. Staff
+log found items with a photo; students search a public catalog where photos are
+blurred until they describe an item well enough to unblur it, then submit a
+claim. Students can also text the service to be notified by SMS when a matching
+item is logged. Final handoff is always verified in person.
 
-First, run the development server:
+> **Note for contributors and agents:** this repo pins a Next.js version with
+> conventions that differ from older releases. Read the relevant guide under
+> `node_modules/next/dist/docs/` before changing routing, params, proxy, or
+> caching behavior. See `AGENTS.md`.
+
+## Stack
+
+- **Next.js 16 / React 19** — App Router, server route handlers under `app/api/`.
+- **Supabase** — Postgres + private storage bucket for photos. All access goes
+  through the service-role key in server code; the schema relies on deny-all RLS
+  for anon (see `supabase/schema.sql` and `supabase/migrations/`).
+- **Anthropic + OpenAI** — claim/alert matching and item embeddings for search.
+- **Twilio** — inbound SMS alerts and outbound match notifications.
+- **Upstash Redis** (optional) — shared rate-limit store; an in-memory fallback
+  is used when it is not configured.
+- **Sentry** — error monitoring, configured to exclude PII.
+
+## Local development
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
+cp .env.example .env.local   # then fill in the values below
+npm run dev                  # http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### Required environment variables
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Startup validation runs in `lib/env.ts`; in production a missing/invalid value
+aborts boot. Minimum set:
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| Variable | Purpose |
+| --- | --- |
+| `NEXT_PUBLIC_UNIVERSITY_ID` | University UUID; scopes all data. |
+| `NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase client config. |
+| `SUPABASE_SERVICE_ROLE_KEY` | Server-only DB/storage access. |
+| `STAFF_SESSION_SECRET` | 32+ chars; signs staff session cookies. |
+| `ADMIN_API_SECRET` | 32+ chars; gates `/api/admin/*` and the deep health check. |
+| `ANTHROPIC_API_KEY` | AI matching. |
+| `OPENAI_API_KEY` | Item embeddings / semantic search. |
+| `TWILIO_ACCOUNT_SID` / `TWILIO_AUTH_TOKEN` | SMS + webhook signature verification. |
+| `UPSTASH_REDIS_REST_URL` / `UPSTASH_REDIS_REST_TOKEN` | Optional; shared rate limiting. |
 
-## Learn More
+Public branding (`NEXT_PUBLIC_UNIVERSITY_NAME`, `NEXT_PUBLIC_BRAND_COLOR`,
+`NEXT_PUBLIC_PICKUP_LOCATION`, `NEXT_PUBLIC_SITE_URL`) is optional and falls back
+to defaults in `lib/university-config.ts`.
 
-To learn more about Next.js, take a look at the following resources:
+### Database
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Apply `supabase/schema.sql`, then the files in `supabase/migrations/` in
+timestamp order.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Scripts
 
-## Deploy on Vercel
+- `npm run dev` — start the dev server.
+- `npm run build` / `npm start` — production build / serve.
+- `npm run lint` — ESLint.
+- `npm test` — Vitest unit tests.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+CI (`.github/workflows/ci.yml`) runs typecheck, lint, and tests on every push and
+pull request.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Data handling
+
+This app processes student PII (names, contact details, photos). Claims and SMS
+alerts are auto-deleted 90 days after creation via a scheduled Postgres job, and
+`/api/admin/erasure` performs on-request right-to-erasure. See `app/privacy`,
+`docs/data-erasure.md`, and `docs/hecvat.md`.
