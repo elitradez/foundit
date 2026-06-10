@@ -1,12 +1,20 @@
 "use client";
 
 import Image from "next/image";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { Cormorant_Garamond } from "next/font/google";
 import { useFocusTrap } from "@/lib/useFocusTrap";
-import { Spinner } from "@/components/ui/Spinner";
 import { ClaimModal } from "@/components/student/HomeExplorer";
 
-const FONT = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+const cormorant = Cormorant_Garamond({ subsets: ["latin"], weight: ["500", "600"], display: "swap" });
+
+// Brand: cream / near-black, editorial. Red stays out of this surface except
+// for error text.
+const CREAM = "#F5F5F0";
+const INK = "#0c0c0c";
+const INK_60 = "rgba(12,12,12,0.6)";
+const INK_40 = "rgba(12,12,12,0.4)";
+const HAIRLINE = "1px solid rgba(12,12,12,0.12)";
 
 type Department = { id: string; name: string };
 
@@ -19,7 +27,8 @@ type FindMatch = {
   requiresPin: boolean;
 };
 
-type Phase = "form" | "searching" | "results" | "no-match";
+type WizardStep = 1 | 2 | 3;
+type Phase = "wizard" | "searching" | "results" | "no-match";
 
 export function FindMyItem({
   departments,
@@ -31,7 +40,9 @@ export function FindMyItem({
   onClaimSubmitted: () => void;
 }) {
   const sheetRef = useFocusTrap<HTMLDivElement>(true, onClose);
-  const [phase, setPhase] = useState<Phase>("form");
+  const [phase, setPhase] = useState<Phase>("wizard");
+  const [step, setStep] = useState<WizardStep>(1);
+  const [direction, setDirection] = useState<"forward" | "back">("forward");
   const [description, setDescription] = useState("");
   const [locationLost, setLocationLost] = useState("");
   const [dateLost, setDateLost] = useState("");
@@ -39,12 +50,35 @@ export function FindMyItem({
   const [matches, setMatches] = useState<FindMatch[]>([]);
   const [findRequestId, setFindRequestId] = useState<string | null>(null);
   const [claimItem, setClaimItem] = useState<FindMatch | null>(null);
-  // SMS alert sub-state on the no-match screen
   const [phone, setPhone] = useState("");
   const [alertBusy, setAlertBusy] = useState(false);
   const [alertDone, setAlertDone] = useState(false);
   const [alertError, setAlertError] = useState<string | null>(null);
+  const stepInputRef = useRef<HTMLTextAreaElement | HTMLSelectElement | HTMLInputElement | null>(null);
+
   const tooShort = description.trim().length < 20;
+
+  // Each step swap unmounts the previously focused control; refocus the new
+  // step's input so keyboard and screen-reader users land somewhere sensible.
+  useEffect(() => {
+    if (phase === "wizard") stepInputRef.current?.focus();
+  }, [step, phase]);
+
+  function goForward() {
+    setDirection("forward");
+    if (step < 3) setStep((s) => (s + 1) as WizardStep);
+    else void submitFind();
+  }
+
+  function goBack() {
+    setDirection("back");
+    if (phase === "results" || phase === "no-match") {
+      setPhase("wizard");
+      setStep(3);
+      return;
+    }
+    if (step > 1) setStep((s) => (s - 1) as WizardStep);
+  }
 
   async function submitFind() {
     setError(null);
@@ -66,16 +100,17 @@ export function FindMyItem({
       };
       if (!res.ok) {
         setError(data.error ?? "Search failed. Please try again.");
-        setPhase("form");
+        setPhase("wizard");
         return;
       }
       setFindRequestId(data.findRequestId ?? null);
       const found = Array.isArray(data.matches) ? data.matches : [];
       setMatches(found);
+      setDirection("forward");
       setPhase(found.length > 0 ? "results" : "no-match");
     } catch {
-      setError("Couldn’t reach the server — please check your connection and try again.");
-      setPhase("form");
+      setError("Couldn’t reach the server — check your connection and try again.");
+      setPhase("wizard");
     }
   }
 
@@ -101,52 +136,72 @@ export function FindMyItem({
     }
   }
 
-  const inputStyle: React.CSSProperties = {
+  const stepAnim = direction === "forward" ? "wiz-step-in" : "wiz-step-back";
+
+  const inputBase: React.CSSProperties = {
     width: "100%",
     boxSizing: "border-box",
     backgroundColor: "#FFFFFF",
-    border: "1px solid #CCCCCC",
-    borderRadius: 8,
-    padding: "12px 14px",
+    border: HAIRLINE,
+    borderRadius: 10,
+    padding: "14px 16px",
     fontSize: 16, // ≥16px so iOS doesn't zoom on focus
-    color: "#333333",
+    color: INK,
     outline: "none",
-    fontFamily: FONT,
-    minHeight: 48,
+    minHeight: 52,
   };
 
   const primaryBtn: React.CSSProperties = {
-    display: "inline-flex",
+    display: "flex",
     width: "100%",
     alignItems: "center",
     justifyContent: "center",
-    gap: 8,
-    minHeight: 52,
-    backgroundColor: "#CC0000",
-    color: "#FFFFFF",
+    minHeight: 54,
+    backgroundColor: INK,
+    color: CREAM,
     fontSize: 16,
-    fontWeight: 600,
+    fontWeight: 500,
+    letterSpacing: "0.01em",
     border: "none",
-    borderRadius: 8,
+    borderRadius: 10,
     cursor: "pointer",
-    fontFamily: FONT,
   };
 
-  const focusRing = {
-    onFocus: (e: React.FocusEvent<HTMLElement>) => {
-      e.currentTarget.style.borderColor = "#CC0000";
-      e.currentTarget.style.boxShadow = "0 0 0 3px rgba(204,0,0,0.12)";
-    },
-    onBlur: (e: React.FocusEvent<HTMLElement>) => {
-      e.currentTarget.style.borderColor = "#CCCCCC";
-      e.currentTarget.style.boxShadow = "none";
-    },
+  const ghostBtn: React.CSSProperties = {
+    display: "flex",
+    width: "100%",
+    alignItems: "center",
+    justifyContent: "center",
+    minHeight: 48,
+    backgroundColor: "transparent",
+    color: INK_60,
+    fontSize: 15,
+    fontWeight: 400,
+    border: "none",
+    cursor: "pointer",
   };
+
+  const heading = (text: string) => (
+    <h2
+      id="find-title"
+      className={cormorant.className}
+      style={{ fontSize: 32, fontWeight: 600, color: INK, margin: "0 0 6px", lineHeight: 1.15, letterSpacing: "-0.01em" }}
+    >
+      {text}
+    </h2>
+  );
+
+  const instruction = (text: string) => (
+    <p style={{ fontSize: 14, color: INK_60, margin: "0 0 28px", lineHeight: 1.5 }}>{text}</p>
+  );
+
+  const totalSteps = 4;
+  const currentDot = phase === "wizard" ? step : 4;
 
   return (
     <div
-      className="anim-fade-in"
-      style={{ position: "fixed", inset: 0, zIndex: 60, backgroundColor: "rgba(0,0,0,0.5)", backdropFilter: "blur(4px)", display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}
+      className="anim-fade-in fixed inset-0 z-[60] flex items-stretch justify-center sm:items-center sm:p-4"
+      style={{ backgroundColor: "rgba(12,12,12,0.45)", backdropFilter: "blur(4px)", fontFamily: 'ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif' }}
       onClick={(e) => { if (e.target === e.currentTarget && phase !== "searching") onClose(); }}
     >
       <div
@@ -154,213 +209,215 @@ export function FindMyItem({
         role="dialog"
         aria-modal="true"
         aria-labelledby="find-title"
-        className="anim-pop-in"
-        style={{
-          width: "100%",
-          maxWidth: 560,
-          maxHeight: "90vh",
-          overflowY: "auto",
-          backgroundColor: "#FFFFFF",
-          borderRadius: 16,
-          boxShadow: "0 20px 60px rgba(0,0,0,0.3)",
-          fontFamily: FONT,
-          color: "#333333",
-        }}
+        className="anim-pop-in flex h-full w-full flex-col sm:h-auto sm:max-h-[88vh] sm:max-w-[540px] sm:rounded-2xl"
+        style={{ backgroundColor: CREAM, color: INK, boxShadow: "0 24px 80px rgba(12,12,12,0.35)", overflow: "hidden" }}
       >
-        {/* Header */}
-        <div style={{ position: "sticky", top: 0, backgroundColor: "#FFFFFF", borderBottom: "1px solid #E5E5E5", padding: "14px 20px", display: "flex", alignItems: "center", justifyContent: "space-between", zIndex: 1, borderRadius: "16px 16px 0 0" }}>
-          <h2 id="find-title" style={{ fontSize: 18, fontWeight: 600, color: "#1a1a1a", margin: 0 }}>
-            {phase === "results" ? "Possible matches" : phase === "no-match" ? "No strong matches yet" : "Find my item"}
-          </h2>
+        {/* Chrome: back · dots · close */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px", borderBottom: HAIRLINE, flexShrink: 0 }}>
+          <button
+            type="button"
+            onClick={goBack}
+            aria-label="Back"
+            disabled={phase === "searching" || (phase === "wizard" && step === 1)}
+            style={{ width: 44, height: 44, display: "flex", alignItems: "center", justifyContent: "center", background: "none", border: "none", borderRadius: 8, color: INK, fontSize: 22, cursor: "pointer", opacity: phase === "searching" || (phase === "wizard" && step === 1) ? 0 : 1, pointerEvents: phase === "searching" || (phase === "wizard" && step === 1) ? "none" : "auto" }}
+          >
+            ←
+          </button>
+
+          <div aria-hidden="true" style={{ display: "flex", gap: 8 }}>
+            {Array.from({ length: totalSteps }).map((_, i) => (
+              <span
+                key={i}
+                style={{
+                  width: 6, height: 6, borderRadius: "50%",
+                  backgroundColor: i < currentDot ? INK : "rgba(12,12,12,0.18)",
+                  transition: "background-color 200ms",
+                }}
+              />
+            ))}
+          </div>
+          <span className="sr-only" aria-live="polite">Step {currentDot} of {totalSteps}</span>
+
           <button
             type="button"
             onClick={onClose}
+            aria-label="Close"
             disabled={phase === "searching"}
-            style={{ minHeight: 40, padding: "8px 16px", backgroundColor: "#FFFFFF", border: "1px solid #E5E5E5", borderRadius: 6, fontSize: 14, color: "#555555", cursor: phase === "searching" ? "not-allowed" : "pointer", opacity: phase === "searching" ? 0.5 : 1, fontFamily: FONT }}
+            style={{ width: 44, height: 44, display: "flex", alignItems: "center", justifyContent: "center", background: "none", border: "none", borderRadius: 8, color: INK, fontSize: 20, cursor: phase === "searching" ? "not-allowed" : "pointer", opacity: phase === "searching" ? 0.4 : 1 }}
           >
-            Close
+            ✕
           </button>
         </div>
 
-        {/* ── Form ── */}
-        {phase === "form" ? (
-          <div style={{ padding: 20, display: "flex", flexDirection: "column", gap: 18 }}>
-            <p style={{ fontSize: 14, color: "#555555", lineHeight: 1.5, margin: 0 }}>
-              Describe your item with <strong style={{ color: "#1a1a1a" }}>as much detail as possible</strong> —
-              color, brand, stickers, scratches, what&apos;s inside. The more detail you give,
-              the more accurate your claim will be.
-            </p>
-
-            <label style={{ display: "block" }}>
-              <span style={{ display: "block", fontSize: 14, fontWeight: 600, color: "#1a1a1a", marginBottom: 6 }}>
-                What did you lose? <span style={{ color: "#CC0000" }}>*</span>
-              </span>
+        {/* Body */}
+        <div style={{ flex: 1, overflowY: "auto", WebkitOverflowScrolling: "touch" }}>
+          {phase === "wizard" && step === 1 ? (
+            <div key="s1" className={stepAnim} style={{ padding: "36px 24px 24px" }}>
+              {heading("What did you lose?")}
+              {instruction("Describe it like you’d tell a friend. Color, brand, anything distinctive.")}
               <textarea
+                ref={(el) => { stepInputRef.current = el; }}
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                rows={4}
-                placeholder="e.g. Dark green Hydro Flask with a dent on the side, black lid, 'Emma' written on the bottom"
-                style={{ ...inputStyle, resize: "vertical" }}
-                {...focusRing}
+                rows={5}
+                placeholder="Dark green Hydro Flask, dent on the side, ‘Emma’ on the bottom"
+                aria-label="Describe your lost item"
+                style={{ ...inputBase, resize: "none", lineHeight: 1.5 }}
               />
-              <span style={{ display: "block", marginTop: 4, fontSize: 12, color: tooShort && description.length > 0 ? "#CC0000" : "#666666" }}>
-                Vague descriptions match poorly — specifics like &quot;dented Hydro Flask with a U sticker&quot; work far better than &quot;water bottle&quot;.
-              </span>
-            </label>
+              {tooShort && description.trim().length > 0 ? (
+                <p style={{ fontSize: 13, color: INK_60, margin: "8px 0 0" }}>A little more detail — 20 characters minimum.</p>
+              ) : null}
+              {error ? <p role="alert" style={{ fontSize: 14, color: "#B42318", margin: "12px 0 0" }}>{error}</p> : null}
+            </div>
+          ) : null}
 
-            <label style={{ display: "block" }}>
-              <span style={{ display: "block", fontSize: 14, fontWeight: 600, color: "#1a1a1a", marginBottom: 6 }}>
-                Where did you lose it? <span style={{ color: "#666666", fontWeight: 400 }}>(optional)</span>
-              </span>
+          {phase === "wizard" && step === 2 ? (
+            <div key="s2" className={stepAnim} style={{ padding: "36px 24px 24px" }}>
+              {heading("Where did you lose it?")}
+              {instruction("Your best guess. Skip if you’re not sure.")}
               <select
+                ref={(el) => { stepInputRef.current = el; }}
                 value={locationLost}
                 onChange={(e) => setLocationLost(e.target.value)}
-                style={{ ...inputStyle, appearance: "auto" }}
-                {...focusRing}
+                aria-label="Where you lost it"
+                style={{ ...inputBase, appearance: "auto" }}
               >
                 <option value="">Not sure</option>
                 {departments.map((d) => (
                   <option key={d.id} value={d.name}>{d.name}</option>
                 ))}
               </select>
-            </label>
+            </div>
+          ) : null}
 
-            <label style={{ display: "block" }}>
-              <span style={{ display: "block", fontSize: 14, fontWeight: 600, color: "#1a1a1a", marginBottom: 6 }}>
-                When did you lose it? <span style={{ color: "#666666", fontWeight: 400 }}>(optional)</span>
-              </span>
+          {phase === "wizard" && step === 3 ? (
+            <div key="s3" className={stepAnim} style={{ padding: "36px 24px 24px" }}>
+              {heading("When did you lose it?")}
+              {instruction("Roughly is fine. Skip if you don’t remember.")}
               <input
+                ref={(el) => { stepInputRef.current = el; }}
                 type="date"
                 value={dateLost}
                 onChange={(e) => setDateLost(e.target.value)}
                 max={new Date().toISOString().slice(0, 10)}
-                style={inputStyle}
-                {...focusRing}
+                aria-label="When you lost it"
+                style={inputBase}
               />
-            </label>
+              {error ? <p role="alert" style={{ fontSize: 14, color: "#B42318", margin: "12px 0 0" }}>{error}</p> : null}
+            </div>
+          ) : null}
 
-            <button
-              type="button"
-              onClick={() => void submitFind()}
-              disabled={tooShort}
-              style={{ ...primaryBtn, opacity: tooShort ? 0.5 : 1, cursor: tooShort ? "not-allowed" : "pointer" }}
-            >
-              Search for my item
-            </button>
-
-            {error ? <p role="alert" style={{ fontSize: 14, color: "#CC0000", margin: 0 }}>{error}</p> : null}
-          </div>
-        ) : null}
-
-        {/* ── Searching ── */}
-        {phase === "searching" ? (
-          <div style={{ padding: "56px 20px", textAlign: "center" }} role="status">
-            <Spinner className="h-8 w-8" style={{ color: "#CC0000", margin: "0 auto 16px" }} />
-            <p style={{ fontSize: 15, fontWeight: 600, color: "#1a1a1a", margin: "0 0 4px" }}>Checking what&apos;s been turned in…</p>
-            <p style={{ fontSize: 13, color: "#666666", margin: 0 }}>This takes a few seconds.</p>
-          </div>
-        ) : null}
-
-        {/* ── Results ── */}
-        {phase === "results" ? (
-          <div style={{ padding: 20, display: "flex", flexDirection: "column", gap: 16 }}>
-            <p style={{ fontSize: 14, color: "#555555", lineHeight: 1.5, margin: 0 }}>
-              {matches.length === 1 ? "We found 1 item that could be yours." : `We found ${matches.length} items that could be yours.`}
-            </p>
-            {matches.map((m) => (
-              <div key={m.id} style={{ border: "1px solid #E5E5E5", borderRadius: 12, overflow: "hidden", backgroundColor: "#FFFFFF", boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}>
-                <div style={{ position: "relative", width: "100%", aspectRatio: "4/3", backgroundColor: "#F5F5F5" }}>
-                  <Image
-                    src={m.photoUrl ?? `/api/items/${m.id}/blur`}
-                    alt={m.photoUrl ? `Photo of ${m.name}` : ""}
-                    fill
-                    className={m.photoUrl ? "object-cover" : "object-cover blur-xl"}
-                    sizes="(max-width: 640px) 100vw, 560px"
-                    unoptimized
-                  />
-                  {!m.photoUrl ? (
-                    <span style={{ position: "absolute", bottom: 8, left: 8, backgroundColor: "rgba(26,26,26,0.8)", color: "#FFFFFF", fontSize: 11, fontWeight: 500, padding: "4px 8px", borderRadius: 4 }}>
-                      {m.requiresPin ? "Photo hidden — this item needs its PIN at pickup" : "Photo hidden — verify it’s yours to see it"}
-                    </span>
-                  ) : null}
-                </div>
-                <div style={{ padding: "14px 16px" }}>
-                  <p style={{ fontSize: 16, fontWeight: 600, color: "#1a1a1a", margin: "0 0 2px" }}>{m.name}</p>
-                  <p style={{ fontSize: 13, color: "#666666", margin: "0 0 12px" }}>
-                    {m.department_name ?? "Lost & Found"}{m.date_found ? ` · found ${m.date_found}` : ""}
-                  </p>
-                  {!m.photoUrl && !m.requiresPin ? (
-                    <p style={{ fontSize: 12, color: "#666666", margin: "0 0 10px", lineHeight: 1.5 }}>
-                      Think it&apos;s yours? You&apos;ll add a few identifying details and the photo unblurs if they match.
-                    </p>
-                  ) : null}
-                  <button type="button" onClick={() => setClaimItem(m)} style={primaryBtn}>
-                    {m.photoUrl ? "Yes, this is mine" : "Verify it’s mine"}
-                  </button>
-                </div>
-              </div>
-            ))}
-            <button
-              type="button"
-              onClick={() => { setPhase("form"); setMatches([]); }}
-              style={{ background: "none", border: "none", color: "#CC0000", fontSize: 14, fontWeight: 500, cursor: "pointer", padding: 12, fontFamily: FONT }}
-            >
-              None of these — search again
-            </button>
-          </div>
-        ) : null}
-
-        {/* ── No match + SMS alert ── */}
-        {phase === "no-match" ? (
-          <div style={{ padding: 20, display: "flex", flexDirection: "column", gap: 16 }}>
-            <p style={{ fontSize: 36, textAlign: "center", margin: "12px 0 0" }}>🔎</p>
-            <p style={{ fontSize: 15, color: "#1a1a1a", fontWeight: 600, textAlign: "center", margin: 0 }}>
-              Nothing matching has been turned in yet.
-            </p>
-            <p style={{ fontSize: 14, color: "#555555", lineHeight: 1.5, textAlign: "center", margin: 0 }}>
-              Items arrive every day. Leave your number and we&apos;ll text you if something matching your description is logged.
-            </p>
-
-            {alertDone ? (
-              <p role="status" style={{ backgroundColor: "#F0FDF4", border: "1px solid #BBF7D0", color: "#166534", borderRadius: 8, padding: "12px 16px", fontSize: 14, textAlign: "center", margin: 0 }}>
-                ✓ You&apos;re on the list — we&apos;ll text you if it shows up.
+          {phase === "searching" ? (
+            <div style={{ padding: "96px 24px", textAlign: "center" }} role="status">
+              <p className={`${cormorant.className} wiz-searching`} style={{ fontSize: 26, fontWeight: 500, color: INK, margin: 0 }}>
+                Searching…
               </p>
-            ) : (
-              <>
-                <label style={{ display: "block" }}>
-                  <span style={{ display: "block", fontSize: 14, fontWeight: 600, color: "#1a1a1a", marginBottom: 6 }}>Phone number</span>
+            </div>
+          ) : null}
+
+          {phase === "results" ? (
+            <div key="results" className={stepAnim} style={{ padding: "32px 24px 24px" }}>
+              {heading(matches.length === 1 ? "One possible match" : `${matches.length} possible matches`)}
+              {instruction("Tap the one that’s yours.")}
+              <div style={{ display: "flex", flexDirection: "column", gap: 28 }}>
+                {matches.map((m) => (
+                  <div key={m.id}>
+                    <button
+                      type="button"
+                      onClick={() => setClaimItem(m)}
+                      aria-label={`${m.photoUrl ? "Claim" : "Verify and claim"} ${m.name}`}
+                      style={{ display: "block", width: "100%", padding: 0, border: "none", background: "none", cursor: "pointer", borderRadius: 12, overflow: "hidden" }}
+                    >
+                      <span style={{ position: "relative", display: "block", width: "100%", aspectRatio: "4/3", backgroundColor: "#EAEAE4" }}>
+                        <Image
+                          src={m.photoUrl ?? `/api/items/${m.id}/blur`}
+                          alt={m.photoUrl ? `Photo of ${m.name}` : ""}
+                          fill
+                          className={m.photoUrl ? "object-cover" : "object-cover blur-xl"}
+                          sizes="(max-width: 640px) 100vw, 540px"
+                          unoptimized
+                        />
+                        {!m.photoUrl ? (
+                          <span style={{ position: "absolute", bottom: 10, left: 10, backgroundColor: "rgba(12,12,12,0.78)", color: CREAM, fontSize: 12, fontWeight: 500, padding: "5px 10px", borderRadius: 6 }}>
+                            {m.requiresPin ? "Photo hidden · PIN required at pickup" : "Photo hidden · verify to view"}
+                          </span>
+                        ) : null}
+                      </span>
+                    </button>
+                    <div style={{ padding: "12px 2px 0" }}>
+                      <p className={cormorant.className} style={{ fontSize: 22, fontWeight: 600, color: INK, margin: "0 0 2px", lineHeight: 1.2 }}>{m.name}</p>
+                      <p style={{ fontSize: 13, color: INK_60, margin: "0 0 12px" }}>
+                        {m.department_name ?? "Lost & Found"}{m.date_found ? ` · found ${m.date_found}` : ""}
+                      </p>
+                      <button type="button" onClick={() => setClaimItem(m)} style={primaryBtn}>
+                        {m.photoUrl ? "Yes, this is mine" : "Verify it’s mine"}
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <button type="button" onClick={goBack} style={{ ...ghostBtn, marginTop: 20 }}>
+                None of these — edit my search
+              </button>
+            </div>
+          ) : null}
+
+          {phase === "no-match" ? (
+            <div key="nomatch" className={stepAnim} style={{ padding: "36px 24px 24px" }}>
+              {heading("No strong matches yet")}
+              {instruction("New items arrive daily. Leave your number — one text if it shows up.")}
+              {alertDone ? (
+                <p role="status" style={{ border: HAIRLINE, borderRadius: 10, padding: "16px 18px", fontSize: 15, color: INK, margin: 0, backgroundColor: "#FFFFFF" }}>
+                  ✓ You’re on the list.
+                </p>
+              ) : (
+                <>
                   <input
                     type="tel"
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
                     placeholder="(801) 555-0100"
                     autoComplete="tel"
-                    style={inputStyle}
-                    {...focusRing}
+                    aria-label="Phone number"
+                    style={inputBase}
                   />
-                </label>
-                <button
-                  type="button"
-                  onClick={() => void registerAlert()}
-                  disabled={alertBusy || phone.trim().length < 10}
-                  style={{ ...primaryBtn, opacity: alertBusy || phone.trim().length < 10 ? 0.5 : 1 }}
-                >
-                  {alertBusy ? <><Spinner className="h-4 w-4" style={{ color: "#fff" }} /> Saving…</> : "Text me if it shows up"}
-                </button>
-                <p style={{ fontSize: 12, color: "#666666", textAlign: "center", margin: 0 }}>
-                  One text if a match is logged. Msg &amp; data rates may apply.
-                </p>
-                {alertError ? <p role="alert" style={{ fontSize: 14, color: "#CC0000", margin: 0, textAlign: "center" }}>{alertError}</p> : null}
-              </>
-            )}
+                  <button
+                    type="button"
+                    onClick={() => void registerAlert()}
+                    disabled={alertBusy || phone.trim().length < 10}
+                    style={{ ...primaryBtn, marginTop: 12, opacity: alertBusy || phone.trim().length < 10 ? 0.45 : 1 }}
+                  >
+                    {alertBusy ? "Saving…" : "Text me if it shows up"}
+                  </button>
+                  <p style={{ fontSize: 12, color: INK_40, margin: "10px 0 0", textAlign: "center" }}>
+                    Msg &amp; data rates may apply.
+                  </p>
+                  {alertError ? <p role="alert" style={{ fontSize: 14, color: "#B42318", margin: "10px 0 0", textAlign: "center" }}>{alertError}</p> : null}
+                </>
+              )}
+              <button type="button" onClick={goBack} style={{ ...ghostBtn, marginTop: 20 }}>
+                Edit my search
+              </button>
+            </div>
+          ) : null}
+        </div>
 
+        {/* Footer: Next/Skip — pinned, thumb-reachable */}
+        {phase === "wizard" ? (
+          <div style={{ flexShrink: 0, borderTop: HAIRLINE, padding: "16px 24px", paddingBottom: "max(16px, env(safe-area-inset-bottom))", backgroundColor: CREAM }}>
             <button
               type="button"
-              onClick={() => { setPhase("form"); setAlertDone(false); }}
-              style={{ background: "none", border: "none", color: "#CC0000", fontSize: 14, fontWeight: 500, cursor: "pointer", padding: 12, fontFamily: FONT }}
+              onClick={goForward}
+              disabled={step === 1 && tooShort}
+              style={{ ...primaryBtn, opacity: step === 1 && tooShort ? 0.45 : 1, cursor: step === 1 && tooShort ? "not-allowed" : "pointer" }}
             >
-              Edit my description and try again
+              {step === 3 ? "Search" : "Next"}
             </button>
+            {step > 1 ? (
+              <button type="button" onClick={goForward} style={{ ...ghostBtn, marginTop: 6 }}>
+                Skip
+              </button>
+            ) : null}
           </div>
         ) : null}
       </div>
@@ -370,8 +427,7 @@ export function FindMyItem({
             contact step; the verification already happened server-side.
           - photo still blurred -> enter at the DESCRIBE step, prefilled with
             the committed description, so the student goes through the same
-            verify-and-unblur sequence the browse flow uses (AI check -> photo
-            reveals on match -> "Yes, this is mine" -> contact form). */}
+            verify-and-unblur sequence the browse flow uses. */}
       {claimItem ? (
         <ClaimModal
           key={claimItem.id}
