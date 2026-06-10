@@ -2,17 +2,26 @@ import { NextResponse } from "next/server";
 import { createAdminSupabaseClient } from "@/lib/supabase-admin";
 import { getUniversityId } from "@/lib/university-config";
 import { aiLimiter, getClientIp, isRateLimited } from "@/lib/ratelimit";
-import { embedQuery, rerankByRelevance, vectorSearchItems } from "@/lib/search";
+import {
+  BROWSE_VECTOR_FLOOR,
+  embedQuery,
+  lexicalSearchItems,
+  mergeHybridCandidates,
+  rerankByRelevance,
+  vectorSearchItems,
+} from "@/lib/search";
 
 type SearchBody = { query?: string };
 
-// Two-stage search, tuned for how students actually search — from memory, with
-// vague, imperfect descriptions ("blue water bottle" for a teal one):
-//   1. RECALL — embed the query and pull every item above an absolute
-//      similarity floor (in-database pgvector query; see lib/search.ts for the
-//      measured threshold rationale). Nothing is trimmed beyond the floor.
-//   2. RANKING — the AI reranker reorders those candidates by true relevance,
-//      so distinguishing attributes (color, brand) win, not just object type.
+// Hybrid search, tuned for how students actually search — from memory, with
+// vague, imperfect, often misspelled queries:
+//   1. RECALL — two in-database stages run in parallel and are UNIONED:
+//      pgvector similarity (low floor: browse returns a ranked list, the floor
+//      only cuts the true noise tail) and pg_trgm lexical matching (carries
+//      short generic queries like "keys" and misspellings like "hydroflask").
+//   2. RANKING — the AI reranker orders the merged head by true relevance, so
+//      attributes (color, brand) win, not just object type. If it fails, the
+//      deterministic hybrid order serves as fallback (AI -> hybrid -> ILIKE).
 
 const MONTH_MAP: Record<string, number> = {
   jan: 1, january: 1, feb: 2, february: 2, mar: 3, march: 3,
@@ -82,16 +91,24 @@ export async function POST(req: Request) {
       for (const row of data ?? []) matchedIds.add(row.id);
     }
 
-    // 2. Vector search (pgvector, in-database) + AI rerank, both in lib/search.
-    const embedding = await embedQuery(query);
-    if (embedding) {
-      const ranked = await vectorSearchItems(supabase, embedding, universityId);
+    // 2. Hybrid recall: pgvector + trigram lexical, in parallel, unioned.
+    // Both stages run in the database; nothing loads the catalog into memory.
+    const [embedding, lexicalRows] = await Promise.all([
+      embedQuery(query),
+      lexicalSearchItems(supabase, query, universityId),
+    ]);
+    const vectorRows = embedding
+      ? await vectorSearchItems(supabase, embedding, universityId, { matchThreshold: BROWSE_VECTOR_FLOOR })
+      : [];
+    const candidates = mergeHybridCandidates(query, vectorRows, lexicalRows);
+
+    if (candidates.length > 0) {
       let orderedIds: string[];
       try {
-        orderedIds = await rerankByRelevance(query, ranked);
+        orderedIds = await rerankByRelevance(query, candidates);
       } catch (e) {
-        console.error("[search] rerank failed, using vector order:", e instanceof Error ? e.message : e);
-        orderedIds = ranked.map((r) => r.id);
+        console.error("[search] rerank failed, using hybrid order:", e instanceof Error ? e.message : e);
+        orderedIds = candidates.map((r) => r.id);
       }
       for (const id of orderedIds) matchedIds.add(id);
     }

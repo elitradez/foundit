@@ -1,0 +1,84 @@
+{
+  "comment": "Regression query set for the browse search harness (scripts/search-eval.mjs). mustInclude entries are case-insensitive substrings matched against item names; every entry must appear somewhere in the final results. topOne is a list of acceptable #1 results. topThree entries must all appear in the first three results. Update expectations when the catalog changes materially.",
+  "queries": [
+    {
+      "class": "short-generic",
+      "q": "keys",
+      "mustInclude": ["Keys", "Single key", "Key fob with keys", "Necklace, bracelet, and key"]
+    },
+    {
+      "class": "short-generic",
+      "q": "wallet",
+      "comment": "No wallet exists in the catalog — negative control. No required items; flags if search fabricates a 'match-anything' behavior.",
+      "mustInclude": []
+    },
+    {
+      "class": "short-generic",
+      "q": "charger",
+      "mustInclude": ["Black laptop charger", "Black USB wall charger", "charger", "Mint phone charger"]
+    },
+    {
+      "class": "short-generic",
+      "q": "glasses",
+      "mustInclude": ["Eyeglasses", "Glasses", "Sunglasses"]
+    },
+    {
+      "class": "attribute",
+      "q": "blue water bottle",
+      "mustInclude": ["Water bottle", "Black water bottle", "Green water bottle", "Purple water bottle", "Teal water bottle", "Blue Stanley tumbler"],
+      "topThree": ["Blue Stanley tumbler"]
+    },
+    {
+      "class": "attribute",
+      "q": "black backpack",
+      "mustInclude": ["Backpack"],
+      "topOne": ["Backpack"]
+    },
+    {
+      "class": "brand",
+      "q": "AirPods",
+      "comment": "No literal AirPods; the white earbud charging case is the obvious human match.",
+      "mustInclude": ["Earbuds"]
+    },
+    {
+      "class": "brand",
+      "q": "Stanley",
+      "mustInclude": ["Blue Stanley tumbler"],
+      "topOne": ["Blue Stanley tumbler"]
+    },
+    {
+      "class": "brand",
+      "q": "Hydro Flask",
+      "mustInclude": ["Hydro Flask Tumbler"],
+      "topOne": ["Hydro Flask Tumbler"]
+    },
+    {
+      "class": "misspelled",
+      "q": "airpods pro 2nd gen",
+      "mustInclude": ["Earbuds"]
+    },
+    {
+      "class": "misspelled",
+      "q": "hydroflask",
+      "mustInclude": ["Hydro Flask Tumbler"],
+      "topOne": ["Hydro Flask Tumbler"]
+    },
+    {
+      "class": "misspelled",
+      "q": "water bottel",
+      "mustInclude": ["Water bottle", "Black water bottle", "Green water bottle", "Purple water bottle", "Teal water bottle"]
+    },
+    {
+      "class": "descriptive",
+      "q": "silver laptop with stickers on it",
+      "comment": "No laptop in the catalog — observational; nearest neighbours (laptop chargers, stickered bottles) acceptable.",
+      "mustInclude": []
+    },
+    {
+      "class": "descriptive",
+      "q": "green bottle with stickers on it",
+      "mustInclude": ["Green water bottle"],
+      "topOne": ["Green water bottle"]
+    }
+  ]
+}
