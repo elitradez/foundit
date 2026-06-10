@@ -17,12 +17,14 @@ export async function POST(req: Request) {
       studentName?: string;
       studentEmail?: string;
       phoneNumber?: string;
+      findRequestId?: string;
     };
 
     const itemId = body.itemId?.trim();
     if (!itemId) {
       return NextResponse.json({ error: "Missing item ID" }, { status: 400 });
     }
+    const findRequestId = body.findRequestId?.trim() || null;
 
     const studentDescription = body.studentDescription?.trim() ?? null;
     const studentName = body.studentName?.trim() || null;
@@ -56,6 +58,21 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Item no longer available" }, { status: 410 });
     }
 
+    // Claims from the describe-first flow link the description the student
+    // committed BEFORE seeing any photos (anti-fraud audit trail for staff).
+    // An id that doesn't resolve is rejected rather than silently dropped.
+    if (findRequestId) {
+      const { data: findReq } = await supabase
+        .from("find_requests")
+        .select("id")
+        .eq("id", findRequestId)
+        .eq("university_id", item.university_id)
+        .maybeSingle();
+      if (!findReq) {
+        return NextResponse.json({ error: "Invalid find request" }, { status: 400 });
+      }
+    }
+
     const { error: claimErr } = await supabase.from("claims").insert({
       item_id: itemId,
       student_name: studentName,
@@ -65,6 +82,7 @@ export async function POST(req: Request) {
       phone_number: phoneNumber,
       university_id: item.university_id,
       status: "pending",
+      find_request_id: findRequestId,
     });
 
     if (claimErr) {

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useFocusTrap } from "@/lib/useFocusTrap";
 import { Spinner } from "@/components/ui/Spinner";
+import { FindMyItem } from "@/components/student/FindMyItem";
 import type { PublicItem } from "@/lib/types";
 
 type Department = { id: string; name: string };
@@ -31,6 +32,7 @@ export function HomeExplorer({ initialItems, loadError, universityName = "Univer
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const searchCacheRef = useRef<Map<string, string[]>>(new Map());
   const [toast, setToast] = useState<string | null>(null);
+  const [findOpen, setFindOpen] = useState(false);
   const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   function showToast(message: string) {
@@ -204,10 +206,42 @@ export function HomeExplorer({ initialItems, loadError, universityName = "Univer
       <section aria-label="Search lost items" style={{ backgroundColor: "#F5F5F5", borderBottom: "1px solid #E5E5E5" }}>
         <div style={{ maxWidth: 1152, margin: "0 auto", padding: "24px 16px" }}>
           <h1 style={{ color: "#1a1a1a", fontSize: 28, fontWeight: 600, margin: "0 0 4px 0" }}>
-            Find a lost item
+            Lost something?
           </h1>
           <p style={{ color: "#666666", fontSize: 14, margin: "0 0 16px 0" }}>
-            Search for lost items found across campus. Photos are blurred to protect against theft — describe your item from memory and we&apos;ll unblur it if it matches. Staff verify ownership in person at pickup.
+            Describe your item from memory and we&apos;ll check everything that&apos;s been turned in.
+            Photos are blurred to protect against theft — they unblur when your description matches. Staff verify ownership in person at pickup.
+          </p>
+          {/* Primary path: describe-first claim flow */}
+          <button
+            type="button"
+            onClick={() => setFindOpen(true)}
+            style={{
+              display: "flex",
+              width: "100%",
+              maxWidth: 420,
+              margin: "0 auto 16px",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 8,
+              minHeight: 52,
+              backgroundColor: "#CC0000",
+              color: "#FFFFFF",
+              fontSize: 16,
+              fontWeight: 600,
+              border: "none",
+              borderRadius: 8,
+              cursor: "pointer",
+              fontFamily: FONT,
+              boxShadow: "0 2px 8px rgba(204,0,0,0.25)",
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#A80000")}
+            onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#CC0000")}
+          >
+            Submit a claim
+          </button>
+          <p style={{ color: "#666666", fontSize: 13, margin: "0 0 8px 0", textAlign: "center" }}>
+            or browse everything that&apos;s been found:
           </p>
           <div style={{ position: "relative" }}>
             {query.trim() && searchBusy ? (
@@ -366,6 +400,14 @@ export function HomeExplorer({ initialItems, loadError, universityName = "Univer
         />
       ) : null}
 
+      {findOpen ? (
+        <FindMyItem
+          departments={departments}
+          onClose={() => setFindOpen(false)}
+          onClaimSubmitted={() => showToast("Claim submitted — we’ll contact you shortly.")}
+        />
+      ) : null}
+
       {/* Toast — container stays mounted so screen readers announce the text */}
       <div
         role="status"
@@ -466,10 +508,29 @@ function ItemCard({ item, onClick }: { item: PublicItem; onClick: () => void }) 
 
 type ModalStep = 1 | 2 | 3 | 4;
 
-function ClaimModal({ item, onClose, departmentName, onSubmitted }: { item: PublicItem; onClose: () => void; departmentName: string; onSubmitted: () => void }) {
+export function ClaimModal({
+  item,
+  onClose,
+  departmentName,
+  onSubmitted,
+  initialStep = 1,
+  committedDescription,
+  findRequestId,
+}: {
+  item: Pick<PublicItem, "id" | "name">;
+  onClose: () => void;
+  departmentName: string;
+  onSubmitted: () => void;
+  // The describe-first flow enters directly at the contact step (its match
+  // check already happened server-side) with the description the student
+  // committed before seeing any photos.
+  initialStep?: ModalStep;
+  committedDescription?: string;
+  findRequestId?: string;
+}) {
   const dialogRef = useFocusTrap<HTMLDivElement>(true, onClose);
-  const [step, setStep] = useState<ModalStep>(1);
-  const [studentDescription, setStudentDescription] = useState("");
+  const [step, setStep] = useState<ModalStep>(initialStep);
+  const [studentDescription, setStudentDescription] = useState(committedDescription ?? "");
   const [matchBusy, setMatchBusy] = useState(false);
   const [matchScore, setMatchScore] = useState<number | null>(null);
   const [revealUrl, setRevealUrl] = useState<string | null>(null);
@@ -529,6 +590,7 @@ function ClaimModal({ item, onClose, departmentName, onSubmitted }: { item: Publ
           studentName: studentName || undefined,
           studentEmail: email || undefined,
           phoneNumber: phoneNumber || undefined,
+          findRequestId: findRequestId || undefined,
         }),
       });
       const data = (await res.json().catch(() => ({}))) as { error?: string };

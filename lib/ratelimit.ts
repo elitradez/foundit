@@ -33,6 +33,8 @@ function makeLimiter(name: string, requests: number, windowSeconds: number): Rat
 export const loginLimiter = makeLimiter("login", 5, 60);
 export const aiLimiter = makeLimiter("ai", 20, 60);
 export const claimLimiter = makeLimiter("claim", 8, 60);
+// SMS-alert registration is adjacent to outbound SMS cost — keep it tight.
+export const alertLimiter = makeLimiter("alert", 5, 3600);
 
 // ---------------------------------------------------------------------------
 // In-memory fallback. Used when Upstash is not configured, or when an Upstash
