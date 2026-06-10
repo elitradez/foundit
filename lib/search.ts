@@ -11,12 +11,27 @@ import {
 // claim flow). Scoring happens IN THE DATABASE via the search_items pgvector
 // function — nothing here loads the item catalog into application memory.
 
-// Recall floor for the browse search box. MEASURED against the live catalog
-// (text-embedding-3-small): unrelated items fall below ~0.34 (red camera .335,
-// sunglasses .323) while real matches sit 0.40+ (see commit history of
-// app/api/items/search/route.ts for the full measurements).
-export const VECTOR_MATCH_THRESHOLD = 0.4;
+// Browse recall floors. MEASURED with scripts/search-eval.mjs — embedding
+// scores are query-length dependent, so one flat floor can't work:
+//   - SHORT (1-2 word) queries compress: "keys" put real key items at
+//     0.389/0.352 and every "charger" item between 0.27-0.34 (the old 0.4
+//     floor hid them all), while true junk sits below ~0.28 -> floor 0.2.
+//   - LONGER queries spread upward: for "blue water bottle" every real bottle
+//     scores >=0.40 and junk tops out at 0.335 -> floor 0.3 cuts the deep
+//     tail without hiding anything a human would expect.
+// Browse returns a RANKED list; floors exist only to cut genuine noise. The
+// lexical layer is unioned regardless, so exact word hits below the vector
+// floor are never lost. (The Find-my-item flow passes its own, stricter
+// threshold — its anti-fraud gates are independent of these constants.)
+export const BROWSE_VECTOR_FLOOR_SHORT = 0.2;
+export const BROWSE_VECTOR_FLOOR_LONG = 0.3;
+export const VECTOR_MATCH_THRESHOLD = 0.4; // default for callers that don't specify
 export const VECTOR_MATCH_COUNT = 50;
+
+/** Length-aware browse floor (see measurement notes above). */
+export function browseVectorFloor(query: string): number {
+  return isShortQuery(query) ? BROWSE_VECTOR_FLOOR_SHORT : BROWSE_VECTOR_FLOOR_LONG;
+}
 
 // How many top candidates to hand the reranker. Vector recall can be wide, but
 // the reranker only needs to ORDER the plausible head; anything past this keeps
@@ -28,7 +43,23 @@ export type VectorRow = {
   name?: string;
   description?: string;
   similarity?: number;
+  lexScore?: number;
 };
+
+export type LexicalRow = { id: string; name?: string; description?: string; lex_score?: number };
+
+// "Close match" boundary, used only as a UI signal (never to trim results):
+// vector junk measured below ~0.34 on the live catalog; a lexical 0.5 means a
+// real word-level hit. Below both, results are best-effort neighbours.
+export const STRONG_VECTOR_SIM = 0.35;
+export const STRONG_LEX_SCORE = 0.5;
+
+/** How many candidates qualify as close matches (UI signal only). */
+export function countStrongCandidates(rows: VectorRow[]): number {
+  return rows.filter(
+    (r) => (r.similarity ?? 0) >= STRONG_VECTOR_SIM || (r.lexScore ?? 0) >= STRONG_LEX_SCORE,
+  ).length;
+}
 
 /** Embed a query with the same model used for item embeddings. Returns null on failure. */
 export async function embedQuery(text: string): Promise<number[] | null> {
@@ -65,6 +96,66 @@ export async function vectorSearchItems(
   return ((data ?? []) as VectorRow[])
     .filter((r) => r && typeof r.id === "string")
     .sort((a, b) => (b.similarity ?? 0) - (a.similarity ?? 0));
+}
+
+/**
+ * Trigram/substring search via the lexical_search_items RPC (pg_trgm).
+ * Strong where embeddings are weak: 1-2 word queries ("keys" hits every item
+ * with "key" in it) and misspellings ("hydroflask", "water bottel").
+ * Returns [] if the RPC is unavailable so callers degrade to vector-only.
+ */
+export async function lexicalSearchItems(
+  supabase: SupabaseClient,
+  query: string,
+  universityId: string,
+  limit = 50,
+): Promise<LexicalRow[]> {
+  const { data, error } = await supabase.rpc("lexical_search_items", {
+    p_query: query,
+    p_university_id: universityId,
+    p_limit: limit,
+  });
+  if (error) {
+    console.error("[search] lexical stage failed (vector-only):", error.message);
+    return [];
+  }
+  return ((data ?? []) as LexicalRow[]).filter((r) => r && typeof r.id === "string");
+}
+
+/** 1-2 word queries lean on the lexical layer; embeddings are noisy there. */
+export function isShortQuery(query: string): boolean {
+  return query.trim().split(/\s+/).filter(Boolean).length <= 2;
+}
+
+/**
+ * Union the vector and lexical candidate sets into one deterministic order
+ * (the AI reranker then reorders the head; this order IS the fallback when the
+ * reranker is unavailable — the degradation ladder stays AI -> hybrid -> ILIKE).
+ *   - short queries: lexical-first (exact/fuzzy word hits beat fuzzy semantics)
+ *   - longer queries: vector-first (semantics carry attribute/descriptive intent),
+ *     lexical-only extras appended so substring matches are never lost
+ */
+export function mergeHybridCandidates(
+  query: string,
+  vectorRows: VectorRow[],
+  lexicalRows: LexicalRow[],
+): VectorRow[] {
+  const byId = new Map<string, VectorRow>();
+  for (const r of vectorRows) byId.set(r.id, { ...r });
+  for (const l of lexicalRows) {
+    const existing = byId.get(l.id);
+    if (existing) existing.lexScore = l.lex_score ?? 0;
+    else byId.set(l.id, { id: l.id, name: l.name, description: l.description, similarity: 0, lexScore: l.lex_score ?? 0 });
+  }
+  const all = [...byId.values()];
+  if (isShortQuery(query)) {
+    return all.sort(
+      (a, b) => (b.lexScore ?? 0) - (a.lexScore ?? 0) || (b.similarity ?? 0) - (a.similarity ?? 0),
+    );
+  }
+  return all.sort(
+    (a, b) => (b.similarity ?? 0) - (a.similarity ?? 0) || (b.lexScore ?? 0) - (a.lexScore ?? 0),
+  );
 }
 
 // Pure embedding similarity ranks by object TYPE ("water bottle") and under-

@@ -28,9 +28,12 @@ export function HomeExplorer({ initialItems, loadError, universityName = "Univer
   const [openItem, setOpenItem] = useState<PublicItem | null>(null);
   const [searchBusy, setSearchBusy] = useState(false);
   const [aiItemIds, setAiItemIds] = useState<string[] | null>(null);
+  // Server-reported count of CLOSE matches; 0 with results means the grid is
+  // showing best-effort neighbours, which the UI labels honestly.
+  const [strongCount, setStrongCount] = useState<number | null>(null);
   const [selectedDept, setSelectedDept] = useState<string | null>(null);
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
-  const searchCacheRef = useRef<Map<string, string[]>>(new Map());
+  const searchCacheRef = useRef<Map<string, { ids: string[]; strong: number | null }>>(new Map());
   const [toast, setToast] = useState<string | null>(null);
   const [findOpen, setFindOpen] = useState(false);
   const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -75,6 +78,7 @@ export function HomeExplorer({ initialItems, loadError, universityName = "Univer
     const q = query.trim();
     if (!q) {
       setAiItemIds(null);
+      setStrongCount(null);
       setSearchBusy(false);
       return;
     }
@@ -82,7 +86,8 @@ export function HomeExplorer({ initialItems, loadError, universityName = "Univer
     const key = q.toLowerCase();
     const cached = searchCacheRef.current.get(key);
     if (cached) {
-      setAiItemIds(cached);
+      setAiItemIds(cached.ids);
+      setStrongCount(cached.strong);
       setSearchBusy(false);
       return;
     }
@@ -91,6 +96,7 @@ export function HomeExplorer({ initialItems, loadError, universityName = "Univer
     // instant local filter for THIS query while the new request is in flight,
     // instead of showing stale matches from the prior query.
     setAiItemIds(null);
+    setStrongCount(null);
     // Mark "searching" from the keystroke (not just once the fetch fires after
     // the debounce), so the empty state stays suppressed and the progress
     // indicator shows during the whole debounce + request window.
@@ -105,11 +111,13 @@ export function HomeExplorer({ initialItems, loadError, universityName = "Univer
           body: JSON.stringify({ query: q }),
           signal: controller.signal,
         });
-        const data = (await res.json().catch(() => ({}))) as { itemIds?: string[] };
+        const data = (await res.json().catch(() => ({}))) as { itemIds?: string[]; strongCount?: number };
         if (res.ok) {
           const ids = Array.isArray(data.itemIds) ? data.itemIds : [];
-          searchCacheRef.current.set(key, ids);
+          const strong = typeof data.strongCount === "number" ? data.strongCount : null;
+          searchCacheRef.current.set(key, { ids, strong });
           setAiItemIds(ids);
+          setStrongCount(strong);
         } else {
           // Search service unavailable (rate limit, outage): fall back to the
           // instant local filter rather than blanking the grid.
@@ -313,6 +321,15 @@ export function HomeExplorer({ initialItems, loadError, universityName = "Univer
         {loadError ? (
           <p style={{ marginBottom: 24, padding: "12px 16px", border: "1px solid #FDE68A", backgroundColor: "#FFFBEB", borderRadius: 6, fontSize: 14, color: "#92400E" }}>
             {loadError}
+          </p>
+        ) : null}
+
+        {/* Honest weak-results signal: ranked neighbours are shown, but the
+            student should know nothing matched closely — "it isn't here" is
+            actionable in a lost & found. */}
+        {query.trim() && !searchBusy && aiItemIds !== null && aiItemIds.length > 0 && strongCount === 0 ? (
+          <p role="status" style={{ margin: "16px 0", padding: "12px 16px", border: "1px solid #E5E5E5", backgroundColor: "#F5F5F5", borderRadius: 6, fontSize: 14, color: "#555555" }}>
+            No close matches for “{query.trim()}” — showing similar items below. Try adding details, or use <strong>Submit a claim</strong> to get texted when it shows up.
           </p>
         ) : null}
 

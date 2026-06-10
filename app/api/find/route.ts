@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { createAdminSupabaseClient } from "@/lib/supabase-admin";
 import { getUniversityId } from "@/lib/university-config";
 import { aiLimiter, getClientIp, isRateLimited } from "@/lib/ratelimit";
-import { embedQuery, rerankByRelevance, vectorSearchItems } from "@/lib/search";
+import { embedQuery, lexicalSearchItems, rerankByRelevance, vectorSearchItems, type VectorRow } from "@/lib/search";
 import { scoreMatch } from "@/lib/match-score";
 
 // ---------------------------------------------------------------------------
@@ -26,6 +26,11 @@ import { scoreMatch } from "@/lib/match-score";
 // genuine attribute-level matches start ~0.45, strong matches 0.54+. 0.45 sits
 // above the noise ceiling with margin while keeping real matches.
 const FIND_MATCH_SIMILARITY = 0.45;
+
+// Gate 1's lexical signal: a score of 0.5+ means a genuine word-level hit on
+// the item's name/description ("knife" -> "Pocket Knife"), not trigram noise.
+// Qualifies a match to be SHOWN only — never to be unblurred.
+const FIND_LEX_SCORE = 0.5;
 
 // Gate 2 — the strict AI match score required to UNBLUR a shown match's photo.
 // Same bar as the existing browse reveal (/api/claims/match). Anti-fraud: the
@@ -111,22 +116,43 @@ export async function POST(req: Request) {
     }
     const findRequestId = findReq.id as string;
 
-    // 2. Recall: embedding -> in-database pgvector search with the
-    // conservative gate-1 threshold applied in SQL.
-    const embedding = await embedQuery(description);
-    if (!embedding) {
-      // Search degraded — keep the committed request, return no matches so the
-      // student lands on the SMS-alert offer rather than an error dead-end.
-      console.error("[find] embedding unavailable; returning no matches");
-      return NextResponse.json({ findRequestId, matches: [] });
-    }
+    // 2. Recall for gate 1 — two signals, either qualifies a match to be SHOWN:
+    //    - pgvector similarity >= FIND_MATCH_SIMILARITY (conservative, in SQL)
+    //    - a real lexical word hit (>= FIND_LEX_SCORE): embeddings compress
+    //      hard on one-word queries, so "knife" scores the catalog's Pocket
+    //      Knife below the vector gate even though it's an obvious match.
+    // This widens only WHAT IS SHOWN (name + blurred photo — the same data
+    // browse shows publicly). The UNBLUR gates below are completely unchanged:
+    // revealing a photo still requires the strict per-item scorer, and PIN
+    // items never unblur.
+    const [embedding, lexRows] = await Promise.all([
+      embedQuery(description),
+      lexicalSearchItems(supabase, description, universityId),
+    ]);
 
-    const rows = await vectorSearchItems(supabase, embedding, universityId, {
-      matchThreshold: FIND_MATCH_SIMILARITY,
-    });
+    const vecRows = embedding
+      ? await vectorSearchItems(supabase, embedding, universityId, {
+          matchThreshold: FIND_MATCH_SIMILARITY,
+        })
+      : [];
+    if (!embedding) {
+      console.error("[find] embedding unavailable; using lexical-only recall");
+    }
     // Defense in depth: re-apply the gate-1 threshold app-side too, so a
     // mis-set RPC default can never widen what this flow shows.
-    const aboveThreshold = rows.filter((r) => (r.similarity ?? 0) >= FIND_MATCH_SIMILARITY);
+    const candidateById = new Map<string, VectorRow>();
+    for (const r of vecRows) {
+      if ((r.similarity ?? 0) >= FIND_MATCH_SIMILARITY) candidateById.set(r.id, r);
+    }
+    for (const l of lexRows) {
+      if ((l.lex_score ?? 0) < FIND_LEX_SCORE) continue;
+      const existing = candidateById.get(l.id);
+      if (existing) existing.lexScore = l.lex_score;
+      else candidateById.set(l.id, { id: l.id, name: l.name, description: l.description, similarity: 0, lexScore: l.lex_score });
+    }
+    const aboveThreshold = [...candidateById.values()].sort(
+      (a, b) => (b.similarity ?? 0) - (a.similarity ?? 0) || (b.lexScore ?? 0) - (a.lexScore ?? 0),
+    );
 
     if (aboveThreshold.length === 0) {
       return NextResponse.json({ findRequestId, matches: [] });
