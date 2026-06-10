@@ -52,6 +52,9 @@ type FindMatch = {
   // Signed unblurred URL when both gates pass and the item has no PIN; null
   // means the client renders the existing blurred proxy instead.
   photoUrl: string | null;
+  // PIN items never unblur (existing rule) — the client uses this to offer the
+  // add-more-detail verify step only where it can actually succeed.
+  requiresPin: boolean;
 };
 
 export async function POST(req: Request) {
@@ -187,6 +190,7 @@ export async function POST(req: Request) {
           date_found: item.date_found,
           department_name: item.departments?.name ?? null,
           photoUrl,
+          requiresPin: item.pin_hash !== null,
         };
       })
     );

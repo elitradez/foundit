@@ -222,8 +222,19 @@ describe("POST /api/find", () => {
     const res = await findPost(jsonReq({ description: GOOD_DESCRIPTION }));
     const body = await res.json();
     expect(body.matches[0].photoUrl).toBeNull();
+    expect(body.matches[0].requiresPin).toBe(true);
     expect(h.state.signedPaths).toHaveLength(0);
     expect(h.state.scoreCalls).toHaveLength(0);
+  });
+
+  it("marks non-PIN items so the client can offer the add-detail verify step", async () => {
+    h.state.vectorRows = [{ id: "a", similarity: 0.8 }];
+    h.state.itemsRows = [makeItemRow("a")];
+    h.state.scoreResult = 10; // below the unblur bar — shown blurred
+    const res = await findPost(jsonReq({ description: GOOD_DESCRIPTION }));
+    const body = await res.json();
+    expect(body.matches[0].photoUrl).toBeNull();
+    expect(body.matches[0].requiresPin).toBe(false);
   });
 
   it("fails CLOSED when the scorer errors — match shown, photo blurred", async () => {
