@@ -89,10 +89,13 @@ export function HomeExplorer({ initialItems, loadError, universityName = "Univer
     // instant local filter for THIS query while the new request is in flight,
     // instead of showing stale matches from the prior query.
     setAiItemIds(null);
+    // Mark "searching" from the keystroke (not just once the fetch fires after
+    // the debounce), so the empty state stays suppressed and the progress
+    // indicator shows during the whole debounce + request window.
+    setSearchBusy(true);
 
     const controller = new AbortController();
     const timer = setTimeout(async () => {
-      setSearchBusy(true);
       try {
         const res = await fetch("/api/items/search", {
           method: "POST",
@@ -135,13 +138,23 @@ export function HomeExplorer({ initialItems, loadError, universityName = "Univer
   const localMatchIds = useMemo(() => {
     const q = query.trim().toLowerCase();
     if (!q) return null;
-    const tokens = q.split(/\s+/).filter(Boolean);
+    // Drop 1-char tokens: they'd match almost every item (and the date string)
+    // and make the instant grid noise. The AI request still gets the full query.
+    const tokens = q.split(/\s+/).filter((t) => t.length >= 2);
+    if (tokens.length === 0) return null;
+    // Match on ANY word (not all), ranked by how many words hit, so a vague
+    // multi-word query like "blue water bottle" instantly surfaces every
+    // water bottle — including a teal one — instead of demanding an exact
+    // phrase match. The AI semantic result replaces this as soon as it lands.
     return allItems
-      .filter((i) => {
+      .map((i) => {
         const hay = `${i.name} ${i.location} ${i.department_name ?? ""} ${i.date_found}`.toLowerCase();
-        return tokens.every((t) => hay.includes(t));
+        const score = tokens.reduce((n, t) => n + (hay.includes(t) ? 1 : 0), 0);
+        return { id: i.id, score };
       })
-      .map((i) => i.id);
+      .filter((x) => x.score > 0)
+      .sort((a, b) => b.score - a.score)
+      .map((x) => x.id);
   }, [allItems, query]);
 
   const filtered = useMemo(() => {
@@ -269,8 +282,9 @@ export function HomeExplorer({ initialItems, loadError, universityName = "Univer
           </p>
         ) : null}
 
-        {/* Empty state */}
-        {filtered.length === 0 && !loadError ? (
+        {/* Empty state — suppressed while a search is in flight so a vague
+            query never flashes "No items found" before AI results land. */}
+        {filtered.length === 0 && !loadError && !searchBusy ? (
           <div style={{ textAlign: "center", padding: "64px 24px" }}>
             <p style={{ fontSize: 36, marginBottom: 12 }}>📭</p>
             <p style={{ fontSize: 14, color: "#666666" }}>

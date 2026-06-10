@@ -5,6 +5,22 @@ import { aiLimiter, getClientIp, isRateLimited } from "@/lib/ratelimit";
 
 type SearchBody = { query?: string };
 
+// Students search from memory with vague, imperfect descriptions — "blue
+// water bottle" for a teal one, or just "water bottle". We optimise for
+// RECALL: surface every plausible match and let the student's eye (and the
+// in-person staff check) pick out their item. A missed match means someone
+// never gets their property back; an extra item just costs a glance.
+//   - A low absolute floor keeps near-matches (teal ≈ blue) in the results.
+//   - Relevance ORDER (best first) surfaces the strongest matches at the top;
+//     it does NOT shrink the set, so the floor is the real narrowing lever.
+// TUNING: text-embedding-3-small produces compressed cosine scores, so on a
+// homogeneous lost-and-found catalog a low floor can let a vague query ("black",
+// "jacket") clear it against much of the catalog. 0.3 favors recall; if vague
+// queries feel unfiltered against the live data, raise the floor a little —
+// but cautiously, since real near-matches (the teal bottle) sit around ~0.5.
+const VECTOR_MATCH_THRESHOLD = 0.3; // recall floor — tune against the live catalog
+const VECTOR_MATCH_COUNT = 50;
+
 const MONTH_MAP: Record<string, number> = {
   jan: 1, january: 1, feb: 2, february: 2, mar: 3, march: 3,
   apr: 4, april: 4, may: 5, jun: 6, june: 6, jul: 7, july: 7,
@@ -83,29 +99,20 @@ export async function POST(req: Request) {
       if (Array.isArray(embedding)) {
         const { data: vectorResults } = await supabase.rpc("search_items", {
           query_embedding: embedding,
-          match_threshold: 0.3,
-          match_count: 20,
+          match_threshold: VECTOR_MATCH_THRESHOLD,
+          match_count: VECTOR_MATCH_COUNT,
           p_university_id: universityId,
         });
-        // The RPC returns rows with a `similarity` score that was previously
-        // ignored — with a low 0.3 threshold the raw set carries a long tail
-        // of generic near-noise matches, so results barely narrowed. Rank by
-        // similarity and trim the tail adaptively: keep rows close to the
-        // best match (or strong in absolute terms), but never fewer than the
-        // top 3 so a weak-but-real match still surfaces. Within this vector
-        // segment IDs are similarity-ordered (the client preserves array
-        // order). Note: any explicit date matches added above are unranked and
-        // already sit ahead of these — intended, since an exact date is a
-        // strong signal.
+        // Keep EVERY item above the recall floor, ordered best-first. We use
+        // the `similarity` score only to RANK (so the closest match leads),
+        // never to trim — a teal bottle that's a plausible "blue" match stays
+        // in the list, just below the exact ones. Date matches added above
+        // sit first (an exact date is a strong, intentional signal).
         type VectorRow = { id: string; similarity?: number };
         const ranked = ((vectorResults ?? []) as VectorRow[])
           .filter((r) => r && typeof r.id === "string")
           .sort((a, b) => (b.similarity ?? 0) - (a.similarity ?? 0));
-        const best = ranked[0]?.similarity ?? 0;
-        const cutoff = Math.max(0.35, best - 0.18);
-        const kept = ranked.filter((r) => (r.similarity ?? 0) >= cutoff);
-        const final = kept.length >= 3 ? kept : ranked.slice(0, 3);
-        for (const row of final) matchedIds.add(row.id);
+        for (const row of ranked) matchedIds.add(row.id);
       }
     }
 
