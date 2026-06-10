@@ -390,7 +390,7 @@ export default async function StaffAnalyticsPage() {
                   <span className="w-5 flex-shrink-0 text-[11px] tabular-nums text-[#9CA3AF]">
                     {idx + 1}
                   </span>
-                  <span className="min-w-0 flex-1 truncate text-sm text-[#374151]">{location}</span>
+                  <span className="min-w-0 flex-1 truncate text-sm text-[#374151]" title={location}>{location}</span>
                   <div className="hidden w-40 overflow-hidden bg-[#F3F4F6] sm:block" style={{ height: 3 }}>
                     <div className="h-full bg-[#1E293B]" style={{ width: `${(count / topMax) * 100}%` }} />
                   </div>
@@ -463,7 +463,7 @@ export default async function StaffAnalyticsPage() {
                 <div className="divide-y divide-[#F3F4F6]">
                   {deptBreakdown.map(({ name, total }) => (
                     <div key={name} className="flex items-center gap-3 px-5 py-3">
-                      <span className="min-w-0 flex-1 truncate text-sm text-[#374151]">{name}</span>
+                      <span className="min-w-0 flex-1 truncate text-sm text-[#374151]" title={name}>{name}</span>
                       <div className="flex items-center gap-2">
                         <div className="w-16 overflow-hidden rounded-none bg-[#F3F4F6]" style={{ height: 3 }}>
                           <div
@@ -506,7 +506,7 @@ export default async function StaffAnalyticsPage() {
                       <span className="w-5 flex-shrink-0 text-[11px] tabular-nums text-[#9CA3AF]">
                         {idx + 1}
                       </span>
-                      <span className="min-w-0 flex-1 truncate text-sm text-[#374151]">{location}</span>
+                      <span className="min-w-0 flex-1 truncate text-sm text-[#374151]" title={location}>{location}</span>
                       <div className="hidden w-40 overflow-hidden bg-[#F3F4F6] sm:block" style={{ height: 3 }}>
                         <div className="h-full bg-[#1E293B]" style={{ width: `${(count / uniTopMax) * 100}%` }} />
                       </div>

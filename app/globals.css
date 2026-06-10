@@ -195,9 +195,7 @@ body {
   border-radius: 4px;
 }
 
-/* Form controls provide custom focus styles via Tailwind ring utilities */
-input:focus-visible,
-textarea:focus-visible,
-select:focus-visible {
-  outline: none;
-}
+/* Form controls keep the universal :focus-visible outline above. Component
+   ring utilities (focus:ring-*) layer on top of it; the outline must never be
+   suppressed globally — keyboard users need a visible indicator even if a
+   component forgets its own focus styling (procurement a11y requirement). */

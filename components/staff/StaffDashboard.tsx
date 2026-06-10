@@ -545,7 +545,9 @@ export function StaffDashboard({
       <button
         type="button"
         role="tab"
+        id={`staff-tab-${id}`}
         aria-selected={active}
+        aria-controls={`staff-tabpanel-${id}`}
         onClick={() => setTab(id)}
         className={`flex flex-1 min-h-10 items-center justify-center rounded px-3 py-2 text-sm font-medium transition ${
           active
@@ -680,6 +682,7 @@ export function StaffDashboard({
 
       {/* Content */}
       <main id="main-content" className="mx-auto max-w-6xl px-4 py-6">
+        <div role="tabpanel" id={`staff-tabpanel-${tab}`} aria-labelledby={`staff-tab-${tab}`}>
         {loadError ? (
           <p className="mb-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{loadError}</p>
         ) : null}
@@ -713,8 +716,8 @@ export function StaffDashboard({
                         className="h-20 w-20 rounded-lg"
                       />
                       <div className="min-w-0 flex-1">
-                        <p className="truncate text-[15px] font-semibold text-[#1a1a1a]">{item.name}</p>
-                        <p className="mt-0.5 truncate text-sm text-[#666666]">{item.description}</p>
+                        <p className="truncate text-[15px] font-semibold text-[#1a1a1a]" title={item.name}>{item.name}</p>
+                        <p className="mt-0.5 truncate text-sm text-[#666666]" title={item.description}>{item.description}</p>
                         <p className="mt-0.5 text-xs text-[#666666]">{item.location}</p>
                         <div className="mt-2.5 flex flex-wrap items-center gap-2">
                           <button
@@ -1003,6 +1006,7 @@ export function StaffDashboard({
             ) : null}
           </>
         ) : null}
+        </div>
       </main>
 
       {showForm ? <LogItemForm onClose={() => setShowForm(false)} onSaved={() => void load()} /> : null}
