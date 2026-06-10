@@ -5,7 +5,6 @@ import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useFocusTrap } from "@/lib/useFocusTrap";
 import { Spinner } from "@/components/ui/Spinner";
-import { FindMyItem } from "@/components/student/FindMyItem";
 import type { PublicItem } from "@/lib/types";
 
 type Department = { id: string; name: string };
@@ -35,7 +34,6 @@ export function HomeExplorer({ initialItems, loadError, universityName = "Univer
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const searchCacheRef = useRef<Map<string, { ids: string[]; strong: number | null }>>(new Map());
   const [toast, setToast] = useState<string | null>(null);
-  const [findOpen, setFindOpen] = useState(false);
   const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   function showToast(message: string) {
@@ -213,44 +211,9 @@ export function HomeExplorer({ initialItems, loadError, universityName = "Univer
       {/* ── Search / hero ── */}
       <section aria-label="Search lost items" style={{ backgroundColor: "#F5F5F5", borderBottom: "1px solid #E5E5E5" }}>
         <div style={{ maxWidth: 1152, margin: "0 auto", padding: "24px 16px" }}>
-          <h1 style={{ color: "#1a1a1a", fontSize: 28, fontWeight: 600, margin: "0 0 4px 0" }}>
+          <h1 style={{ color: "#1a1a1a", fontSize: 28, fontWeight: 600, margin: "0 0 16px 0" }}>
             Lost something?
           </h1>
-          <p style={{ color: "#666666", fontSize: 14, margin: "0 0 16px 0" }}>
-            Describe your item from memory and we&apos;ll check everything that&apos;s been turned in.
-            Photos are blurred to protect against theft — they unblur when your description matches. Staff verify ownership in person at pickup.
-          </p>
-          {/* Primary path: describe-first claim flow */}
-          <button
-            type="button"
-            onClick={() => setFindOpen(true)}
-            style={{
-              display: "flex",
-              width: "100%",
-              maxWidth: 420,
-              margin: "0 auto 16px",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: 8,
-              minHeight: 52,
-              backgroundColor: "#CC0000",
-              color: "#FFFFFF",
-              fontSize: 16,
-              fontWeight: 600,
-              border: "none",
-              borderRadius: 8,
-              cursor: "pointer",
-              fontFamily: FONT,
-              boxShadow: "0 2px 8px rgba(204,0,0,0.25)",
-            }}
-            onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#A80000")}
-            onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#CC0000")}
-          >
-            Submit a claim
-          </button>
-          <p style={{ color: "#666666", fontSize: 13, margin: "0 0 8px 0", textAlign: "center" }}>
-            or browse everything that&apos;s been found:
-          </p>
           <div style={{ position: "relative" }}>
             {query.trim() && searchBusy ? (
               <span style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", display: "inline-flex", alignItems: "center", gap: 5, pointerEvents: "none" }}>
@@ -329,7 +292,7 @@ export function HomeExplorer({ initialItems, loadError, universityName = "Univer
             actionable in a lost & found. */}
         {query.trim() && !searchBusy && aiItemIds !== null && aiItemIds.length > 0 && strongCount === 0 ? (
           <p role="status" style={{ margin: "16px 0", padding: "12px 16px", border: "1px solid #E5E5E5", backgroundColor: "#F5F5F5", borderRadius: 6, fontSize: 14, color: "#555555" }}>
-            No close matches for “{query.trim()}” — showing similar items below. Try adding details, or use <strong>Submit a claim</strong> to get texted when it shows up.
+            No close matches for “{query.trim()}” — showing similar items below. Try adding more detail to your search.
           </p>
         ) : null}
 
@@ -414,14 +377,6 @@ export function HomeExplorer({ initialItems, loadError, universityName = "Univer
           onClose={() => setOpenItem(null)}
           departmentName={openItem.department_name ?? "Lost & Found"}
           onSubmitted={() => showToast("Claim submitted — we’ll contact you shortly.")}
-        />
-      ) : null}
-
-      {findOpen ? (
-        <FindMyItem
-          departments={departments}
-          onClose={() => setFindOpen(false)}
-          onClaimSubmitted={() => showToast("Claim submitted — we’ll contact you shortly.")}
         />
       ) : null}
 
