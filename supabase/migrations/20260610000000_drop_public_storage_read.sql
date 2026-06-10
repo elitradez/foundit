@@ -18,6 +18,9 @@ DROP POLICY IF EXISTS "Public read item photos"   ON storage.objects;
 DROP POLICY IF EXISTS "Public Access"             ON storage.objects;
 DROP POLICY IF EXISTS "Public read items bucket"  ON storage.objects;
 DROP POLICY IF EXISTS "Anyone can read items"     ON storage.objects;
+-- The name actually found live on prod (see migration 20260610030000, which
+-- applied this drop to the production DB):
+DROP POLICY IF EXISTS "Public can view images"    ON storage.objects;
 
 -- Ensure the bucket is not flagged public (public buckets bypass policies).
 UPDATE storage.buckets SET public = false WHERE id = 'items';

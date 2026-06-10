@@ -1,0 +1,23 @@
+-- Migration: drop_public_view_images_storage_policy
+-- (applied to the live campus DB on 2026-06-09 as
+--  "drop_public_view_images_storage_policy")
+--
+-- Remove the leftover anon-readable storage policy on the items bucket.
+--
+-- "Public can view images" was FOR SELECT TO public USING (bucket_id = 'items'),
+-- which let the anon role (key is public in the browser bundle) download every
+-- ORIGINAL item photo via the Storage REST API — bypassing the blur proxy and
+-- the staff-authenticated proxy. The bucket's public=false flag does not stop
+-- this; the RLS SELECT policy grants it independently.
+--
+-- This was the policy the defensive migration 20260610000000 aimed at but
+-- missed by name (it guessed common names; the real one was found by querying
+-- pg_policy on the live DB).
+--
+-- Safe to drop: all campus photo access goes through the Next.js service-role
+-- proxies (blur proxy for public, authenticated proxy for staff, signed URLs
+-- for AI reveal). No campus code uses the anon key, so after this drop anon has
+-- deny-all on storage.objects (RLS enabled, zero policies) and the app is
+-- unaffected. Verified post-apply: policy count on storage.objects = 0, bucket
+-- private, live blur proxy still serving photos.
+DROP POLICY IF EXISTS "Public can view images" ON storage.objects;
