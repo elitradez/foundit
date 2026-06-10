@@ -24,6 +24,9 @@ type PendingClaim = {
   date_found: string | null;
   student_name: string | null;
   student_id_number: string | null;
+  claim_description: string | null;
+  committed_description: string | null;
+  committed_at: string | null;
   created_at: string;
 };
 
@@ -763,13 +766,14 @@ export function StaffDashboard({
 
             {!claimsLoading ? (
               <div className="overflow-x-auto rounded-lg border border-[#E5E5E5]">
-                <table className="w-full min-w-[860px] text-left text-sm">
+                <table className="w-full min-w-[1040px] text-left text-sm">
                   <thead style={{ borderBottom: "1px solid #E5E5E5", backgroundColor: "#F5F5F5" }}>
                     <tr>
                       <th scope="col" className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-[#666666]">Photo</th>
                       <th scope="col" className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-[#666666]">Item</th>
                       <th scope="col" className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-[#666666]">Student name</th>
                       <th scope="col" className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-[#666666]">Student ID</th>
+                      <th scope="col" className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-[#666666]">Their description</th>
                       <th scope="col" className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-[#666666]">Date submitted</th>
                       <th scope="col" className="px-4 py-3"><span className="sr-only">Actions</span></th>
                     </tr>
@@ -777,7 +781,7 @@ export function StaffDashboard({
                   <tbody className="divide-y divide-[#E5E5E5]">
                     {claims.length === 0 ? (
                       <tr>
-                        <td colSpan={6} className="px-4 py-10 text-center text-[#666666]">
+                        <td colSpan={7} className="px-4 py-10 text-center text-[#666666]">
                           No pending claims.
                         </td>
                       </tr>
@@ -801,6 +805,20 @@ export function StaffDashboard({
                           </td>
                           <td className="px-4 py-3 text-[#333333]">
                             {c.student_id_number?.trim() ? c.student_id_number : <span className="text-[#666666]">Not provided</span>}
+                          </td>
+                          <td className="px-4 py-3">
+                            {c.committed_description?.trim() ? (
+                              <div className="max-w-[280px]">
+                                <p className="max-h-20 overflow-y-auto whitespace-pre-wrap text-xs text-[#333333]">{c.committed_description}</p>
+                                <p className="mt-1 text-[11px] text-[#666666]" title="Written before the student saw any photos">
+                                  Committed {c.committed_at ? new Date(c.committed_at).toLocaleString() : "before viewing"} — pre-photo
+                                </p>
+                              </div>
+                            ) : c.claim_description?.trim() ? (
+                              <p className="max-h-20 max-w-[280px] overflow-y-auto whitespace-pre-wrap text-xs text-[#333333]">{c.claim_description}</p>
+                            ) : (
+                              <span className="text-xs text-[#666666]">Not provided</span>
+                            )}
                           </td>
                           <td className="px-4 py-3 text-[#666666]">{c.created_at.slice(0, 10)}</td>
                           <td className="px-4 py-3">

@@ -7,7 +7,9 @@ type PendingClaimRow = {
   item_id: string;
   student_name: string | null;
   student_id_number: string | null;
+  claim_description: string | null;
   created_at: string;
+  find_requests: { description: string; created_at: string } | null;
 };
 
 type ItemRef = {
@@ -41,9 +43,11 @@ export async function GET() {
     return NextResponse.json({ claims: [] });
   }
 
+  // find_requests join: the description the student committed BEFORE seeing
+  // any photos (describe-first flow). Staff compare it against the item.
   const { data, error } = await supabase
     .from("claims")
-    .select("id, item_id, student_name, student_id_number, created_at")
+    .select("id, item_id, student_name, student_id_number, claim_description, created_at, find_requests(description, created_at)")
     .eq("status", "pending")
     .in("item_id", deptItemIds)
     .order("created_at", { ascending: false });
@@ -52,7 +56,7 @@ export async function GET() {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  const rows = (data ?? []) as PendingClaimRow[];
+  const rows = (data ?? []) as unknown as PendingClaimRow[];
   const itemMap = new Map(deptItems.map((i) => [i.id, i]));
 
   const claims = rows.map((r) => ({
@@ -62,6 +66,9 @@ export async function GET() {
     date_found: itemMap.get(r.item_id)?.date_found ?? null,
     student_name: r.student_name,
     student_id_number: r.student_id_number,
+    claim_description: r.claim_description,
+    committed_description: r.find_requests?.description ?? null,
+    committed_at: r.find_requests?.created_at ?? null,
     created_at: r.created_at,
   }));
 
