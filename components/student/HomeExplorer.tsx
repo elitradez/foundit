@@ -255,7 +255,7 @@ export function HomeExplorer({ initialItems, loadError, universityName = "Univer
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Search by name, location, or date…"
               aria-label="Search items"
-              style={{ width: "100%", boxSizing: "border-box", backgroundColor: "#FFFFFF", border: "1px solid #CCCCCC", borderRadius: 8, padding: "10px 16px", fontSize: 14, color: "#333333", outline: "none" }}
+              style={{ width: "100%", boxSizing: "border-box", backgroundColor: "#FFFFFF", border: "1px solid #CCCCCC", borderRadius: 8, padding: "10px 16px", fontSize: 14, color: "#333333" }}
               onFocus={(e) => { e.currentTarget.style.borderColor = "#CC0000"; e.currentTarget.style.boxShadow = "0 0 0 3px rgba(204,0,0,0.12)"; }}
               onBlur={(e) => { e.currentTarget.style.borderColor = "#CCCCCC"; e.currentTarget.style.boxShadow = "none"; }}
             />
@@ -282,7 +282,9 @@ export function HomeExplorer({ initialItems, loadError, universityName = "Univer
                 <button
                   key={tab.id ?? "__all"}
                   role="tab"
+                  id={`dept-tab-${tab.id ?? "all"}`}
                   aria-selected={active}
+                  aria-controls="items-tabpanel"
                   type="button"
                   onClick={() => setSelectedDept(tab.id)}
                   style={{
@@ -323,6 +325,8 @@ export function HomeExplorer({ initialItems, loadError, universityName = "Univer
           </p>
         ) : null}
 
+        {/* The tab panel: the item grid region the department tabs control. */}
+        <div role="tabpanel" id="items-tabpanel" aria-labelledby={`dept-tab-${selectedDept ?? "all"}`}>
         {/* Empty state — suppressed while a search is in flight so a vague
             query never flashes "No items found" before AI results land. */}
         {filtered.length === 0 && !loadError && !searchBusy ? (
@@ -415,6 +419,7 @@ export function HomeExplorer({ initialItems, loadError, universityName = "Univer
             ) : null}
           </>
         )}
+        </div>
       </main>
 
       {openItem ? (
@@ -632,7 +637,6 @@ export function ClaimModal({
     padding: "10px 14px",
     fontSize: 14,
     color: "#333333",
-    outline: "none",
     fontFamily: FONT,
   };
 
