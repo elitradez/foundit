@@ -2,19 +2,16 @@
 
 import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
-import { Cormorant_Garamond } from "next/font/google";
 import { useFocusTrap } from "@/lib/useFocusTrap";
 import { ClaimModal } from "@/components/student/HomeExplorer";
 
-const cormorant = Cormorant_Garamond({ subsets: ["latin"], weight: ["500", "600"], display: "swap" });
-
-// Brand: cream / near-black, editorial. Red stays out of this surface except
-// for error text.
-const CREAM = "#F5F5F0";
-const INK = "#0c0c0c";
-const INK_60 = "rgba(12,12,12,0.6)";
-const INK_40 = "rgba(12,12,12,0.4)";
-const HAIRLINE = "1px solid rgba(12,12,12,0.12)";
+// Matches the student page: white surface, university red, system font.
+const SURFACE = "#FFFFFF";
+const INK = "#1a1a1a";
+const INK_60 = "#666666";
+const INK_40 = "#999999";
+const BRAND = "#CC0000";
+const HAIRLINE = "1px solid #E5E5E5";
 
 type Department = { id: string; name: string };
 
@@ -142,8 +139,8 @@ export function FindMyItem({
     width: "100%",
     boxSizing: "border-box",
     backgroundColor: "#FFFFFF",
-    border: HAIRLINE,
-    borderRadius: 10,
+    border: "1px solid #CCCCCC",
+    borderRadius: 8,
     padding: "14px 16px",
     fontSize: 16, // ≥16px so iOS doesn't zoom on focus
     color: INK,
@@ -157,11 +154,10 @@ export function FindMyItem({
     alignItems: "center",
     justifyContent: "center",
     minHeight: 54,
-    backgroundColor: INK,
-    color: CREAM,
+    backgroundColor: BRAND,
+    color: "#FFFFFF",
     fontSize: 16,
-    fontWeight: 500,
-    letterSpacing: "0.01em",
+    fontWeight: 600,
     border: "none",
     borderRadius: 10,
     cursor: "pointer",
@@ -173,19 +169,19 @@ export function FindMyItem({
     alignItems: "center",
     justifyContent: "center",
     minHeight: 48,
-    backgroundColor: "transparent",
-    color: INK_60,
+    backgroundColor: "#FFFFFF",
+    color: "#333333",
     fontSize: 15,
-    fontWeight: 400,
-    border: "none",
+    fontWeight: 500,
+    border: "1px solid #E5E5E5",
+    borderRadius: 8,
     cursor: "pointer",
   };
 
   const heading = (text: string) => (
     <h2
       id="find-title"
-      className={cormorant.className}
-      style={{ fontSize: 32, fontWeight: 600, color: INK, margin: "0 0 6px", lineHeight: 1.15, letterSpacing: "-0.01em" }}
+            style={{ fontSize: 24, fontWeight: 600, color: INK, margin: "0 0 6px", lineHeight: 1.2 }}
     >
       {text}
     </h2>
@@ -210,7 +206,7 @@ export function FindMyItem({
         aria-modal="true"
         aria-labelledby="find-title"
         className="anim-pop-in flex h-full w-full flex-col sm:h-auto sm:max-h-[88vh] sm:max-w-[540px] sm:rounded-2xl"
-        style={{ backgroundColor: CREAM, color: INK, boxShadow: "0 24px 80px rgba(12,12,12,0.35)", overflow: "hidden" }}
+        style={{ backgroundColor: SURFACE, color: "#333333", boxShadow: "0 24px 80px rgba(12,12,12,0.35)", overflow: "hidden" }}
       >
         {/* Chrome: back · dots · close */}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px", borderBottom: HAIRLINE, flexShrink: 0 }}>
@@ -230,7 +226,7 @@ export function FindMyItem({
                 key={i}
                 style={{
                   width: 6, height: 6, borderRadius: "50%",
-                  backgroundColor: i < currentDot ? INK : "rgba(12,12,12,0.18)",
+                  backgroundColor: i < currentDot ? BRAND : "#E5E5E5",
                   transition: "background-color 200ms",
                 }}
               />
@@ -267,7 +263,7 @@ export function FindMyItem({
               {tooShort && description.trim().length > 0 ? (
                 <p style={{ fontSize: 13, color: INK_60, margin: "8px 0 0" }}>A little more detail — 20 characters minimum.</p>
               ) : null}
-              {error ? <p role="alert" style={{ fontSize: 14, color: "#B42318", margin: "12px 0 0" }}>{error}</p> : null}
+              {error ? <p role="alert" style={{ fontSize: 14, color: "#CC0000", margin: "12px 0 0" }}>{error}</p> : null}
             </div>
           ) : null}
 
@@ -303,13 +299,13 @@ export function FindMyItem({
                 aria-label="When you lost it"
                 style={inputBase}
               />
-              {error ? <p role="alert" style={{ fontSize: 14, color: "#B42318", margin: "12px 0 0" }}>{error}</p> : null}
+              {error ? <p role="alert" style={{ fontSize: 14, color: "#CC0000", margin: "12px 0 0" }}>{error}</p> : null}
             </div>
           ) : null}
 
           {phase === "searching" ? (
             <div style={{ padding: "96px 24px", textAlign: "center" }} role="status">
-              <p className={`${cormorant.className} wiz-searching`} style={{ fontSize: 26, fontWeight: 500, color: INK, margin: 0 }}>
+              <p className="wiz-searching" style={{ fontSize: 18, fontWeight: 600, color: INK, margin: 0 }}>
                 Searching…
               </p>
             </div>
@@ -328,7 +324,7 @@ export function FindMyItem({
                       aria-label={`${m.photoUrl ? "Claim" : "Verify and claim"} ${m.name}`}
                       style={{ display: "block", width: "100%", padding: 0, border: "none", background: "none", cursor: "pointer", borderRadius: 12, overflow: "hidden" }}
                     >
-                      <span style={{ position: "relative", display: "block", width: "100%", aspectRatio: "4/3", backgroundColor: "#EAEAE4" }}>
+                      <span style={{ position: "relative", display: "block", width: "100%", aspectRatio: "4/3", backgroundColor: "#F5F5F5" }}>
                         <Image
                           src={m.photoUrl ?? `/api/items/${m.id}/blur`}
                           alt={m.photoUrl ? `Photo of ${m.name}` : ""}
@@ -338,14 +334,14 @@ export function FindMyItem({
                           unoptimized
                         />
                         {!m.photoUrl ? (
-                          <span style={{ position: "absolute", bottom: 10, left: 10, backgroundColor: "rgba(12,12,12,0.78)", color: CREAM, fontSize: 12, fontWeight: 500, padding: "5px 10px", borderRadius: 6 }}>
+                          <span style={{ position: "absolute", bottom: 10, left: 10, backgroundColor: "rgba(26,26,26,0.8)", color: "#FFFFFF", fontSize: 12, fontWeight: 500, padding: "5px 10px", borderRadius: 6 }}>
                             {m.requiresPin ? "Photo hidden · PIN required at pickup" : "Photo hidden · verify to view"}
                           </span>
                         ) : null}
                       </span>
                     </button>
                     <div style={{ padding: "12px 2px 0" }}>
-                      <p className={cormorant.className} style={{ fontSize: 22, fontWeight: 600, color: INK, margin: "0 0 2px", lineHeight: 1.2 }}>{m.name}</p>
+                      <p style={{ fontSize: 18, fontWeight: 600, color: INK, margin: "0 0 2px", lineHeight: 1.2 }}>{m.name}</p>
                       <p style={{ fontSize: 13, color: INK_60, margin: "0 0 12px" }}>
                         {m.department_name ?? "Lost & Found"}{m.date_found ? ` · found ${m.date_found}` : ""}
                       </p>
@@ -367,7 +363,7 @@ export function FindMyItem({
               {heading("No strong matches yet")}
               {instruction("New items arrive daily. Leave your number — one text if it shows up.")}
               {alertDone ? (
-                <p role="status" style={{ border: HAIRLINE, borderRadius: 10, padding: "16px 18px", fontSize: 15, color: INK, margin: 0, backgroundColor: "#FFFFFF" }}>
+                <p role="status" style={{ border: "1px solid #BBF7D0", borderRadius: 8, padding: "16px 18px", fontSize: 15, color: "#166534", margin: 0, backgroundColor: "#F0FDF4" }}>
                   ✓ You’re on the list.
                 </p>
               ) : (
@@ -392,7 +388,7 @@ export function FindMyItem({
                   <p style={{ fontSize: 12, color: INK_40, margin: "10px 0 0", textAlign: "center" }}>
                     Msg &amp; data rates may apply.
                   </p>
-                  {alertError ? <p role="alert" style={{ fontSize: 14, color: "#B42318", margin: "10px 0 0", textAlign: "center" }}>{alertError}</p> : null}
+                  {alertError ? <p role="alert" style={{ fontSize: 14, color: "#CC0000", margin: "10px 0 0", textAlign: "center" }}>{alertError}</p> : null}
                 </>
               )}
               <button type="button" onClick={goBack} style={{ ...ghostBtn, marginTop: 20 }}>
@@ -404,7 +400,7 @@ export function FindMyItem({
 
         {/* Footer: Next/Skip — pinned, thumb-reachable */}
         {phase === "wizard" ? (
-          <div style={{ flexShrink: 0, borderTop: HAIRLINE, padding: "16px 24px", paddingBottom: "max(16px, env(safe-area-inset-bottom))", backgroundColor: CREAM }}>
+          <div style={{ flexShrink: 0, borderTop: HAIRLINE, padding: "16px 24px", paddingBottom: "max(16px, env(safe-area-inset-bottom))", backgroundColor: SURFACE }}>
             <button
               type="button"
               onClick={goForward}
