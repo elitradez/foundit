@@ -9,8 +9,9 @@
     {
       "class": "short-generic",
       "q": "wallet",
-      "comment": "No wallet exists in the catalog — negative control. No required items; flags if search fabricates a 'match-anything' behavior.",
-      "mustInclude": []
+      "comment": "No wallet exists in the catalog — negative control. maxResults bounds the weak-neighbour tail so 'match everything' behavior fails the run.",
+      "mustInclude": [],
+      "maxResults": 25
     },
     {
       "class": "short-generic",
@@ -71,8 +72,9 @@
     {
       "class": "descriptive",
       "q": "silver laptop with stickers on it",
-      "comment": "No laptop in the catalog — observational; nearest neighbours (laptop chargers, stickered bottles) acceptable.",
-      "mustInclude": []
+      "comment": "No laptop in the catalog — negative-ish control; nearest neighbours (laptop chargers, stickered bottles) acceptable but bounded.",
+      "mustInclude": [],
+      "maxResults": 25
     },
     {
       "class": "descriptive",

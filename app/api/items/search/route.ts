@@ -3,7 +3,8 @@ import { createAdminSupabaseClient } from "@/lib/supabase-admin";
 import { getUniversityId } from "@/lib/university-config";
 import { aiLimiter, getClientIp, isRateLimited } from "@/lib/ratelimit";
 import {
-  BROWSE_VECTOR_FLOOR,
+  browseVectorFloor,
+  countStrongCandidates,
   embedQuery,
   lexicalSearchItems,
   mergeHybridCandidates,
@@ -81,6 +82,7 @@ export async function POST(req: Request) {
     // and sit ahead of the similarity-ranked results (an exact date is a
     // strong, intentional signal).
     const parsedDate = extractDate(query);
+    let dateMatchCount = 0;
     if (parsedDate) {
       const { data } = await supabase
         .from("items")
@@ -89,6 +91,7 @@ export async function POST(req: Request) {
         .eq("university_id", universityId)
         .is("returned_at", null);
       for (const row of data ?? []) matchedIds.add(row.id);
+      dateMatchCount = matchedIds.size;
     }
 
     // 2. Hybrid recall: pgvector + trigram lexical, in parallel, unioned.
@@ -98,9 +101,14 @@ export async function POST(req: Request) {
       lexicalSearchItems(supabase, query, universityId),
     ]);
     const vectorRows = embedding
-      ? await vectorSearchItems(supabase, embedding, universityId, { matchThreshold: BROWSE_VECTOR_FLOOR })
+      ? await vectorSearchItems(supabase, embedding, universityId, { matchThreshold: browseVectorFloor(query) })
       : [];
     const candidates = mergeHybridCandidates(query, vectorRows, lexicalRows);
+    // UI signal only — results are never trimmed by this. Lets the client say
+    // "no close matches — showing similar items" instead of presenting a weak
+    // best-effort tail as if it were confident matches. Exact date hits are
+    // strong by definition.
+    const strongCount = countStrongCandidates(candidates) + dateMatchCount;
 
     if (candidates.length > 0) {
       let orderedIds: string[];
@@ -122,7 +130,7 @@ export async function POST(req: Request) {
       for (const row of [...(nameData ?? []), ...(descData ?? [])]) matchedIds.add(row.id);
     }
 
-    return NextResponse.json({ itemIds: Array.from(matchedIds) });
+    return NextResponse.json({ itemIds: Array.from(matchedIds), strongCount });
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Search failed";
     return NextResponse.json({ error: msg }, { status: 500 });

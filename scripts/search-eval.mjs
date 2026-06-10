@@ -15,10 +15,23 @@
 // then checks the expectations (mustInclude / topOne / topThree) and exits
 // non-zero on any failure, so CI or a manual run gives a hard PASS/FAIL.
 //
-// PIPELINE CONSTANTS mirrored for annotation only (the API enforces them):
-const ANNOTATE_VECTOR_FLOOR = 0.2; // browse floor; keep in sync with lib/search.ts
-
 import { readFileSync } from "node:fs";
+
+// Floor annotations are read from lib/search.ts so the diagnostic labels can't
+// drift from the code under test. The floor is length-aware (short vs long
+// queries) — mirror that rule here for labelling only.
+const FLOORS = (() => {
+  const fallback = { short: 0.2, long: 0.3 };
+  try {
+    const src = readFileSync(new URL("../lib/search.ts", import.meta.url), "utf8");
+    const s = src.match(/BROWSE_VECTOR_FLOOR_SHORT\s*=\s*([0-9.]+)/);
+    const l = src.match(/BROWSE_VECTOR_FLOOR_LONG\s*=\s*([0-9.]+)/);
+    return { short: s ? Number(s[1]) : fallback.short, long: l ? Number(l[1]) : fallback.long };
+  } catch {
+    return fallback;
+  }
+})();
+const floorFor = (q) => (q.trim().split(/\s+/).filter(Boolean).length <= 2 ? FLOORS.short : FLOORS.long);
 
 const SB_URL = need("NEXT_PUBLIC_SUPABASE_URL");
 const SB_KEY = need("SUPABASE_SERVICE_ROLE_KEY");
@@ -85,15 +98,27 @@ async function lexicalStage(query) {
   }
 }
 
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
 async function finalStage(query) {
-  const res = await fetch(`${BASE}/api/items/search`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ query }),
-  });
-  if (!res.ok) throw new Error(`API ${BASE}/api/items/search -> ${res.status}`);
-  const data = await res.json();
-  return Array.isArray(data.itemIds) ? data.itemIds : [];
+  // The prod endpoint shares the per-IP aiLimiter (20/min): back-to-back runs
+  // (BEFORE/AFTER, fix-and-rerun loops) can trip 429. Wait and retry so a rate
+  // limit can never masquerade as a search regression.
+  for (let attempt = 1; ; attempt++) {
+    const res = await fetch(`${BASE}/api/items/search`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ query }),
+    });
+    if (res.status === 429 && attempt <= 3) {
+      console.log(`   (rate limited — waiting 30s, attempt ${attempt}/3)`);
+      await sleep(30_000);
+      continue;
+    }
+    if (!res.ok) throw new Error(`API ${BASE}/api/items/search -> ${res.status}`);
+    const data = await res.json();
+    return Array.isArray(data.itemIds) ? data.itemIds : [];
+  }
 }
 
 function fmt(n, width) {
@@ -129,7 +154,7 @@ async function main() {
       .sort((a, b) => (a.pos ?? 999) - (b.pos ?? 999) || b.v - a.v);
 
     for (const r of interesting) {
-      const floorNote = r.pos === null && r.v < ANNOTATE_VECTOR_FLOOR ? " (below vector floor)" : r.pos === null ? " (MISSING from final)" : "";
+      const floorNote = r.pos === null && r.v < floorFor(spec.q) ? " (below vector floor)" : r.pos === null ? " (MISSING from final)" : "";
       console.log(
         `   ${fmt(r.pos ?? "—", 5)}${fmt(r.v.toFixed(3), 9)}${fmt(r.l === null ? "n/a" : r.l.toFixed(3), 9)}${r.name}${floorNote}`
       );
@@ -137,24 +162,36 @@ async function main() {
 
     // Expectations
     const finalNames = finalIds.map((id) => (nameById.get(id) ?? "").toLowerCase());
+    const finalIdSet = new Set(finalIds);
     const problems = [];
 
+    // STRICT semantics: each mustInclude entry resolves to EVERY catalog item
+    // whose name contains it, and every one of those items must be present by
+    // id — so "Keys" can't be satisfied by "Key fob with keys" while the
+    // actual Keys item silently drops out.
     for (const want of spec.mustInclude ?? []) {
       const w = want.toLowerCase();
-      if (!finalNames.some((n) => n.includes(w))) {
-        // Pinpoint the losing stage.
-        const cand = catalog.filter((r) => r.name.toLowerCase().includes(w));
-        const why = cand
-          .map((r) => {
-            const v = vec.get(r.id) ?? 0;
-            const inLex = (lex?.get(r.id) ?? 0) > 0;
-            if (v < ANNOTATE_VECTOR_FLOOR && !inLex) return `${r.name}: vector ${v.toFixed(3)} below floor, no lexical hit`;
-            if (v < ANNOTATE_VECTOR_FLOOR) return `${r.name}: vector ${v.toFixed(3)} below floor (lexical found it — union/rank stage dropped it)`;
-            return `${r.name}: vector ${v.toFixed(3)} ABOVE floor — lost after vector stage (limit/rerank)`;
-          })
-          .join("; ");
-        problems.push(`missing "${want}" — ${why || "no catalog item matches this name"}`);
+      const candidates = catalog.filter((r) => r.name.toLowerCase().includes(w));
+      if (candidates.length === 0) {
+        problems.push(`mustInclude "${want}" matches no catalog item — fix the query set`);
+        continue;
       }
+      for (const r of candidates) {
+        if (finalIdSet.has(r.id)) continue;
+        const v = vec.get(r.id) ?? 0;
+        const inLex = (lex?.get(r.id) ?? 0) > 0;
+        const why =
+          v < floorFor(spec.q) && !inLex ? `vector ${v.toFixed(3)} below floor, no lexical hit`
+          : v < floorFor(spec.q) ? `vector ${v.toFixed(3)} below floor (lexical found it — union/rank stage dropped it)`
+          : `vector ${v.toFixed(3)} ABOVE floor — lost after vector stage (limit/rerank)`;
+        problems.push(`missing "${r.name}" — ${why}`);
+      }
+    }
+
+    // Negative-control bound: catches "match everything" behavior (e.g. a
+    // wildcard query or a broken floor returning the whole catalog).
+    if (typeof spec.maxResults === "number" && finalIds.length > spec.maxResults) {
+      problems.push(`returned ${finalIds.length} results, max allowed ${spec.maxResults}`);
     }
     for (const want of spec.topOne ?? []) {
       if (!finalNames[0]?.includes(want.toLowerCase())) {
@@ -181,6 +218,8 @@ async function main() {
 }
 
 main().catch((e) => {
-  console.error("eval crashed:", e.message);
-  process.exit(1);
+  // Exit 2 = infrastructure failure (network, env, API down) — distinct from
+  // exit 1, which means the search QUALITY expectations failed.
+  console.error("eval crashed (infrastructure, not a quality failure):", e.message);
+  process.exit(2);
 });
