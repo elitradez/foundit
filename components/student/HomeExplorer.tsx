@@ -30,9 +30,14 @@ export function HomeExplorer({ initialItems, loadError, universityName = "Univer
   // Server-reported count of CLOSE matches; 0 with results means the grid is
   // showing best-effort neighbours, which the UI labels honestly.
   const [strongCount, setStrongCount] = useState<number | null>(null);
+  // WHICH result ids are close matches. The grid shows only these by default;
+  // the weak tail collapses behind a "show similar items" toggle so vague
+  // queries stay clean even with hundreds of items in the catalog.
+  const [strongIds, setStrongIds] = useState<string[] | null>(null);
+  const [showWeak, setShowWeak] = useState(false);
   const [selectedDept, setSelectedDept] = useState<string | null>(null);
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
-  const searchCacheRef = useRef<Map<string, { ids: string[]; strong: number | null }>>(new Map());
+  const searchCacheRef = useRef<Map<string, { ids: string[]; strong: number | null; strongIds: string[] | null }>>(new Map());
   const [toast, setToast] = useState<string | null>(null);
   const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -74,9 +79,11 @@ export function HomeExplorer({ initialItems, loadError, universityName = "Univer
 
   useEffect(() => {
     const q = query.trim();
+    setShowWeak(false);
     if (!q) {
       setAiItemIds(null);
       setStrongCount(null);
+      setStrongIds(null);
       setSearchBusy(false);
       return;
     }
@@ -86,6 +93,7 @@ export function HomeExplorer({ initialItems, loadError, universityName = "Univer
     if (cached) {
       setAiItemIds(cached.ids);
       setStrongCount(cached.strong);
+      setStrongIds(cached.strongIds);
       setSearchBusy(false);
       return;
     }
@@ -95,6 +103,7 @@ export function HomeExplorer({ initialItems, loadError, universityName = "Univer
     // instead of showing stale matches from the prior query.
     setAiItemIds(null);
     setStrongCount(null);
+    setStrongIds(null);
     // Mark "searching" from the keystroke (not just once the fetch fires after
     // the debounce), so the empty state stays suppressed and the progress
     // indicator shows during the whole debounce + request window.
@@ -109,13 +118,15 @@ export function HomeExplorer({ initialItems, loadError, universityName = "Univer
           body: JSON.stringify({ query: q }),
           signal: controller.signal,
         });
-        const data = (await res.json().catch(() => ({}))) as { itemIds?: string[]; strongCount?: number };
+        const data = (await res.json().catch(() => ({}))) as { itemIds?: string[]; strongCount?: number; strongIds?: string[] };
         if (res.ok) {
           const ids = Array.isArray(data.itemIds) ? data.itemIds : [];
           const strong = typeof data.strongCount === "number" ? data.strongCount : null;
-          searchCacheRef.current.set(key, { ids, strong });
+          const strongList = Array.isArray(data.strongIds) ? data.strongIds : null;
+          searchCacheRef.current.set(key, { ids, strong, strongIds: strongList });
           setAiItemIds(ids);
           setStrongCount(strong);
+          setStrongIds(strongList);
         } else {
           // Search service unavailable (rate limit, outage): fall back to the
           // instant local filter rather than blanking the grid.
@@ -181,7 +192,23 @@ export function HomeExplorer({ initialItems, loadError, universityName = "Univer
       .sort((a, b) => (order.get(a.id) ?? 0) - (order.get(b.id) ?? 0));
   }, [aiItemIds, localMatchIds, allItems, query, selectedDept]);
 
-  const visibleItems = filtered.slice(0, visibleCount);
+  // Split search results into close matches and the weak best-effort tail.
+  // Default view shows only close matches; the tail sits behind a toggle.
+  // When there are NO close matches, show the whole tail under the existing
+  // "no close matches" notice (an empty grid would be a dead end).
+  const { strongItems, weakItems } = useMemo(() => {
+    if (!query.trim() || aiItemIds === null || strongIds === null || strongIds.length === 0) {
+      return { strongItems: filtered, weakItems: [] as PublicItem[] };
+    }
+    const strongSet = new Set(strongIds);
+    return {
+      strongItems: filtered.filter((i) => strongSet.has(i.id)),
+      weakItems: filtered.filter((i) => !strongSet.has(i.id)),
+    };
+  }, [filtered, query, aiItemIds, strongIds]);
+
+  const displayItems = showWeak ? [...strongItems, ...weakItems] : strongItems;
+  const visibleItems = displayItems.slice(0, visibleCount);
 
   return (
     <div style={{ minHeight: "100vh", backgroundColor: "#FFFFFF", fontFamily: FONT, color: "#333333" }}>
@@ -318,7 +345,7 @@ export function HomeExplorer({ initialItems, loadError, universityName = "Univer
                 </li>
               ))}
             </ul>
-            {visibleCount < filtered.length ? (
+            {visibleCount < displayItems.length ? (
               <div style={{ textAlign: "center", marginTop: 32 }}>
                 <button
                   type="button"
@@ -338,7 +365,27 @@ export function HomeExplorer({ initialItems, loadError, universityName = "Univer
                 </button>
               </div>
             ) : null}
-            {hasMore && !query.trim() && visibleCount >= filtered.length ? (
+            {!showWeak && weakItems.length > 0 && visibleCount >= displayItems.length ? (
+              <div style={{ textAlign: "center", marginTop: 24 }}>
+                <button
+                  type="button"
+                  onClick={() => setShowWeak(true)}
+                  style={{
+                    backgroundColor: "#FFFFFF",
+                    border: "1px solid #E5E5E5",
+                    borderRadius: 6,
+                    padding: "10px 28px",
+                    fontSize: 14,
+                    fontWeight: 500,
+                    color: "#666666",
+                    cursor: "pointer",
+                  }}
+                >
+                  Show {weakItems.length} similar item{weakItems.length === 1 ? "" : "s"}
+                </button>
+              </div>
+            ) : null}
+            {hasMore && !query.trim() && visibleCount >= displayItems.length ? (
               loadingMore ? (
                 <ul style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 20, listStyle: "none", padding: 0, margin: "20px 0 0" }}>
                   {Array.from({ length: 6 }).map((_, i) => (
