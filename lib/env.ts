@@ -16,15 +16,19 @@ function validateEnv(): ValidationResult {
     errors.push(`ANTHROPIC_API_KEY does not look like an Anthropic key (expected prefix "sk-ant-")`);
   }
 
-  // ANTHROPIC_MODEL — optional, but if set must be a known model ID
-  const model = process.env.ANTHROPIC_MODEL?.trim();
-  if (model !== undefined && model !== "") {
-    if (!VALID_MODELS.has(model)) {
-      errors.push(
-        `ANTHROPIC_MODEL "${model}" is not a recognised model ID. ` +
-        `Valid values: ${[...VALID_MODELS].join(", ")}. ` +
-        `Tip: check for trailing whitespace or newlines (use printf '%s', not echo, when setting via CLI).`
-      );
+  // Model overrides — optional, but if set must be known model IDs.
+  // ANTHROPIC_MODEL applies only to PHOTO_ANALYSIS (its historical meaning);
+  // per-purpose vars (ANTHROPIC_MODEL_<PURPOSE>) override a specific purpose.
+  for (const name of ["ANTHROPIC_MODEL", "ANTHROPIC_MODEL_PHOTO_ANALYSIS", "ANTHROPIC_MODEL_SEMANTIC_SEARCH"]) {
+    const model = process.env[name]?.trim();
+    if (model !== undefined && model !== "") {
+      if (!VALID_MODELS.has(model)) {
+        errors.push(
+          `${name} "${model}" is not a recognised model ID. ` +
+          `Valid values: ${[...VALID_MODELS].join(", ")}. ` +
+          `Tip: check for trailing whitespace or newlines (use printf '%s', not echo, when setting via CLI).`
+        );
+      }
     }
   }
 

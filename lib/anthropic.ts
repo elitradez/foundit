@@ -5,11 +5,18 @@ import { ANTHROPIC_MODELS, DEFAULT_MODELS, type AnthropicModel } from "@/lib/mod
 const VALID_MODELS = new Set<string>(Object.values(ANTHROPIC_MODELS));
 
 export function getAnthropicModel(purpose: keyof typeof DEFAULT_MODELS = "PHOTO_ANALYSIS"): AnthropicModel {
-  const raw = process.env.ANTHROPIC_MODEL?.trim();
+  // Per-purpose override (e.g. ANTHROPIC_MODEL_SEMANTIC_SEARCH) wins; the
+  // generic ANTHROPIC_MODEL override applies ONLY to PHOTO_ANALYSIS, its
+  // historical meaning. It must not silently hijack purpose-tuned paths:
+  // SEMANTIC_SEARCH runs Haiku under a 5s timeout on every uncached search,
+  // and a generic Sonnet/Opus pin in prod made the search rerank time out and
+  // fall back to vector order on every request.
+  const perPurpose = process.env[`ANTHROPIC_MODEL_${purpose}`]?.trim();
+  const raw = perPurpose || (purpose === "PHOTO_ANALYSIS" ? process.env.ANTHROPIC_MODEL?.trim() : undefined);
   if (raw) {
     if (!VALID_MODELS.has(raw)) {
       throw new Error(
-        `ANTHROPIC_MODEL "${raw}" is not a recognised model ID. Valid values: ${[...VALID_MODELS].join(", ")}`
+        `${perPurpose ? `ANTHROPIC_MODEL_${purpose}` : "ANTHROPIC_MODEL"} "${raw}" is not a recognised model ID. Valid values: ${[...VALID_MODELS].join(", ")}`
       );
     }
     return raw as AnthropicModel;
