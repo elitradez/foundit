@@ -9,7 +9,6 @@ import { ClaimModal } from "@/components/student/HomeExplorer";
 const SURFACE = "#FFFFFF";
 const INK = "#1a1a1a";
 const INK_60 = "#666666";
-const INK_40 = "#999999";
 const BRAND = "#CC0000";
 const HAIRLINE = "1px solid #E5E5E5";
 
@@ -147,7 +146,6 @@ export function FindMyItem({
     padding: "14px 16px",
     fontSize: 16, // ≥16px so iOS doesn't zoom on focus
     color: INK,
-    outline: "none",
     minHeight: 52,
   };
 
@@ -386,7 +384,7 @@ export function FindMyItem({
                   >
                     {alertBusy ? "Saving…" : "Text me if it shows up"}
                   </button>
-                  <p style={{ fontSize: 12, color: INK_40, margin: "10px 0 0", textAlign: "center" }}>
+                  <p style={{ fontSize: 12, color: INK_60, margin: "10px 0 0", textAlign: "center" }}>
                     Msg &amp; data rates may apply.
                   </p>
                   {alertError ? <p role="alert" style={{ fontSize: 14, color: "#CC0000", margin: "10px 0 0", textAlign: "center" }}>{alertError}</p> : null}

@@ -39,11 +39,11 @@ export default function StaffLoginPage() {
           <p className="text-[#FF4444] text-sm font-semibold tracking-wide uppercase">Staff</p>
           <h1 className="text-2xl font-semibold text-[#F5F5F0]">Foundit</h1>
           <p className="text-sm text-[#F5F5F0]/60">Sign in to log and manage items</p>
-          <p className="text-xs text-[#F5F5F0]/60">
+          <nav aria-label="Site" className="text-xs text-[#F5F5F0]/60">
             <Link href="/" className="text-[#FF4444]/90 hover:text-[#FF4444]">
               Back to student view
             </Link>
-          </p>
+          </nav>
         </div>
         <form onSubmit={onSubmit} className="space-y-4 rounded-2xl border border-white/10 bg-white/[0.03] p-6 backdrop-blur">
           <label className="block space-y-2">
@@ -58,6 +58,8 @@ export default function StaffLoginPage() {
             />
           </label>
           {error ? <p role="alert" className="text-sm text-red-400">{error}</p> : null}
+          {/* The button's text swap isn't announced while it keeps focus */}
+          <p className="sr-only" role="status">{loading ? "Signing in…" : ""}</p>
           <button
             type="submit"
             disabled={loading}

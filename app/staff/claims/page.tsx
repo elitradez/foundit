@@ -38,6 +38,10 @@ async function getPendingClaims(departmentId: string): Promise<PendingClaimRow[]
 
 export const dynamic = "force-dynamic";
 
+export const metadata = {
+  title: "Claims Inbox — Staff",
+};
+
 async function markAsClaimedAction(formData: FormData) {
   "use server";
 
@@ -157,7 +161,7 @@ export default async function StaffClaimsInboxPage() {
 
         {claims.length > 0 ? (
           <div className="overflow-x-auto rounded-2xl border border-white/10">
-            <table className="w-full min-w-[900px] text-left text-sm">
+            <table className="w-full min-w-[900px] text-left text-sm" aria-label="Pending claims">
               <thead className="border-b border-white/10 bg-white/[0.04] text-[#F5F5F0]/70">
                 <tr>
                   <th scope="col" className="px-4 py-3 font-medium">Student name</th>

@@ -70,10 +70,12 @@ function StaffDashboardItemPhoto({
   photoUrl,
   sizes,
   className,
+  alt = "",
 }: {
   photoUrl: string;
   sizes: string;
   className: string;
+  alt?: string;
 }) {
   const [loaded, setLoaded] = useState(false);
   return (
@@ -83,7 +85,7 @@ function StaffDashboardItemPhoto({
       ) : null}
       <Image
         src={photoUrl}
-        alt=""
+        alt={alt}
         fill
         className={`relative z-10 object-cover transition-opacity duration-200 ${loaded ? "opacity-100" : "opacity-0"}`}
         sizes={sizes}
@@ -539,6 +541,20 @@ export function StaffDashboard({
   const returnClaimRef = useFocusTrap<HTMLDivElement>(!!(returnClaimId && returnClaimItemId), closeReturnClaimModal);
 
   // ── Tab button ───────────────────────────────────────────────────────────────
+  // APG tabs pattern, manual activation: only the selected tab is in the Tab
+  // order; Left/Right/Home/End move focus between tabs; Enter/Space activates.
+  const TAB_ORDER: Tab[] = ["active", "claims", "log", "surplus"];
+  function onTabKeyDown(e: React.KeyboardEvent, id: Tab) {
+    const idx = TAB_ORDER.indexOf(id);
+    let next: Tab;
+    if (e.key === "ArrowRight") next = TAB_ORDER[(idx + 1) % TAB_ORDER.length];
+    else if (e.key === "ArrowLeft") next = TAB_ORDER[(idx - 1 + TAB_ORDER.length) % TAB_ORDER.length];
+    else if (e.key === "Home") next = TAB_ORDER[0];
+    else if (e.key === "End") next = TAB_ORDER[TAB_ORDER.length - 1];
+    else return;
+    e.preventDefault();
+    document.getElementById(`staff-tab-${next}`)?.focus();
+  }
   function TabButton({ id, label }: { id: Tab; label: string }) {
     const active = tab === id;
     return (
@@ -548,6 +564,8 @@ export function StaffDashboard({
         id={`staff-tab-${id}`}
         aria-selected={active}
         aria-controls={`staff-tabpanel-${id}`}
+        tabIndex={active ? 0 : -1}
+        onKeyDown={(e) => onTabKeyDown(e, id)}
         onClick={() => setTab(id)}
         className={`flex flex-1 min-h-10 items-center justify-center rounded px-3 py-2 text-sm font-medium transition ${
           active
@@ -636,7 +654,7 @@ export function StaffDashboard({
         </div>
         {/* Row 3: secondary actions */}
         <div className="border-t border-white/10 px-4 py-1.5">
-          <div className="mx-auto flex max-w-6xl items-center gap-2">
+          <nav aria-label="Staff tools" className="mx-auto flex max-w-6xl items-center gap-2">
             <a
               href="/staff/analytics"
               className="inline-flex min-h-8 items-center rounded border border-white/20 px-3 py-1 text-xs text-white/70 hover:bg-white/10 hover:text-white transition"
@@ -664,27 +682,32 @@ export function StaffDashboard({
             >
               Sign out
             </button>
-          </div>
+          </nav>
         </div>
       </header>
 
       {/* Return to student view */}
       <div className="border-b border-[#E5E5E5] bg-white px-4 py-2">
-        <div className="mx-auto max-w-6xl">
+        <nav aria-label="Student site" className="mx-auto max-w-6xl">
           <Link
             href="/"
             className="text-xs font-medium text-[#CC0000] hover:underline"
           >
             ← Return to student view
           </Link>
-        </div>
+        </nav>
       </div>
 
       {/* Content */}
       <main id="main-content" className="mx-auto max-w-6xl px-4 py-6">
-        <div role="tabpanel" id={`staff-tabpanel-${tab}`} aria-labelledby={`staff-tab-${tab}`}>
+        <div role="tabpanel" id={`staff-tabpanel-${tab}`} aria-labelledby={`staff-tab-${tab}`} tabIndex={0}>
         {loadError ? (
-          <p className="mb-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{loadError}</p>
+          <p role="alert" className="mb-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{loadError}</p>
+        ) : null}
+
+        {/* Announce data loading to screen readers (the visual skeletons are silent) */}
+        {loading || claimsLoading || logLoading || surplusLoading ? (
+          <p role="status" className="sr-only">Loading…</p>
         ) : null}
 
         {/* ── Active Items ── */}
@@ -763,13 +786,13 @@ export function StaffDashboard({
         {tab === "claims" ? (
           <>
             {claimsError ? (
-              <p className="mb-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{claimsError}</p>
+              <p role="alert" className="mb-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{claimsError}</p>
             ) : null}
             {claimsLoading ? <TableSkeleton rows={6} cols={6} /> : null}
 
             {!claimsLoading ? (
               <div className="overflow-x-auto rounded-lg border border-[#E5E5E5]">
-                <table className="w-full min-w-[1040px] text-left text-sm">
+                <table className="w-full min-w-[1040px] text-left text-sm" aria-label="Pending claims">
                   <thead style={{ borderBottom: "1px solid #E5E5E5", backgroundColor: "#F5F5F5" }}>
                     <tr>
                       <th scope="col" className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-[#666666]">Photo</th>
@@ -800,6 +823,7 @@ export function StaffDashboard({
                               photoUrl={`/api/staff/items/${c.item_id}/photo`}
                               sizes="48px"
                               className="h-12 w-12 rounded-lg"
+                              alt={`Photo of ${c.item_name}`}
                             />
                           </td>
                           <td className="px-4 py-3 font-semibold text-[#1a1a1a]">{c.item_name}</td>
@@ -860,12 +884,12 @@ export function StaffDashboard({
         {tab === "surplus" ? (
           <>
             {surplusError ? (
-              <p className="mb-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{surplusError}</p>
+              <p role="alert" className="mb-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{surplusError}</p>
             ) : null}
             {surplusLoading ? <TableSkeleton rows={6} cols={5} /> : null}
             {!surplusLoading ? (
               <div className="overflow-x-auto rounded-lg border border-[#E5E5E5]">
-                <table className="w-full min-w-[720px] text-left text-sm">
+                <table className="w-full min-w-[720px] text-left text-sm" aria-label="Items sent to surplus">
                   <thead style={{ borderBottom: "1px solid #E5E5E5", backgroundColor: "#F5F5F5" }}>
                     <tr>
                       <th scope="col" className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-[#666666]">Photo</th>
@@ -892,7 +916,7 @@ export function StaffDashboard({
                         <tr key={s.id} className={idx % 2 === 1 ? "bg-[#F5F5F5]" : "bg-white"}>
                           <td className="px-4 py-3">
                             <div className="relative h-12 w-12 overflow-hidden rounded-lg border border-[#E5E5E5]">
-                              <Image src={`/api/staff/items/${s.id}/photo`} alt="" fill className="object-cover" sizes="48px" unoptimized loading="lazy" />
+                              <Image src={`/api/staff/items/${s.id}/photo`} alt={`Photo of ${s.name}`} fill className="object-cover" sizes="48px" unoptimized loading="lazy" />
                             </div>
                           </td>
                           <td className="px-4 py-3 font-semibold text-[#1a1a1a]">{s.name}</td>
@@ -918,12 +942,12 @@ export function StaffDashboard({
         {tab === "log" ? (
           <>
             {logError ? (
-              <p className="mb-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{logError}</p>
+              <p role="alert" className="mb-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{logError}</p>
             ) : null}
             {logLoading ? <TableSkeleton rows={6} cols={7} /> : null}
             {!logLoading ? (
               <div className="overflow-x-auto rounded-lg border border-[#E5E5E5]">
-                <table className="w-full min-w-[900px] text-left text-sm">
+                <table className="w-full min-w-[900px] text-left text-sm" aria-label="Student log of returned and claimed items">
                   <thead style={{ borderBottom: "1px solid #E5E5E5", backgroundColor: "#F5F5F5" }}>
                     <tr>
                       <th scope="col" className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-[#666666]">Item name</th>
@@ -1015,7 +1039,7 @@ export function StaffDashboard({
       {deleteConfirmItem ? (
         <div className="anim-fade-in fixed inset-0 z-[88] flex items-center justify-center bg-black/60 p-4">
           <div ref={deleteConfirmRef} role="dialog" aria-modal="true" aria-labelledby="delete-item-title" className="anim-pop-in w-full max-w-sm rounded-lg border border-[#E5E5E5] bg-white p-5 shadow-2xl">
-            <h3 id="delete-item-title" className="text-base font-semibold text-[#1a1a1a]">Delete item?</h3>
+            <h2 id="delete-item-title" className="text-base font-semibold text-[#1a1a1a]">Delete item?</h2>
             <p className="mt-2 text-sm text-[#555555]">
               Remove <span className="font-semibold text-[#1a1a1a]">{deleteConfirmItem.name}</span> from lost and found. This cannot be undone.
             </p>
@@ -1033,7 +1057,7 @@ export function StaffDashboard({
       {activeSurplusConfirmItem ? (
         <div className="anim-fade-in fixed inset-0 z-[89] flex items-center justify-center bg-black/60 p-4">
           <div ref={surplusConfirmRef} role="dialog" aria-modal="true" aria-labelledby="surplus-confirm-title" className="anim-pop-in w-full max-w-sm rounded-lg border border-[#E5E5E5] bg-white p-5 shadow-2xl">
-            <h3 id="surplus-confirm-title" className="text-base font-semibold text-[#1a1a1a]">Send to surplus?</h3>
+            <h2 id="surplus-confirm-title" className="text-base font-semibold text-[#1a1a1a]">Send to surplus?</h2>
             <p className="mt-2 text-sm text-[#555555]">
               <span className="font-semibold text-[#1a1a1a]">{activeSurplusConfirmItem.name}</span> will be removed from the active list.
             </p>
@@ -1051,7 +1075,7 @@ export function StaffDashboard({
       {deleteLogRow ? (
         <div className="anim-fade-in fixed inset-0 z-[89] flex items-center justify-center bg-black/60 p-4">
           <div ref={deleteLogRef} role="dialog" aria-modal="true" aria-labelledby="delete-log-title" className="anim-pop-in w-full max-w-sm rounded-lg border border-[#E5E5E5] bg-white p-5 shadow-2xl">
-            <h3 id="delete-log-title" className="text-base font-semibold text-[#1a1a1a]">Delete this log entry?</h3>
+            <h2 id="delete-log-title" className="text-base font-semibold text-[#1a1a1a]">Delete this log entry?</h2>
             <p className="mt-2 text-sm text-[#555555]">
               This will permanently delete <span className="font-semibold text-[#1a1a1a]">{deleteLogRow.item_name}</span>.
             </p>
@@ -1069,7 +1093,7 @@ export function StaffDashboard({
       {editActiveItem ? (
         <div className="anim-fade-in fixed inset-0 z-[85] flex items-end justify-center bg-black/60 p-0 sm:items-center sm:p-4">
           <div ref={editActiveRef} role="dialog" aria-modal="true" aria-labelledby="edit-item-title" className="anim-pop-in max-h-[95vh] w-full overflow-y-auto rounded-none border border-[#E5E5E5] bg-white p-5 shadow-2xl sm:max-h-[90vh] sm:max-w-lg sm:rounded-lg">
-            <h3 id="edit-item-title" className="text-base font-semibold text-[#1a1a1a]">Edit item</h3>
+            <h2 id="edit-item-title" className="text-base font-semibold text-[#1a1a1a]">Edit item</h2>
             <p className="mt-1 text-sm text-[#666666]">Update how this listing appears for staff and on the student site.</p>
 
             <div className="mt-4 space-y-3">
@@ -1131,7 +1155,7 @@ export function StaffDashboard({
       {editReturnedItemId ? (
         <div className="anim-fade-in fixed inset-0 z-[90] flex items-center justify-center bg-black/60 p-4">
           <div ref={editStudentRef} role="dialog" aria-modal="true" aria-labelledby="edit-student-title" className="anim-pop-in w-full max-w-md rounded-lg border border-[#E5E5E5] bg-white p-5 shadow-2xl">
-            <h3 id="edit-student-title" className="text-base font-semibold text-[#1a1a1a]">Returned item student info</h3>
+            <h2 id="edit-student-title" className="text-base font-semibold text-[#1a1a1a]">Returned item student info</h2>
             <p className="mt-2 text-sm text-[#666666]">This will appear in the Student Log.</p>
 
             <div className="mt-4 space-y-3">
@@ -1159,7 +1183,7 @@ export function StaffDashboard({
       {returnClaimId && returnClaimItemId ? (
         <div className="anim-fade-in fixed inset-0 z-[90] flex items-center justify-center bg-black/60 p-4">
           <div ref={returnClaimRef} role="dialog" aria-modal="true" aria-labelledby="confirm-return-title" className="anim-pop-in w-full max-w-md rounded-lg border border-[#E5E5E5] bg-white p-5 shadow-2xl">
-            <h3 id="confirm-return-title" className="text-base font-semibold text-[#1a1a1a]">Confirm return</h3>
+            <h2 id="confirm-return-title" className="text-base font-semibold text-[#1a1a1a]">Confirm return</h2>
             <p className="mt-2 text-sm text-[#666666]">This will move the item into the Student Log.</p>
 
             <div className="mt-4 space-y-3">

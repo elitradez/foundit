@@ -224,14 +224,16 @@ export function HomeExplorer({ initialItems, loadError, universityName = "Univer
               Lost &amp; Found
             </p>
           </div>
-          <Link
-            href="/staff/login"
-            style={{ color: "#CC0000", fontSize: 14, fontWeight: 500, textDecoration: "none" }}
-            onMouseEnter={(e) => (e.currentTarget.style.textDecoration = "underline")}
-            onMouseLeave={(e) => (e.currentTarget.style.textDecoration = "none")}
-          >
-            Staff sign in
-          </Link>
+          <nav aria-label="Site">
+            <Link
+              href="/staff/login"
+              style={{ color: "#CC0000", fontSize: 14, fontWeight: 500, textDecoration: "none" }}
+              onMouseEnter={(e) => (e.currentTarget.style.textDecoration = "underline")}
+              onMouseLeave={(e) => (e.currentTarget.style.textDecoration = "none")}
+            >
+              Staff sign in
+            </Link>
+          </nav>
         </div>
       </header>
 
@@ -273,11 +275,24 @@ export function HomeExplorer({ initialItems, loadError, universityName = "Univer
           </div>
         ) : null}
 
-        {/* Department tabs */}
+        {/* Announce search progress and result counts — the progress bar and
+            grid changes are visual-only. Mounted container so the text swap
+            is reliably announced. */}
+        <p className="sr-only" role="status" aria-live="polite">
+          {query.trim()
+            ? searchBusy
+              ? "Searching…"
+              : `${displayItems.length} ${displayItems.length === 1 ? "item" : "items"} found`
+            : ""}
+        </p>
+
+        {/* Department tabs — APG pattern, manual activation: only the selected
+            tab is in the Tab order; Left/Right/Home/End move focus. */}
         {departments.length > 0 ? (
           <div role="tablist" aria-label="Filter by location" style={{ overflowX: "auto", whiteSpace: "nowrap", borderBottom: "1px solid #E5E5E5", marginBottom: 24 }}>
             {[{ id: null, name: "All", count: allItems.length }, ...departments.map((d) => ({ id: d.id, name: d.name, count: deptCounts.get(d.id) ?? 0 }))].map((tab) => {
               const active = selectedDept === tab.id;
+              const tabIds: (string | null)[] = [null, ...departments.map((d) => d.id)];
               return (
                 <button
                   key={tab.id ?? "__all"}
@@ -286,6 +301,18 @@ export function HomeExplorer({ initialItems, loadError, universityName = "Univer
                   aria-selected={active}
                   aria-controls="items-tabpanel"
                   type="button"
+                  tabIndex={active ? 0 : -1}
+                  onKeyDown={(e) => {
+                    const idx = tabIds.indexOf(tab.id);
+                    let next: string | null;
+                    if (e.key === "ArrowRight") next = tabIds[(idx + 1) % tabIds.length];
+                    else if (e.key === "ArrowLeft") next = tabIds[(idx - 1 + tabIds.length) % tabIds.length];
+                    else if (e.key === "Home") next = tabIds[0];
+                    else if (e.key === "End") next = tabIds[tabIds.length - 1];
+                    else return;
+                    e.preventDefault();
+                    document.getElementById(`dept-tab-${next ?? "all"}`)?.focus();
+                  }}
                   onClick={() => setSelectedDept(tab.id)}
                   style={{
                     display: "inline-block",
@@ -326,7 +353,7 @@ export function HomeExplorer({ initialItems, loadError, universityName = "Univer
         ) : null}
 
         {/* The tab panel: the item grid region the department tabs control. */}
-        <div role="tabpanel" id="items-tabpanel" aria-labelledby={`dept-tab-${selectedDept ?? "all"}`}>
+        <div role="tabpanel" id="items-tabpanel" aria-labelledby={`dept-tab-${selectedDept ?? "all"}`} tabIndex={0}>
         {/* Empty state — suppressed while a search is in flight so a vague
             query never flashes "No items found" before AI results land. */}
         {filtered.length === 0 && !loadError && !searchBusy ? (
@@ -471,7 +498,7 @@ function ItemCard({ item, onClick }: { item: PublicItem; onClick: () => void }) 
     <button
       type="button"
       onClick={onClick}
-      aria-label={`Claim this item – ${item.name}`}
+      aria-label={`${item.name}, ${item.department_name ?? "Lost & Found"}, found ${item.date_found} — claim this item`}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       style={{
@@ -576,6 +603,7 @@ export function ClaimModal({
   // announces "You're all set" inside the dialog, which the aria-modal would
   // otherwise suppress for an outside-the-dialog toast.
   useEffect(() => {
+    if (step === 2) document.getElementById("claim-match-result")?.focus();
     if (step === 3) document.getElementById("claim-name")?.focus();
     if (step === 4) document.getElementById("claim-title")?.focus();
   }, [step]);
@@ -714,6 +742,12 @@ export function ClaimModal({
           </button>
         </div>
 
+        {/* Busy-state announcements — the visual button-text swaps happen on
+            the focused element and are not read by screen readers. */}
+        <p className="sr-only" role="status">
+          {matchBusy ? "Checking your description…" : submitBusy ? "Submitting your claim…" : ""}
+        </p>
+
         {/* ── Step 1: Describe your item ── */}
         {step === 1 ? (
           <div style={{ padding: "20px", display: "flex", flexDirection: "column", gap: 16 }}>
@@ -779,7 +813,7 @@ export function ClaimModal({
 
             {isMatch ? (
               <>
-                <p style={{ fontSize: 15, fontWeight: 600, color: "#1a1a1a", margin: 0 }}>
+                <p id="claim-match-result" tabIndex={-1} style={{ fontSize: 15, fontWeight: 600, color: "#1a1a1a", margin: 0, outline: "none" }}>
                   Looks like a match — is this your item?
                 </p>
                 <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -793,7 +827,7 @@ export function ClaimModal({
               </>
             ) : (
               <>
-                <p style={{ fontSize: 14, color: "#555555", lineHeight: 1.6, margin: 0 }}>
+                <p id="claim-match-result" tabIndex={-1} style={{ fontSize: 14, color: "#555555", lineHeight: 1.6, margin: 0, outline: "none" }}>
                   We couldn&apos;t verify from your description alone. You can add more detail and try again, or submit a claim and staff will verify in person when you come to pick it up.
                 </p>
                 <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>

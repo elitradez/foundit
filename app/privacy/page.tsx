@@ -15,7 +15,7 @@ export default function PrivacyPage() {
 
       {/* Nav */}
       <header style={{ backgroundColor: "#FFFFFF", borderBottom: "1px solid #E5E5E5" }}>
-        <div style={{ maxWidth: 1152, margin: "0 auto", padding: "12px 16px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <nav aria-label="Site" style={{ maxWidth: 1152, margin: "0 auto", padding: "12px 16px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <Link href="/" style={{ textDecoration: "none" }}>
             <p style={{ color: "#CC0000", fontSize: 11, fontWeight: 600, letterSpacing: "0.12em", textTransform: "uppercase", lineHeight: 1.3, margin: 0 }}>
               {universityName}
@@ -30,7 +30,7 @@ export default function PrivacyPage() {
           >
             Staff sign in
           </Link>
-        </div>
+        </nav>
       </header>
 
       {/* Content */}

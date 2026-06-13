@@ -148,8 +148,11 @@ body {
 .wiz-step-in   { animation: wiz-step-in 170ms ease-out; }
 .wiz-step-back { animation: wiz-step-back 170ms ease-out; }
 
+/* Trough is 0.65, not lower: #1a1a1a text at 65% opacity on white is the
+   minimum that keeps ≥4.5:1 contrast (WCAG 1.4.3) at the animation's dimmest
+   point. */
 @keyframes wiz-breathe {
-  0%, 100% { opacity: 0.45; }
+  0%, 100% { opacity: 0.65; }
   50%      { opacity: 1; }
 }
 .wiz-searching { animation: wiz-breathe 1.6s ease-in-out infinite; }
@@ -188,14 +191,30 @@ body {
 }
 
 /* ── Visible focus indicators for keyboard navigation ─────────────── */
-/* All interactive elements get a visible focus ring when navigating by keyboard */
+/* All interactive elements get a visible focus ring when navigating by
+   keyboard. Two-tone ring: the inner white ring (box-shadow) guarantees
+   ≥3:1 contrast on the dark staff surfaces (#0c0c0c/#111/#141414) and any
+   runtime brand color a university configures; the brand outline carries
+   contrast on white. Component focus:ring-* utilities override the
+   box-shadow but never the outline, so an indicator always remains. */
 :focus-visible {
   outline: 2px solid var(--color-brand);
   outline-offset: 2px;
   border-radius: 4px;
+  box-shadow: 0 0 0 2px #ffffff;
 }
 
 /* Form controls keep the universal :focus-visible outline above. Component
    ring utilities (focus:ring-*) layer on top of it; the outline must never be
    suppressed globally — keyboard users need a visible indicator even if a
    component forgets its own focus styling (procurement a11y requirement). */
+
+/* ── Placeholder contrast (WCAG 1.4.3) ─────────────────────────────── */
+/* Tailwind v4's preflight renders placeholders at currentColor/50%, which is
+   ~2.85:1 on the white inputs. #6B7280 is 4.83:1 on white. Dark-surface
+   inputs override per-field with placeholder:text-[#9CA3AF] (7.8:1 on
+   near-black), which wins over this rule by specificity. */
+::placeholder {
+  color: #6B7280;
+  opacity: 1;
+}

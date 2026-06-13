@@ -3,6 +3,10 @@ import { StaffDashboard } from "@/components/staff/StaffDashboard";
 import { getStaffSession } from "@/lib/staff-api";
 import { getUniversityConfig } from "@/lib/university-config";
 
+export const metadata = {
+  title: "Staff Dashboard — Lost & Found",
+};
+
 export default async function StaffHomePage() {
   const session = await getStaffSession();
   if (!session) redirect("/staff/login");

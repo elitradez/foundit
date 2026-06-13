@@ -18,12 +18,16 @@ export function useFocusTrap<T extends HTMLElement = HTMLDivElement>(
   });
 
   useEffect(() => {
-    if (active) {
-      previousFocusRef.current = document.activeElement as HTMLElement;
-    } else {
+    if (!active) return;
+    previousFocusRef.current = document.activeElement as HTMLElement;
+    // Cleanup runs both when `active` flips false AND when the dialog
+    // component unmounts while still active (the common pattern
+    // `{open ? <Modal /> : null}` with useFocusTrap(true, …)) — focus must
+    // return to the trigger element in both cases.
+    return () => {
       previousFocusRef.current?.focus();
       previousFocusRef.current = null;
-    }
+    };
   }, [active]);
 
   useEffect(() => {

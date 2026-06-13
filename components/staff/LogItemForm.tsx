@@ -192,24 +192,26 @@ export function LogItemForm({ onClose, onSaved }: Props) {
           <div className="block space-y-2">
             <span className="text-sm text-[#F5F5F0]/80">Photo</span>
             <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-              <label className="cursor-pointer rounded-xl border border-white/10 bg-black/30 px-4 py-3 text-center text-sm text-[#F5F5F0]/80 transition duration-200 hover:bg-white/5">
+              {/* Inputs are sr-only (not display:none) so they stay keyboard-
+                  focusable; the label shows the ring via focus-within. */}
+              <label className="cursor-pointer rounded-xl border border-white/10 bg-black/30 px-4 py-3 text-center text-sm text-[#F5F5F0]/80 transition duration-200 hover:bg-white/5 focus-within:ring-2 focus-within:ring-brand focus-within:ring-offset-2 focus-within:ring-offset-[#141414]">
                 <span className="font-medium">Upload photo</span>
                 <input
                   type="file"
                   accept="image/*"
                   onChange={onPhotoChange}
-                  className="hidden"
+                  className="sr-only"
                 />
               </label>
 
-              <label className="cursor-pointer rounded-xl bg-brand/15 px-4 py-3 text-center text-sm font-medium text-[#F5F5F0] transition duration-200 hover:bg-brand/25">
+              <label className="cursor-pointer rounded-xl bg-brand/15 px-4 py-3 text-center text-sm font-medium text-[#F5F5F0] transition duration-200 hover:bg-brand/25 focus-within:ring-2 focus-within:ring-brand focus-within:ring-offset-2 focus-within:ring-offset-[#141414]">
                 <span>Take photo</span>
                 <input
                   type="file"
                   accept="image/*"
                   capture="environment"
                   onChange={onPhotoChange}
-                  className="hidden"
+                  className="sr-only"
                 />
               </label>
             </div>
@@ -253,7 +255,7 @@ export function LogItemForm({ onClose, onSaved }: Props) {
               value={location}
               onChange={(e) => setLocation(e.target.value)}
               placeholder="e.g. Union — 2nd floor lounge"
-              className="w-full rounded-xl border border-white/10 bg-black/40 px-4 py-2.5 text-[#F5F5F0] outline-none focus:border-brand/50 focus:ring-2 focus:ring-brand/30"
+              className="w-full rounded-xl border border-white/10 bg-black/40 px-4 py-2.5 text-[#F5F5F0] placeholder:text-[#9CA3AF] outline-none focus:border-brand/50 focus:ring-2 focus:ring-brand/30"
               required
             />
           </label>
@@ -277,7 +279,7 @@ export function LogItemForm({ onClose, onSaved }: Props) {
               onChange={(e) => setOptionalPin(e.target.value)}
               placeholder="Leave blank if not needed"
               autoComplete="new-password"
-              className="w-full rounded-xl border border-white/10 bg-black/40 px-4 py-2.5 text-[#F5F5F0] outline-none focus:border-brand/50 focus:ring-2 focus:ring-brand/30"
+              className="w-full rounded-xl border border-white/10 bg-black/40 px-4 py-2.5 text-[#F5F5F0] placeholder:text-[#9CA3AF] outline-none focus:border-brand/50 focus:ring-2 focus:ring-brand/30"
             />
             <p className="text-xs text-[#F5F5F0]/60">Students must enter this PIN to submit a claim.</p>
           </label>
@@ -288,7 +290,7 @@ export function LogItemForm({ onClose, onSaved }: Props) {
             <button
               type="button"
               onClick={onClose}
-              className="inline-flex min-h-11 items-center rounded-xl border border-white/15 px-4 py-2.5 text-sm transition duration-200 hover:bg-white/5 active:scale-[0.99]"
+              className="inline-flex min-h-11 items-center rounded-xl border border-white/15 px-4 py-2.5 text-sm text-[#F5F5F0]/85 transition duration-200 hover:bg-white/5 active:scale-[0.99]"
             >
               Cancel
             </button>

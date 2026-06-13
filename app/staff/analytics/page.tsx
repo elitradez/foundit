@@ -5,6 +5,10 @@ import { createAdminSupabaseClient } from "@/lib/supabase-admin";
 
 export const dynamic = "force-dynamic";
 
+export const metadata = {
+  title: "Analytics — Staff",
+};
+
 type ItemRow = {
   id: string;
   created_at: string;
@@ -122,12 +126,18 @@ function WeeklyBarChart({ weeks }: { weeks: { label: string; count: number }[] }
     y: TP + CH - f * CH,
   }));
 
+  // Expose the chart data itself, not just the chart's name — an SVG bar
+  // chart is otherwise invisible to screen readers.
+  const dataLabel = `Weekly items logged, last 8 weeks: ${weeks
+    .map((w) => `week of ${w.label}: ${w.count}`)
+    .join(", ")}`;
+
   return (
-    <svg viewBox={`0 0 ${TW} ${TH}`} className="w-full" role="img" aria-label="Weekly items logged">
+    <svg viewBox={`0 0 ${TW} ${TH}`} className="w-full" role="img" aria-label={dataLabel}>
       {yTicks.map(({ value, y }) => (
         <g key={value}>
           <line x1={LP} y1={y} x2={LP + CW} y2={y} stroke="#F1F5F9" strokeWidth={1} />
-          <text x={LP - 5} y={y + 3.5} textAnchor="end" fontSize={8} fill="#94A3B8" fontFamily="system-ui,sans-serif">
+          <text x={LP - 5} y={y + 3.5} textAnchor="end" fontSize={8} fill="#64748B" fontFamily="system-ui,sans-serif">
             {value}
           </text>
         </g>
@@ -157,7 +167,7 @@ function WeeklyBarChart({ weeks }: { weeks: { label: string; count: number }[] }
             )}
             <text
               x={x + barW / 2} y={TH - 2}
-              textAnchor="middle" fontSize={7.5} fill={isCurrent ? "#374151" : "#94A3B8"}
+              textAnchor="middle" fontSize={7.5} fill={isCurrent ? "#374151" : "#64748B"}
               fontFamily="system-ui,sans-serif"
             >
               {week.label}
@@ -264,13 +274,13 @@ export default async function StaffAnalyticsPage() {
       <header className="border-b border-[#E5E7EB] bg-white">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
           <div className="flex items-baseline gap-4">
-            <span className="text-[10px] font-semibold uppercase tracking-[0.15em] text-[#9CA3AF]">
+            <span className="text-[10px] font-semibold uppercase tracking-[0.15em] text-[#6B7280]">
               Analytics
             </span>
             <span className="text-[#D1D5DB]">|</span>
             <h1 className="text-sm font-semibold text-[#111827]">{session.department_name}</h1>
           </div>
-          <nav className="flex items-center gap-5">
+          <nav aria-label="Staff navigation" className="flex items-center gap-5">
             <Link href="/staff" className="text-sm text-[#6B7280] hover:text-[#111827] transition-colors">
               ← Dashboard
             </Link>
@@ -288,11 +298,11 @@ export default async function StaffAnalyticsPage() {
         ════════════════════════════════════════════════════════════════ */}
 
         <div className="mb-2 flex items-center gap-3">
-          <span className="text-[10px] font-semibold uppercase tracking-[0.15em] text-[#9CA3AF]">
+          <h2 className="text-[10px] font-semibold uppercase tracking-[0.15em] text-[#6B7280]">
             Your Department
-          </span>
+          </h2>
           <span className="flex-1 border-t border-[#F3F4F6]" />
-          <span className="text-[10px] text-[#9CA3AF]">{session.department_name}</span>
+          <span className="text-[10px] text-[#6B7280]">{session.department_name}</span>
         </div>
 
         {/* KPI row */}
@@ -304,9 +314,9 @@ export default async function StaffAnalyticsPage() {
             { label: "Avg. Time to Return", value: avgHours !== null ? fmtHours(avgHours) : "—", sub: avgHours !== null ? "logged → returned" : "no returns yet" },
           ].map(({ label, value, sub }) => (
             <div key={label} className="px-5 py-5">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[#9CA3AF]">{label}</p>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[#6B7280]">{label}</p>
               <p className="mt-2 text-[2rem] font-semibold leading-none tracking-tight text-[#111827]">{value}</p>
-              <p className="mt-1.5 text-[11px] text-[#9CA3AF]">{sub}</p>
+              <p className="mt-1.5 text-[11px] text-[#6B7280]">{sub}</p>
             </div>
           ))}
         </div>
@@ -317,14 +327,14 @@ export default async function StaffAnalyticsPage() {
           {/* Weekly chart */}
           <div className="border border-[#E5E7EB]">
             <div className="flex items-center justify-between border-b border-[#E5E7EB] px-5 py-3">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[#9CA3AF]">
+              <h3 className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[#6B7280]">
                 Weekly Activity
-              </p>
-              <p className="text-[10px] text-[#9CA3AF]">Last 8 weeks · current week in red</p>
+              </h3>
+              <p className="text-[10px] text-[#6B7280]">Last 8 weeks · current week in red</p>
             </div>
             <div className="px-4 py-5">
               {weeklyTrend.every((w) => w.count === 0) ? (
-                <p className="py-10 text-center text-sm text-[#9CA3AF]">No items logged in the last 8 weeks.</p>
+                <p className="py-10 text-center text-sm text-[#6B7280]">No items logged in the last 8 weeks.</p>
               ) : (
                 <WeeklyBarChart weeks={weeklyTrend} />
               )}
@@ -334,9 +344,9 @@ export default async function StaffAnalyticsPage() {
           {/* Status breakdown */}
           <div className="border border-[#E5E7EB]">
             <div className="border-b border-[#E5E7EB] px-5 py-3">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[#9CA3AF]">
+              <h3 className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[#6B7280]">
                 Item Status
-              </p>
+              </h3>
             </div>
             <div className="divide-y divide-[#F3F4F6]">
               {[
@@ -366,7 +376,7 @@ export default async function StaffAnalyticsPage() {
             </div>
             <div className="border-t border-[#F3F4F6] px-5 py-3">
               <div className="flex items-center justify-between">
-                <span className="text-[11px] text-[#9CA3AF]">Total</span>
+                <span className="text-[11px] text-[#6B7280]">Total</span>
                 <span className="text-sm font-semibold tabular-nums text-[#111827]">{totalItems}</span>
               </div>
             </div>
@@ -376,18 +386,18 @@ export default async function StaffAnalyticsPage() {
         {/* Top locations */}
         <div className="mt-6 border border-[#E5E7EB]">
           <div className="border-b border-[#E5E7EB] px-5 py-3">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[#9CA3AF]">
+            <h3 className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[#6B7280]">
               Top Locations
-            </p>
+            </h3>
           </div>
 
           {topLocations.length === 0 ? (
-            <p className="px-5 py-10 text-center text-sm text-[#9CA3AF]">No location data yet.</p>
+            <p className="px-5 py-10 text-center text-sm text-[#6B7280]">No location data yet.</p>
           ) : (
             <div className="divide-y divide-[#F3F4F6]">
               {topLocations.map(({ location, count }, idx) => (
                 <div key={location} className="flex items-center gap-4 px-5 py-3">
-                  <span className="w-5 flex-shrink-0 text-[11px] tabular-nums text-[#9CA3AF]">
+                  <span className="w-5 flex-shrink-0 text-[11px] tabular-nums text-[#6B7280]">
                     {idx + 1}
                   </span>
                   <span className="min-w-0 flex-1 truncate text-sm text-[#374151]" title={location}>{location}</span>
@@ -410,11 +420,11 @@ export default async function StaffAnalyticsPage() {
         {showCampus && (
           <>
             <div className="mb-2 mt-12 flex items-center gap-3">
-              <span className="text-[10px] font-semibold uppercase tracking-[0.15em] text-[#9CA3AF]">
+              <h2 className="text-[10px] font-semibold uppercase tracking-[0.15em] text-[#6B7280]">
                 Campus Wide
-              </span>
+              </h2>
               <span className="flex-1 border-t border-[#F3F4F6]" />
-              <span className="text-[10px] text-[#9CA3AF]">All departments combined</span>
+              <span className="text-[10px] text-[#6B7280]">All departments combined</span>
             </div>
 
             {/* Campus KPI row */}
@@ -426,9 +436,9 @@ export default async function StaffAnalyticsPage() {
                 { label: "Avg. Time to Return", value: uniAvgHours !== null ? fmtHours(uniAvgHours) : "—", sub: uniAvgHours !== null ? "logged → returned" : "no returns yet" },
               ].map(({ label, value, sub }) => (
                 <div key={label} className="px-5 py-5">
-                  <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[#9CA3AF]">{label}</p>
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[#6B7280]">{label}</p>
                   <p className="mt-2 text-[2rem] font-semibold leading-none tracking-tight text-[#111827]">{value}</p>
-                  <p className="mt-1.5 text-[11px] text-[#9CA3AF]">{sub}</p>
+                  <p className="mt-1.5 text-[11px] text-[#6B7280]">{sub}</p>
                 </div>
               ))}
             </div>
@@ -439,14 +449,14 @@ export default async function StaffAnalyticsPage() {
               {/* Campus weekly chart */}
               <div className="border border-[#E5E7EB]">
                 <div className="flex items-center justify-between border-b border-[#E5E7EB] px-5 py-3">
-                  <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[#9CA3AF]">
+                  <h3 className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[#6B7280]">
                     Weekly Activity
-                  </p>
-                  <p className="text-[10px] text-[#9CA3AF]">Last 8 weeks · current week in red</p>
+                  </h3>
+                  <p className="text-[10px] text-[#6B7280]">Last 8 weeks · current week in red</p>
                 </div>
                 <div className="px-4 py-5">
                   {uniWeeklyTrend.every((w) => w.count === 0) ? (
-                    <p className="py-10 text-center text-sm text-[#9CA3AF]">No items logged in the last 8 weeks.</p>
+                    <p className="py-10 text-center text-sm text-[#6B7280]">No items logged in the last 8 weeks.</p>
                   ) : (
                     <WeeklyBarChart weeks={uniWeeklyTrend} />
                   )}
@@ -456,9 +466,9 @@ export default async function StaffAnalyticsPage() {
               {/* Department breakdown */}
               <div className="border border-[#E5E7EB]">
                 <div className="border-b border-[#E5E7EB] px-5 py-3">
-                  <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[#9CA3AF]">
+                  <h3 className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[#6B7280]">
                     By Department
-                  </p>
+                  </h3>
                 </div>
                 <div className="divide-y divide-[#F3F4F6]">
                   {deptBreakdown.map(({ name, total }) => (
@@ -483,7 +493,7 @@ export default async function StaffAnalyticsPage() {
                 </div>
                 <div className="border-t border-[#F3F4F6] px-5 py-3">
                   <div className="flex items-center justify-between">
-                    <span className="text-[11px] text-[#9CA3AF]">Total</span>
+                    <span className="text-[11px] text-[#6B7280]">Total</span>
                     <span className="text-sm font-semibold tabular-nums text-[#111827]">{uniTotal}</span>
                   </div>
                 </div>
@@ -493,17 +503,17 @@ export default async function StaffAnalyticsPage() {
             {/* Campus top locations */}
             <div className="mt-6 border border-[#E5E7EB]">
               <div className="border-b border-[#E5E7EB] px-5 py-3">
-                <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[#9CA3AF]">
+                <h3 className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[#6B7280]">
                   Top Locations
-                </p>
+                </h3>
               </div>
               {uniTopLocations.length === 0 ? (
-                <p className="px-5 py-10 text-center text-sm text-[#9CA3AF]">No location data yet.</p>
+                <p className="px-5 py-10 text-center text-sm text-[#6B7280]">No location data yet.</p>
               ) : (
                 <div className="divide-y divide-[#F3F4F6]">
                   {uniTopLocations.map(({ location, count }, idx) => (
                     <div key={location} className="flex items-center gap-4 px-5 py-3">
-                      <span className="w-5 flex-shrink-0 text-[11px] tabular-nums text-[#9CA3AF]">
+                      <span className="w-5 flex-shrink-0 text-[11px] tabular-nums text-[#6B7280]">
                         {idx + 1}
                       </span>
                       <span className="min-w-0 flex-1 truncate text-sm text-[#374151]" title={location}>{location}</span>
@@ -522,7 +532,7 @@ export default async function StaffAnalyticsPage() {
         )}
 
         {/* Footer */}
-        <p className="mt-6 text-right text-[10px] text-[#9CA3AF]">
+        <p className="mt-6 text-right text-[10px] text-[#6B7280]">
           Generated {generated}
         </p>
 
