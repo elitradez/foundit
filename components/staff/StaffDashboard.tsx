@@ -158,6 +158,11 @@ export function StaffDashboard({
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
+  // Inline replacement for native alert() on staff action failures and
+  // validation. Surfaced through a single role="alert" region (below) so the
+  // message is announced to screen readers; cleared at the start of each
+  // action so a successful retry never leaves a stale error visible.
+  const [actionError, setActionError] = useState<string | null>(null);
   const [tab, setTab] = useState<Tab>("active");
   const [claims, setClaims] = useState<PendingClaim[]>([]);
   const [claimsLoading, setClaimsLoading] = useState(false);
@@ -297,6 +302,7 @@ export function StaffDashboard({
   }
 
   async function confirmDeleteActiveItem() {
+    setActionError(null);
     if (!deleteConfirmItem) return;
     const id = deleteConfirmItem.id;
     setBusyId(id);
@@ -304,7 +310,7 @@ export function StaffDashboard({
       const res = await fetch(`/api/staff/items/${id}`, { method: "DELETE" });
       const data = (await res.json().catch(() => ({}))) as { error?: string };
       if (!res.ok) {
-        alert(data.error ?? "Could not delete item");
+        setActionError(data.error ?? "Could not delete item");
         return;
       }
       setDeleteConfirmItem(null);
@@ -317,6 +323,7 @@ export function StaffDashboard({
   }
 
   async function saveActiveItem() {
+    setActionError(null);
     if (!editActiveItem) return;
     const id = editActiveItem.id;
     const name = editActiveName.trim();
@@ -324,7 +331,7 @@ export function StaffDashboard({
     const location = editActiveLocation.trim();
     const date_found = editActiveDateFound.trim();
     if (!name || !description || !location || !date_found) {
-      alert("Please fill in name, description, location, and date found.");
+      setActionError("Please fill in name, description, location, and date found.");
       return;
     }
 
@@ -349,7 +356,7 @@ export function StaffDashboard({
       }
       const data = (await res.json().catch(() => ({}))) as { error?: string };
       if (!res.ok) {
-        alert(data.error ?? "Could not save changes");
+        setActionError(data.error ?? "Could not save changes");
         return;
       }
       closeEditActiveItem();
@@ -360,6 +367,7 @@ export function StaffDashboard({
   }
 
   async function confirmSendActiveItemToSurplus() {
+    setActionError(null);
     if (!activeSurplusConfirmItem) return;
     const id = activeSurplusConfirmItem.id;
     setBusyId(id);
@@ -367,7 +375,7 @@ export function StaffDashboard({
       const res = await fetch(`/api/staff/items/${id}/surplus`, { method: "POST" });
       const data = (await res.json().catch(() => ({}))) as { error?: string };
       if (!res.ok) {
-        alert(data.error ?? "Failed to send item to surplus");
+        setActionError(data.error ?? "Failed to send item to surplus");
         return;
       }
       setActiveSurplusConfirmItem(null);
@@ -397,16 +405,17 @@ export function StaffDashboard({
   }
 
   async function confirmReturnClaim() {
+    setActionError(null);
     if (!returnClaimId || !returnClaimItemId) return;
     const name = returnStudentName.trim();
     if (!name) {
-      alert("Student name is required");
+      setActionError("Student name is required");
       return;
     }
     const studentId = returnStudentIdNumber.trim();
     const phone = returnPhoneNumber.trim();
     if (!studentId && !phone) {
-      alert("Enter a Student ID or phone number.");
+      setActionError("Enter a Student ID or phone number.");
       return;
     }
 
@@ -425,7 +434,7 @@ export function StaffDashboard({
       });
       if (!res.ok) {
         const j = (await res.json().catch(() => ({}))) as { error?: string };
-        alert(j.error ?? "Failed to mark returned");
+        setActionError(j.error ?? "Failed to mark returned");
         return;
       }
       closeReturnClaimModal();
@@ -438,6 +447,7 @@ export function StaffDashboard({
   }
 
   async function resolveClaim(claimId: string, action: "surplus") {
+    setActionError(null);
     setBusyId(claimId);
     try {
       const res = await fetch("/api/staff/claims/resolve", {
@@ -447,7 +457,7 @@ export function StaffDashboard({
       });
       if (!res.ok) {
         const j = (await res.json().catch(() => ({}))) as { error?: string };
-        alert(j.error ?? "Failed to update claim");
+        setActionError(j.error ?? "Failed to update claim");
         return;
       }
       await load();
@@ -459,6 +469,7 @@ export function StaffDashboard({
   }
 
   async function relist(row: StudentLogRow) {
+    setActionError(null);
     setBusyId(row.kind === "claimed" ? row.claim_id ?? row.item_id : row.item_id);
     try {
       const res = await fetch("/api/staff/relist", {
@@ -468,7 +479,7 @@ export function StaffDashboard({
       });
       const data = (await res.json().catch(() => ({}))) as { error?: string };
       if (!res.ok) {
-        alert(data.error ?? "Failed to relist");
+        setActionError(data.error ?? "Failed to relist");
         return;
       }
       await load();
@@ -481,6 +492,7 @@ export function StaffDashboard({
   }
 
   async function confirmDeleteLogRow() {
+    setActionError(null);
     if (!deleteLogRow) return;
     const id = deleteLogRow.item_id;
     setBusyId(id);
@@ -488,7 +500,7 @@ export function StaffDashboard({
       const res = await fetch(`/api/staff/items/${id}`, { method: "DELETE" });
       const data = (await res.json().catch(() => ({}))) as { error?: string };
       if (!res.ok) {
-        alert(data.error ?? "Failed to delete item");
+        setActionError(data.error ?? "Failed to delete item");
         return;
       }
       setDeleteLogRow(null);
@@ -509,6 +521,7 @@ export function StaffDashboard({
   }
 
   async function saveStudentInfo() {
+    setActionError(null);
     if (!editReturnedItemId) return;
     setBusyId(editReturnedItemId);
     try {
@@ -522,7 +535,7 @@ export function StaffDashboard({
       });
       const data = (await res.json().catch(() => ({}))) as { error?: string };
       if (!res.ok) {
-        alert(data.error ?? "Failed to save student info");
+        setActionError(data.error ?? "Failed to save student info");
         return;
       }
       setEditReturnedItemId(null);
@@ -1213,6 +1226,29 @@ export function StaffDashboard({
                 {busyId === returnClaimId ? "…" : "Confirm Return"}
               </button>
             </div>
+          </div>
+        </div>
+      ) : null}
+
+      {/* ── Action error announcer (replaces native alert) ──
+          Single role="alert" region for staff action failures + validation.
+          Floats above the modals (z-[100]) so it is visible whether the
+          failing action came from a dialog or a table-row button. */}
+      {actionError ? (
+        <div className="pointer-events-none fixed inset-x-0 bottom-0 z-[100] flex justify-center px-4 pb-[max(16px,env(safe-area-inset-bottom))]">
+          <div
+            role="alert"
+            className="anim-pop-in pointer-events-auto flex max-w-md items-start gap-3 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 shadow-2xl"
+          >
+            <span className="flex-1">{actionError}</span>
+            <button
+              type="button"
+              onClick={() => setActionError(null)}
+              aria-label="Dismiss"
+              className="-mr-1 -mt-0.5 shrink-0 rounded px-1.5 font-semibold text-red-700 hover:text-red-900"
+            >
+              ✕
+            </button>
           </div>
         </div>
       ) : null}
