@@ -71,7 +71,7 @@ export default function PrivacyPage() {
         <Section title="Data retention">
           <p>Item records remain active until the item is returned to its owner or transferred to surplus.</p>
           <p>Claim records containing personal information are automatically deleted 90 days after submission. Alerts are deleted 90 days after creation. We maintain an internal log of when deletions occur for audit purposes.</p>
-          <p>Students may request earlier deletion by emailing <a href="mailto:privacy@laikacampus.com" style={{ color: "#CC0000" }}>privacy@laikacampus.com</a>.</p>
+          <p>Students may request earlier deletion by emailing <a href="mailto:privacy@laikacampus.com" style={{ color: "#CC0000", textDecoration: "underline" }}>privacy@laikacampus.com</a>.</p>
         </Section>
 
         <Section title="FERPA compliance">
@@ -84,11 +84,11 @@ export default function PrivacyPage() {
 
         <Section title="Your rights">
           <p>You have the right to request access to, correction of, or deletion of any personal information you have submitted. To exercise these rights, contact us at:</p>
-          <p><a href="mailto:privacy@laikacampus.com" style={{ color: "#CC0000", fontWeight: 500 }}>privacy@laikacampus.com</a></p>
+          <p><a href="mailto:privacy@laikacampus.com" style={{ color: "#CC0000", fontWeight: 500, textDecoration: "underline" }}>privacy@laikacampus.com</a></p>
         </Section>
 
         <Section title="Contact">
-          <p>Questions about this policy? Email <a href="mailto:privacy@laikacampus.com" style={{ color: "#CC0000" }}>privacy@laikacampus.com</a>.</p>
+          <p>Questions about this policy? Email <a href="mailto:privacy@laikacampus.com" style={{ color: "#CC0000", textDecoration: "underline" }}>privacy@laikacampus.com</a>.</p>
         </Section>
       </main>
 
@@ -96,7 +96,7 @@ export default function PrivacyPage() {
       <footer style={{ borderTop: "1px solid #E5E5E5", backgroundColor: "#FFFFFF", padding: "24px 16px", textAlign: "center" }}>
         <p style={{ fontSize: 13, color: "#767676", margin: 0 }}>
           {universityName} Lost &amp; Found &nbsp;·&nbsp;{" "}
-          <Link href="/privacy" style={{ color: "#CC0000", textDecoration: "none" }}>
+          <Link href="/privacy" style={{ color: "#CC0000", textDecoration: "underline" }}>
             Privacy
           </Link>
         </p>
