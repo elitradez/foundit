@@ -768,7 +768,7 @@ export function StaffDashboard({
                             type="button"
                             disabled={!isEligible || busyId === item.id}
                             onClick={() => setActiveSurplusConfirmItem(item)}
-                            aria-label={isEligible ? `Send ${item.name} to surplus` : `${item.name} surplus eligible in ${daysUntilEligible} days`}
+                            aria-label={isEligible ? `Send to Surplus, ${item.name}` : `Send to Surplus, ${item.name} — eligible in ${daysUntilEligible} days`}
                             className="inline-flex min-h-8 items-center rounded border border-[#E5E5E5] bg-white px-3 py-1 text-xs font-medium text-[#333333] hover:bg-[#F5F5F5] disabled:cursor-not-allowed disabled:opacity-40 transition"
                           >
                             Send to Surplus
@@ -867,7 +867,7 @@ export function StaffDashboard({
                                 type="button"
                                 disabled={busyId === c.id}
                                 onClick={() => openReturnClaimModal(c)}
-                                aria-label={`Mark ${c.item_name} as returned`}
+                                aria-label={`Mark as Returned, ${c.item_name}`}
                                 className="inline-flex min-h-9 items-center rounded bg-[#CC0000] px-3 py-1.5 text-xs font-semibold text-white hover:bg-[#A80000] disabled:opacity-50 transition"
                               >
                                 Mark as Returned
@@ -876,7 +876,7 @@ export function StaffDashboard({
                                 type="button"
                                 disabled={!canSendToSurplus || busyId === c.id}
                                 onClick={() => void resolveClaim(c.id, "surplus")}
-                                aria-label={canSendToSurplus ? `Send ${c.item_name} to surplus` : `${c.item_name} surplus eligible in ${daysUntilEligible} days`}
+                                aria-label={canSendToSurplus ? `Send to Surplus, ${c.item_name}` : `Surplus in ${daysUntilEligible}d, ${c.item_name}`}
                                 className="inline-flex min-h-9 items-center rounded border border-[#E5E5E5] bg-white px-3 py-1.5 text-xs font-semibold text-[#333333] hover:bg-[#F5F5F5] disabled:cursor-not-allowed disabled:opacity-40 transition"
                               >
                                 {canSendToSurplus ? "Send to Surplus" : `Surplus in ${daysUntilEligible}d`}
