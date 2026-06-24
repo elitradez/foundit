@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useFocusTrap } from "@/lib/useFocusTrap";
 import { Spinner } from "@/components/ui/Spinner";
+import { WelcomeModal } from "@/components/student/WelcomeModal";
 import type { PublicItem } from "@/lib/types";
 
 type Department = { id: string; name: string };
@@ -13,13 +14,18 @@ type Props = {
   initialItems: PublicItem[];
   loadError?: string | null;
   universityName?: string;
+  brandColor?: string;
+  brandColorHover?: string;
   departments?: Department[];
 };
 
 const FONT = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
 const PAGE_SIZE = 24;
 
-export function HomeExplorer({ initialItems, loadError, universityName = "University of Utah", departments = [] }: Props) {
+export function HomeExplorer({ initialItems, loadError, universityName = "University of Utah", brandColor = "#CC0000", brandColorHover = "#a80000", departments = [] }: Props) {
+  // Welcome popup shows on every entry to the student home page. Intentionally
+  // not persisted: no flag, field, or storage tracks whether it has been seen.
+  const [showWelcome, setShowWelcome] = useState(true);
   const [allItems, setAllItems] = useState<PublicItem[]>(initialItems);
   const [hasMore, setHasMore] = useState(initialItems.length === 500);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -210,8 +216,24 @@ export function HomeExplorer({ initialItems, loadError, universityName = "Univer
   const displayItems = showWeak ? [...strongItems, ...weakItems] : strongItems;
   const visibleItems = displayItems.slice(0, visibleCount);
 
+  function closeWelcome() {
+    setShowWelcome(false);
+    // Move the student into the items/search view by focusing search after the
+    // modal unmounts and focus is restored.
+    setTimeout(() => document.getElementById("item-search")?.focus(), 0);
+  }
+
   return (
     <div style={{ minHeight: "100vh", backgroundColor: "#FFFFFF", fontFamily: FONT, color: "#333333" }}>
+
+      {showWelcome ? (
+        <WelcomeModal
+          universityName={universityName}
+          brandColor={brandColor}
+          brandColorHover={brandColorHover}
+          onClose={closeWelcome}
+        />
+      ) : null}
 
       {/* ── Nav ── */}
       <header style={{ backgroundColor: "#FFFFFF", borderBottom: "1px solid #E5E5E5" }}>
@@ -252,6 +274,7 @@ export function HomeExplorer({ initialItems, loadError, universityName = "Univer
               </span>
             ) : null}
             <input
+              id="item-search"
               type="search"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
